@@ -573,3 +573,81 @@ teardown() {
         "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:53:5" \
         "fixtures/definition_regulator_min_microvolt.rpc.json"
 }
+
+# ---------------------------------------------------------------------------
+# Diagnostics: missing semicolon
+# Fixture: fixtures/diag_missing_semicolon.dts
+#   line 8: compatible = "foo,bar"  -- missing semicolon
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports missing semicolon" {
+    lsts_diagnostics "fixtures/diag_missing_semicolon.dts"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 1 and (.message | test("semicolon"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: unbalanced braces
+# Fixture: fixtures/diag_unbalanced_brace.dts
+#   missing closing brace at EOF
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports unclosed brace" {
+    lsts_diagnostics "fixtures/diag_unbalanced_brace.dts"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 1 and (.message | test("brace"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: missing required property
+# Fixture: fixtures/diag_missing_required.dts
+#   node with compatible = "qcom,geni-uart" missing 'clocks'
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports missing required property" {
+    lsts_diagnostics "fixtures/diag_missing_required.dts"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("clocks"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: undocumented property
+# Fixture: fixtures/diag_undocumented_prop.dts
+#   node with compatible = "qcom,geni-uart" with a fake property
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports undocumented property" {
+    lsts_diagnostics "fixtures/diag_undocumented_prop.dts"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("my-fake-property"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: valid document reports no errors
+# Source: tests/linux/arch/xtensa/boot/dts/csp.dts (small, clean DTS)
+# ---------------------------------------------------------------------------
+
+@test "diagnostics on valid document reports no errors" {
+    lsts_initialize
+    lsts_open "fixtures/diag_valid.dts"
+
+    local uri="file://$LSTS_ROOT/fixtures/diag_valid.dts"
+    local _deadline=$(( SECONDS + ${LSTS_TIMEOUT:-10} ))
+    while (( SECONDS < _deadline )); do
+        lsts_recv || return 1
+        _lsts_reply_to_request && continue
+        printf '%s' "$LSTS_RESPONSE" | jq -e \
+            --arg m "textDocument/publishDiagnostics" --arg uri "$uri" \
+            '.method == $m and .params.uri == $uri' >/dev/null 2>&1 && break
+    done
+
+    printf '%s' "$LSTS_RESPONSE" | jq -e '.params.diagnostics | length == 0'
+}

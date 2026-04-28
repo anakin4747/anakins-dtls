@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	serial@a88000 {
+		compatible = "qcom,geni-uart";
+		reg = <0xa88000 0x7000>;
+		interrupts = <0 355 4>;
+		clock-names = "se";
+	};
+};

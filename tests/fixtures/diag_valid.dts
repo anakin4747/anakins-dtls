@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+// Minimal valid DTS with no compatible nodes that have bindings
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	model = "Test Board";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x40000000>;
+	};
+};

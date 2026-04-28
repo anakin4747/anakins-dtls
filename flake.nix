@@ -13,7 +13,7 @@
 
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
-          runtimeInputs = with pkgs; [ bash jq ];
+          runtimeInputs = with pkgs; [ bash jq ripgrep ];
           checkPhase = "";
           text = builtins.readFile ./anakins-dtls;
         };
@@ -28,6 +28,7 @@
             bash
             bats
             jq
+            ripgrep
             shellcheck
             anakins-dtls
           ];
