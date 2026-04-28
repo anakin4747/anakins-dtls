@@ -1,0 +1,5 @@
+// Minimal fixture: phandle is a compiler-generated property not found in Linux kernel DTS source.
+/ {
+	phandle = <1>;
+	linux,phandle = <1>;
+};
