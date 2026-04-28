@@ -1461,40 +1461,40 @@ handle_hover() {
     _send_hover_result "$id" "$word" "$standard_doc" "$binding_doc" "$compat" "$text"
 }
 
-# Dispatch hover result based on available docs.
+# Dispatch hover result combining ALL available documentation sources.
 _send_hover_result() {
     local id="$1" word="$2" standard_doc="$3" binding_doc="$4" compat="$5" text="$6"
     local BT=$'\`'
-    if [[ -n "$binding_doc" ]] && [[ -n "$standard_doc" ]]; then
-        send_hover "$id" "$standard_doc
+    local parts="" sep=""
 
----
+    # 1. Standard DT spec doc
+    [[ -n "$standard_doc" ]] && { parts+="${sep}${standard_doc}"; sep=$'\n\n---\n\n'; }
 
-**From binding** ($BT$compat$BT):
+    # 2. Binding doc (from node compatible or global search)
+    if [[ -n "$binding_doc" ]]; then
+        local binding_header="**From binding** (${BT}${compat}${BT}):"
+        [[ -z "$compat" ]] && binding_header="**From binding:**"
+        parts+="${sep}${binding_header}\n\n${binding_doc}"
+        sep=$'\n\n---\n\n'
+    fi
 
-$binding_doc"
-    elif [[ -n "$binding_doc" ]]; then
-        send_hover "$id" "## $word
+    # 3. CPP macro doc
+    local macro_doc
+    macro_doc="$(find_macro_doc "$word" "$text")" || macro_doc=""
+    [[ -n "$macro_doc" ]] && { parts+="${sep}${macro_doc}"; sep=$'\n\n---\n\n'; }
 
-**From binding** ($BT$compat$BT):
+    # 4. Linux kernel Documentation .txt
+    local linux_doc
+    linux_doc="$(find_linux_doc_for_prop "$word" "$LINUX_DIR")" || linux_doc=""
+    if [[ -n "$linux_doc" ]]; then
+        parts+="${sep}**Source:** Linux kernel Documentation\n\n\`\`\`\n${linux_doc}\n\`\`\`"
+        sep=$'\n\n---\n\n'
+    fi
 
-$binding_doc"
-    elif [[ -n "$standard_doc" ]]; then
-        send_hover "$id" "$standard_doc"
+    if [[ -n "$parts" ]]; then
+        send_hover "$id" "$parts"
     else
-        local macro_doc
-        macro_doc="$(find_macro_doc "$word" "$text")"
-        if [[ -n "$macro_doc" ]]; then
-            send_hover "$id" "$macro_doc"
-        else
-            local linux_doc
-            linux_doc="$(find_linux_doc_for_prop "$word" "$LINUX_DIR")" || linux_doc=""
-            if [[ -n "$linux_doc" ]]; then
-                send_hover "$id" "## ${word}\n\n**Source:** Linux kernel Documentation\n\n\`\`\`\n${linux_doc}\n\`\`\`"
-            else
-                send_null "$id"
-            fi
-        fi
+        send_null "$id"
     fi
 }
 
