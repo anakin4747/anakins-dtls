@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## GIC_SPI\n\n**Defined in:** `dt-bindings/interrupt-controller/arm-gic.h`\n\n```c\n#define GIC_SPI 0\n```"}}}

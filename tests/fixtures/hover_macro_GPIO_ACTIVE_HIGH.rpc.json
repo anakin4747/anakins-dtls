@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## GPIO_ACTIVE_HIGH\n\n**Defined in:** `dt-bindings/gpio/gpio.h`\n\n```c\n#define GPIO_ACTIVE_HIGH 0\n```"}}}

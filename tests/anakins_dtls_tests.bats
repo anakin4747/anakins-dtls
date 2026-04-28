@@ -446,3 +446,94 @@ teardown() {
     run env -i PATH="$bash_dir" bash "$server_src"
     [[ "$output" == *"jq"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# go-to-definition: capabilities
+# ---------------------------------------------------------------------------
+
+@test "initialize advertises definitionProvider" {
+    lsts_initialize
+    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.definitionProvider == true'
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: compatible value → binding YAML
+# Real source: arch/arm64/boot/dts/qcom/sdm845.dtsi line 1319 col 18
+#   compatible = "qcom,geni-uart";  cursor on "qcom,geni-uart"
+# ---------------------------------------------------------------------------
+
+@test "definition on compatible value navigates to binding YAML" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sdm845.dtsi:1319:18" \
+        "fixtures/definition_compatible_value.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: property name → binding property location
+# Real source: arch/arm64/boot/dts/qcom/sdm845.dtsi line 1322 col 5
+#   clocks = <&gcc ...>;  node has compatible = "qcom,geni-uart"
+# ---------------------------------------------------------------------------
+
+@test "definition on property navigates to binding property location" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sdm845.dtsi:1322:5" \
+        "fixtures/definition_property_binding.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: standard property name → spec RST
+# Real source: arch/arm64/boot/dts/qcom/sm8550.dtsi line 39 col 5
+#   compatible = ...  cursor on "compatible" keyword itself
+# ---------------------------------------------------------------------------
+
+@test "definition on standard property navigates to spec" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:5" \
+        "fixtures/definition_spec_property.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: unknown token → null
+# ---------------------------------------------------------------------------
+
+@test "definition returns null for unknown" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1:1" \
+        "fixtures/definition_null.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# Hover: CPP macros
+# Real source: arch/arm64/boot/dts/qcom/sm8550.dtsi line 845 col 18
+#   interrupts = <GIC_SPI 229 ...>  cursor on GIC_SPI
+# ---------------------------------------------------------------------------
+
+@test "hover over GIC_SPI returns macro definition" {
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:845:18" \
+        "fixtures/hover_macro_GIC_SPI.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# Hover: CPP macros (GPIO)
+# Real source: arch/arm64/boot/dts/qcom/sc7180-idp.dts line 319 col 35
+#   reset-gpios = <&pm6150l_gpios 3 GPIO_ACTIVE_HIGH>;  cursor on GPIO_ACTIVE_HIGH
+# ---------------------------------------------------------------------------
+
+@test "hover over GPIO_ACTIVE_HIGH returns macro definition" {
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sc7180-idp.dts:319:35" \
+        "fixtures/hover_macro_GPIO_ACTIVE_HIGH.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: CPP macro → header file
+# Real source: arch/arm64/boot/dts/qcom/sm8550.dtsi line 845 col 18
+#   cursor on GIC_SPI → navigate to arm-gic.h #define line
+# ---------------------------------------------------------------------------
+
+@test "definition on GIC_SPI navigates to header file" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:845:18" \
+        "fixtures/definition_macro_GIC_SPI.rpc.json"
+}

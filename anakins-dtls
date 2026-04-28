@@ -1022,9 +1022,220 @@ chosen {
 # Hover dispatch
 # ---------------------------------------------------------------------------
 
-# Global variable set during initialize
+# Global variables set during initialize
 BINDINGS_DIR=""
+SPEC_DIR=""
+INCLUDE_DIRS=()
 
+# ---------------------------------------------------------------------------
+# CPP macro helpers
+# ---------------------------------------------------------------------------
+
+# Given a macro name, the document text, and the root path, return
+# "header_rel_path:define_line" for the first matching #define, or empty.
+find_macro_location() {
+    local macro="$1" doc_text="$2"
+    [[ -n "$macro" ]] || return 0
+    [[ ${#INCLUDE_DIRS[@]} -gt 0 ]] || return 0
+
+    # Extract #include <...> paths from the document
+    local includes
+    includes="$(printf '%s' "$doc_text" | grep -o '#include <[^>]*>' | sed 's/#include <//;s/>//')" || true
+    [[ -n "$includes" ]] || return 0
+
+    local inc_path header_file
+    while IFS= read -r inc_path; do
+        [[ -n "$inc_path" ]] || continue
+        for dir in "${INCLUDE_DIRS[@]}"; do
+            header_file="${dir}/${inc_path}"
+            if [[ -f "$header_file" ]]; then
+                local lineno
+                lineno="$(grep -n "^#define ${macro}[[:space:]]" "$header_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+                if [[ -n "$lineno" ]]; then
+                    printf '%s:%s' "$header_file" "$lineno"
+                    return 0
+                fi
+            fi
+        done
+    done <<< "$includes"
+    return 0
+}
+
+# Given a macro name and doc_text, return a markdown hover string or empty.
+find_macro_doc() {
+    local macro="$1" doc_text="$2"
+    local location
+    location="$(find_macro_location "$macro" "$doc_text")"
+    [[ -n "$location" ]] || return 0
+
+    local header_file lineno define_line inc_rel
+    header_file="${location%:*}"
+    lineno="${location##*:}"
+    define_line="$(sed -n "${lineno}p" "$header_file")"
+    # Make header path relative to include root for display
+    inc_rel="$header_file"
+    for dir in "${INCLUDE_DIRS[@]}"; do
+        if [[ "$header_file" == "${dir}/"* ]]; then
+            inc_rel="${header_file#${dir}/}"
+            break
+        fi
+    done
+
+    printf '## %s\n\n**Defined in:** `%s`\n\n```c\n%s\n```' \
+        "$macro" "$inc_rel" "$define_line"
+}
+
+# ---------------------------------------------------------------------------
+# Definition helpers
+# ---------------------------------------------------------------------------
+
+# Check if the cursor is on a quoted string within a compatible = ... line.
+# Outputs the compatible value string (without quotes) or empty.
+compatible_value_at() {
+    local text="$1" line="$2" character="$3"
+    local line_text
+    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+    printf '%s' "$line_text" | grep -q 'compatible[[:space:]]*=' || return 0
+
+    # Find which quoted string the cursor falls within
+    local pos=0 in_quote=0 start=0 ch
+    local len=${#line_text}
+    local i=0
+    while [[ $i -lt $len ]]; do
+        ch="${line_text:$i:1}"
+        if [[ "$ch" == '"' ]]; then
+            if [[ $in_quote -eq 0 ]]; then
+                in_quote=1
+                start=$i
+            else
+                in_quote=0
+                if [[ $character -gt $start && $character -le $i ]]; then
+                    # cursor is inside this quoted string
+                    printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
+                    return 0
+                fi
+            fi
+        fi
+        (( i++ )) || true
+    done
+    # Also check if cursor is right on the opening quote
+    i=0
+    in_quote=0
+    start=0
+    while [[ $i -lt $len ]]; do
+        ch="${line_text:$i:1}"
+        if [[ "$ch" == '"' ]]; then
+            if [[ $in_quote -eq 0 ]]; then
+                in_quote=1
+                start=$i
+            else
+                in_quote=0
+                if [[ $character -ge $start && $character -le $i ]]; then
+                    printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
+                    return 0
+                fi
+            fi
+        fi
+        (( i++ )) || true
+    done
+    return 0
+}
+
+# Send a definition Location response.
+send_definition() {
+    local id="$1" file_path="$2" file_line="$3"
+    send "$(jq -n \
+        --argjson id "$id" \
+        --arg uri "file://$file_path" \
+        --argjson line "$file_line" \
+        '{"jsonrpc":"2.0","id":$id,"result":{"uri":$uri,"range":{"start":{"line":$line,"character":0},"end":{"line":$line,"character":0}}}}')"
+}
+
+handle_definition() {
+    local body="$1"
+    local def_uri def_line def_char def_id def_text
+    def_uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    def_line=$(printf '%s' "$body" | jq -r '.params.position.line')
+    def_char=$(printf '%s' "$body" | jq -r '.params.position.character')
+    def_id=$(printf '%s' "$body" | jq -r '.id')
+    def_text="${DOC_TEXT[$def_uri]:-}"
+
+    if [[ -z "$def_text" ]]; then
+        send "$(jq -n --argjson id "$def_id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
+        return
+    fi
+
+    # 1. Check if cursor is on a compatible value string
+    local compat_val
+    compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
+    if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
+        local binding_file
+        binding_file="$(grep -rl "$compat_val" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | head -1)" || true
+        if [[ -n "$binding_file" ]]; then
+            local file_line
+            file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+            file_line=$(( file_line - 1 ))
+            [[ $file_line -lt 0 ]] && file_line=0
+            send_definition "$def_id" "$binding_file" "$file_line"
+            return
+        fi
+    fi
+
+    # 2. Check if cursor is on a CPP macro (all-caps identifier)
+    local def_word
+    def_word="$(word_at "$def_text" "$def_line" "$def_char")"
+    if [[ -n "$def_word" ]] && [[ "$def_word" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+        local macro_loc
+        macro_loc="$(find_macro_location "$def_word" "$def_text")"
+        if [[ -n "$macro_loc" ]]; then
+            local mfile mline
+            mfile="${macro_loc%:*}"
+            mline="${macro_loc##*:}"
+            mline=$(( mline - 1 ))
+            [[ $mline -lt 0 ]] && mline=0
+            send_definition "$def_id" "$mfile" "$mline"
+            return
+        fi
+    fi
+
+    # 3. Check if cursor is on a property name — try spec first for standard properties, then binding
+    if [[ -n "$def_word" ]]; then
+        # Check spec first — standard DTS properties go to spec
+        if [[ -n "$SPEC_DIR" ]]; then
+            local spec_result spec_file spec_line
+            spec_result="$(grep -rn "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
+            if [[ -n "$spec_result" ]]; then
+                spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
+                spec_line="$(printf '%s' "$spec_result" | cut -d: -f2)"
+                spec_line=$(( spec_line - 1 ))
+                [[ $spec_line -lt 0 ]] && spec_line=0
+                send_definition "$def_id" "$spec_file" "$spec_line"
+                return
+            fi
+        fi
+        # Fall back to binding YAML
+        local node_compat
+        node_compat="$(node_compatible_at "$def_text" "$def_line")"
+        if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
+            local binding_file
+            binding_file="$(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | head -1)" || true
+            if [[ -n "$binding_file" ]]; then
+                local prop_line
+                prop_line="$(grep -n "^  ${def_word}:" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+                if [[ -n "$prop_line" ]]; then
+                    prop_line=$(( prop_line - 1 ))
+                    [[ $prop_line -lt 0 ]] && prop_line=0
+                    send_definition "$def_id" "$binding_file" "$prop_line"
+                    return
+                fi
+            fi
+        fi
+    fi
+
+    send "$(jq -n --argjson id "$def_id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
+}
+
+# ---------------------------------------------------------------------------
 # Extract the compatible string of the node enclosing the given line.
 node_compatible_at() {
     local text="$1" line="$2"
@@ -1169,7 +1380,14 @@ $binding_doc"
     elif [[ -n "$standard_doc" ]]; then
         send_hover "$id" "$standard_doc"
     else
-        send_null "$id"
+        # Try CPP macro lookup as final fallback
+        local macro_doc
+        macro_doc="$(find_macro_doc "$word" "$text")"
+        if [[ -n "$macro_doc" ]]; then
+            send_hover "$id" "$macro_doc"
+        else
+            send_null "$id"
+        fi
     fi
 }
 
@@ -1218,7 +1436,20 @@ while recv; do
             else
                 BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
             fi
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1}}}}"
+            if [[ -d "${root_path}/tests/devicetree-specification/source" ]]; then
+                SPEC_DIR="${root_path}/tests/devicetree-specification/source"
+            else
+                SPEC_DIR="${root_path}/devicetree-specification/source"
+            fi
+            INCLUDE_DIRS=()
+            for _idir in \
+                "${root_path}/tests/linux/include" \
+                "${root_path}/linux/include" \
+                "${root_path}/tests/linux/arch/arm/include" \
+                "${root_path}/tests/linux/arch/arm64/include"; do
+                [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
+            done
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1}}}}"
             ;;
         initialized)
             ;;
@@ -1232,6 +1463,9 @@ while recv; do
             ;;
         textDocument/hover)
             handle_hover "$id" "${DOC_TEXT["$uri"]:-}" "$line" "$character"
+            ;;
+        textDocument/definition)
+            handle_definition "$BODY"
             ;;
         exit)
             exit 0
