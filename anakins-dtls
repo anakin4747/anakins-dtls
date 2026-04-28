@@ -1170,7 +1170,7 @@ handle_definition() {
     compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
     if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
         local binding_file
-        binding_file="$(grep -rl "$compat_val" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | head -1)" || true
+        binding_file="$(grep -rl "$compat_val" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
         if [[ -n "$binding_file" ]]; then
             local file_line
             file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
@@ -1218,7 +1218,7 @@ handle_definition() {
         node_compat="$(node_compatible_at "$def_text" "$def_line")"
         if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
             local binding_file
-            binding_file="$(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | head -1)" || true
+            binding_file="$(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
             if [[ -n "$binding_file" ]]; then
                 local prop_line
                 prop_line="$(grep -n "^  ${def_word}:" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
@@ -1282,7 +1282,7 @@ find_binding_doc() {
             printf '%s' "$desc"
             return 0
         fi
-    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null)
+    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null | sort)
     return 0
 }
 
