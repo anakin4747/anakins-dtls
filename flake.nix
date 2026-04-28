@@ -17,6 +17,9 @@
 
           packages = with pkgs; [
             bash
+            bats
+            jq
+            shellcheck
           ];
         };
       });
