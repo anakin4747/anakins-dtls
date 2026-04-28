@@ -1425,13 +1425,26 @@ collect_diagnostics() {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
         }
+        BEGIN { angle = 0; depth = 0; nd = 0 }
         {
             lineno = NR - 1
             line = $0
             sub(/\/\/.*$/, "", line)
             gsub(/\/\*[^*]*\*\//, "", line)
 
-            if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_,-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/)
+            # Track multi-line values: count unmatched < > to detect continuations
+            n = split(line, chars, "")
+            for (i = 1; i <= n; i++) {
+                if (chars[i] == "<") angle++
+                else if (chars[i] == ">") angle = (angle > 0) ? angle - 1 : 0
+            }
+
+            # A line ending with , is a value continuation — not a missing semicolon
+            trimmed = line
+            gsub(/[[:space:]]+$/, "", trimmed)
+            continuation = (trimmed ~ /,$/ || angle > 0)
+
+            if (!continuation && line ~ /^[[:space:]]+[A-Za-z_#][A-Za-z0-9_,#-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/)
                 diags[nd++] = make(lineno, 1, "Missing semicolon")
 
             if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
