@@ -1181,7 +1181,33 @@ node_compatible_at() {
     local text="$1" line="$2"
     local above
     above="$(printf '%s' "$text" | head -n "$((line + 1))")" || true
-    printf '%s' "$above" | grep -o 'compatible = "[^"]*"' | tail -1 | grep -o '"[^"]*"' | head -1 | tr -d '"'  || true
+    # Walk backwards through all lines above, tracking brace depth, to find the
+    # nearest ancestor node that has a compatible property.
+    printf '%s' "$above" | awk '
+        {
+            # Track brace depth cumulatively
+            for (i = 1; i <= length($0); i++) {
+                c = substr($0, i, 1)
+                if (c == "{") depth++
+                else if (c == "}") depth--
+            }
+            lines[NR] = $0
+            depths[NR] = depth
+        }
+        END {
+            target_depth = depth
+            for (i = NR; i >= 1; i--) {
+                if (depths[i] <= target_depth && lines[i] ~ /compatible[[:space:]]*=/) {
+                    match(lines[i], /"[^"]*"/)
+                    if (RSTART) {
+                        val = substr(lines[i], RSTART+1, RLENGTH-2)
+                        print val
+                        exit
+                    }
+                }
+            }
+        }
+    ' || true
 }
 
 # Extract property description from a single YAML binding file.
@@ -1213,35 +1239,56 @@ extract_property_doc() {
     ' "$yaml_file" | sed '/^[[:space:]]*$/d' | head -20
 }
 
+# extract_property_doc_recursive <prop> <yaml_file> <depth>
+# Like extract_property_doc but follows $ref chains up to 3 levels deep.
+extract_property_doc_recursive() {
+    local prop="$1" yaml_file="$2" depth="${3:-0}"
+    [[ $depth -gt 3 ]] && return 1
+    local doc
+    doc="$(extract_property_doc "$prop" "$yaml_file")"
+    [[ -n "$doc" ]] && { printf '%s' "$doc"; return 0; }
+    # Follow $ref links
+    local ref_line ref_name abs_ref
+    while IFS= read -r ref_line; do
+        ref_name="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#"]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
+        [[ -z "$ref_name" ]] && continue
+        abs_ref="$(find "${BINDINGS_DIR:-$(dirname "$yaml_file")}" -name "$(basename "$ref_name")" 2>/dev/null | sort | head -1)"
+        [[ -z "$abs_ref" ]] && continue
+        doc="$(extract_property_doc_recursive "$prop" "$abs_ref" $((depth + 1)))"
+        [[ -n "$doc" ]] && { printf '%s' "$doc"; return 0; }
+    done < <(grep '\$ref:' "$yaml_file" 2>/dev/null)
+    return 1
+}
+
+# Search ALL binding YAML files for a property definition.
+find_property_in_any_binding() {
+    local prop="$1" bindings_dir="$2"
+    [[ -d "$bindings_dir" ]] || return 1
+    [[ -n "$prop" ]] || return 1
+    local yaml_file doc
+    while IFS= read -r yaml_file; do
+        doc="$(extract_property_doc "$prop" "$yaml_file")"
+        [[ -n "$doc" ]] && { printf '%s' "$doc"; return 0; }
+    done < <(rg -l "^  ${prop}:" "$bindings_dir" --glob '*.yaml' 2>/dev/null | sort | head -5)
+    return 1
+}
+
 # Given a compatible string, a property name, and the bindings directory,
 # return the property description from the matching binding YAML file.
-# Follows $ref includes one level deep.
+# Follows $ref includes up to 3 levels deep.
 find_binding_doc() {
     local compatible="$1" prop="$2" bindings_dir="$3"
     [[ -d "$bindings_dir" ]] || return 0
     [[ -n "$compatible" ]] || return 0
     [[ -n "$prop" ]] || return 0
 
-    local file desc
+    local file doc
     while IFS= read -r file; do
-        desc="$(extract_property_doc "$prop" "$file")"
-        if [[ -n "$desc" ]]; then
-            printf '%s' "$desc"
+        doc="$(extract_property_doc_recursive "$prop" "$file" 0)"
+        if [[ -n "$doc" ]]; then
+            printf '%s' "$doc"
             return 0
         fi
-        # Follow $ref includes one level deep
-        local ref_line ref_file abs_ref
-        while IFS= read -r ref_line; do
-            ref_file="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
-            [[ -z "$ref_file" ]] && continue
-            abs_ref="$(find "$bindings_dir" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)"
-            [[ -z "$abs_ref" ]] && continue
-            desc="$(extract_property_doc "$prop" "$abs_ref")"
-            if [[ -n "$desc" ]]; then
-                printf '%s' "$desc"
-                return 0
-            fi
-        done < <(grep '\$ref:' "$file")
     done < <(rg -l "$compatible" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort)
     return 0
 }
@@ -1360,6 +1407,11 @@ handle_hover() {
         binding_doc="$(find_binding_doc "$compat" "$word" "$BINDINGS_DIR")"
     else
         binding_doc=""
+    fi
+
+    # Global fallback: search all binding YAMLs for the property
+    if [[ -z "$binding_doc" ]] && [[ -n "$BINDINGS_DIR" ]]; then
+        binding_doc="$(find_property_in_any_binding "$word" "$BINDINGS_DIR")" || binding_doc=""
     fi
 
     _send_hover_result "$id" "$word" "$standard_doc" "$binding_doc" "$compat" "$text"

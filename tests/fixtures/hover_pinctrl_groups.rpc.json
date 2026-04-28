@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## groups\n\n**From binding** (\\`sophgo,cv1800b-pinctrl\\`):\n\nthe group to apply the properties to, if the driver supports\nconfiguration of whole groups rather than individual pins (either\nthis, \"pins\" or \"pinmux\" has to be specified)"}}}

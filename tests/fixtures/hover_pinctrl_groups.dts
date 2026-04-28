@@ -1,0 +1,15 @@
+// Minimal fixture: pinctrl node with subnode using groups.
+// groups is defined in Documentation/devicetree/bindings/pinctrl/pinmux-node.yaml
+/ {
+	pinctrl@ffd10000 {
+		compatible = "sophgo,cv1800b-pinctrl";
+		reg = <0xffd10000 0x1000>;
+
+		uart0_cfg: uart0-cfg {
+			uart0-pins {
+				function = "uart0";
+				groups = "uart0-grp";
+			};
+		};
+	};
+};

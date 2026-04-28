@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## bias-pull-up\n\n**From binding** (\\`sophgo,cv1800b-pinctrl\\`):\n\npull up the pin. Takes as optional argument on hardware\nsupporting it the pull strength in Ohm."}}}

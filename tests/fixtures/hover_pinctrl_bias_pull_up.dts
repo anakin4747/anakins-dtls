@@ -1,0 +1,16 @@
+// Minimal fixture: pinctrl node with subnode using bias-pull-up.
+// bias-pull-up is defined in Documentation/devicetree/bindings/pinctrl/pincfg-node.yaml
+// The subnode has no compatible of its own; global fallback should find it.
+/ {
+	pinctrl@ffd10000 {
+		compatible = "sophgo,cv1800b-pinctrl";
+		reg = <0xffd10000 0x1000>;
+
+		uart0_cfg: uart0-cfg {
+			uart0-pins {
+				pinmux = <0x1000>;
+				bias-pull-up;
+			};
+		};
+	};
+};

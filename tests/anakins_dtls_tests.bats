@@ -425,6 +425,31 @@ teardown() {
         "fixtures/hover_binding_interrupt_names.rpc.json"
 }
 
+# ---------------------------------------------------------------------------
+# Hover: pinctrl subnode properties (ancestor compatible walk + global fallback)
+# Fixture: fixtures/hover_pinctrl_bias_pull_up.dts
+#   bias-pull-up is in Documentation/devicetree/bindings/pinctrl/pincfg-node.yaml
+#   The subnode has no compatible; ancestor walk finds sophgo,cv1800b-pinctrl
+# ---------------------------------------------------------------------------
+
+@test "hover over bias-pull-up returns binding doc" {
+    lsts_hover \
+        "fixtures/hover_pinctrl_bias_pull_up.dts:12:5" \
+        "fixtures/hover_pinctrl_bias_pull_up.rpc.json"
+}
+
+@test "hover over groups returns binding doc" {
+    lsts_hover \
+        "fixtures/hover_pinctrl_groups.dts:11:5" \
+        "fixtures/hover_pinctrl_groups.rpc.json"
+}
+
+@test "hover over function returns binding doc" {
+    lsts_hover \
+        "fixtures/hover_pinctrl_groups.dts:10:5" \
+        "fixtures/hover_pinctrl_function.rpc.json"
+}
+
 @test "hover over unknown token returns null" {
     lsts_hover \
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1:1" \
