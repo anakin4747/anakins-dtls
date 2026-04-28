@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## gpio-controller\n\nPresence of this property marks the node as a GPIO controller.\n\n```dts\n/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */\npio: pinctrl@300b000 {\n    compatible = \"allwinner,sun50i-h6-pinctrl\";\n    gpio-controller;\n    #gpio-cells = <3>;\n};\n```"}}}

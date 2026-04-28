@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## phandle\n\nSpecifies a numerical identifier for a node that is unique in the device tree. Used by other nodes to reference this node.\n\n```dts\n/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */\npio: pinctrl@300b000 {\n    compatible = \"allwinner,sun50i-h6-pinctrl\";\n    phandle = <0x01>;\n};\n```"}}}

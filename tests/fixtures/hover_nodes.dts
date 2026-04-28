@@ -1,0 +1,7 @@
+/ {
+	aliases { serial0 = &uart7; };
+	chosen { stdout-path = "serial0:115200n8"; };
+	memory@0 { device_type = "memory"; reg = <0x0 0x0 0x0 0x40000000>; };
+	reserved-memory { ranges; };
+	cpus { #address-cells = <2>; #size-cells = <0>; };
+};

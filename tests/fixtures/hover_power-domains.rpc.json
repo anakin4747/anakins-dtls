@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## power-domains\n\nA list of phandle and power domain specifier pairs, one per power domain consumed by the device.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\nuart7: serial@880000 {\n    power-domains = <&rpmhpd RPMHPD_CX>;\n};\n```"}}}

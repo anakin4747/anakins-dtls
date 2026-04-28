@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## memory\n\nThe `/memory` node describes the physical memory layout of the system. Every device tree must have at least one memory node.\n\n```dts\n/* arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */\nmemory@0 {\n    device_type = \"memory\";\n    reg = <0x0 0x0 0x0 0x40000000>;\n};\n```"}}}

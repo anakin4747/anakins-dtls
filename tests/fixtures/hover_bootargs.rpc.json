@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## bootargs\n\nA string specifying the kernel boot parameters to be passed to the Linux kernel command line.\n\n```dts\nchosen {\n    bootargs = \"console=ttyS0,115200 root=/dev/mmcblk0p2 rootwait\";\n};\n```"}}}

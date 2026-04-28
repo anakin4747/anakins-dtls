@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## clock-frequency\n\nSpecifies the frequency, in Hz, of a clock.\n\n```dts\n/* arch/arm/boot/dts/aspeed-g5.dtsi */\nclk_clkin: clk_clkin {\n    compatible = \"fixed-clock\";\n    #clock-cells = <0>;\n    clock-frequency = <25000000>;\n};\n```"}}}

@@ -1,0 +1,5 @@
+/ {
+	resets = <&gcc 1>;
+	reset-names = "qup";
+	#reset-cells = <1>;
+};

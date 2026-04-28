@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## #msi-cells\n\nSpecifies the number of cells in an MSI specifier. Used by MSI controller nodes.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\npcie0_msi: msi-controller@1c0e0040 {\n    compatible = \"qcom,pcie-msi\";\n    #msi-cells = <1>;\n};\n```"}}}

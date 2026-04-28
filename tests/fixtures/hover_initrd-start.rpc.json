@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## initrd-start\n\nSpecifies the physical start address of an initial ramdisk image. Written by firmware/bootloader.\n\n```dts\nchosen {\n    linux,initrd-start = <0x84000000>;\n    linux,initrd-end   = <0x84800000>;\n};\n```"}}}

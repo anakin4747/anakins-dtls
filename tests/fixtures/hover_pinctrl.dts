@@ -1,0 +1,5 @@
+/ {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&qup_default>;
+	pinctrl-1 = <&qup_sleep>;
+};

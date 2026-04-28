@@ -1,0 +1,5 @@
+/ {
+	dmas = <&gpi_dma 0 7 1>;
+	dma-names = "tx";
+	#dma-cells = <3>;
+};

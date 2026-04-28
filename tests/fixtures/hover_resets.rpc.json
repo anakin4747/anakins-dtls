@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## resets\n\nA list of phandle and reset specifier pairs, one pair per reset signal for the device.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\nuart7: serial@880000 {\n    resets = <&gcc GCC_QUPV3_WRAP1_S7_BCR>;\n    reset-names = \"qup\";\n};\n```"}}}

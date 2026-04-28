@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## linux,phandle\n\nLegacy alias for `phandle`. Older device trees used this property; `phandle` is preferred in new device trees.\n\n```dts\ncpu@0 {\n    linux,phandle = <1>;\n    phandle = <1>;\n};\n```"}}}

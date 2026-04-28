@@ -1,0 +1,8 @@
+/ {
+	interrupts = <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>;
+	interrupts-extended = <&gic GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+	interrupt-parent = <&gic>;
+	#interrupt-cells = <3>;
+	interrupt-controller;
+	wakeup-source;
+};

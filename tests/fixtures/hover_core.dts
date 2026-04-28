@@ -1,0 +1,9 @@
+/ {
+	compatible = "qcom,sm8550";
+	model = "Qualcomm SM8550";
+	device_type = "cpu";
+	status = "okay";
+	phandle = <1>;
+	linux,phandle = <1>;
+	label = "my-device";
+};
