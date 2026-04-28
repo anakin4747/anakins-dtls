@@ -581,7 +581,8 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "diagnostics reports missing semicolon" {
-    lsts_diagnostics "fixtures/diag_missing_semicolon.dts"
+    lsts_diagnostics "fixtures/diag_missing_semicolon.dts" \
+        "fixtures/diag_missing_semicolon.rpc.json"
     echo "$LSTS_RESPONSE" | jq -e '
         .params.diagnostics |
         any(.severity == 1 and (.message | test("semicolon"; "i")))
@@ -595,7 +596,8 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "diagnostics reports unclosed brace" {
-    lsts_diagnostics "fixtures/diag_unbalanced_brace.dts"
+    lsts_diagnostics "fixtures/diag_unbalanced_brace.dts" \
+        "fixtures/diag_unbalanced_brace.rpc.json"
     echo "$LSTS_RESPONSE" | jq -e '
         .params.diagnostics |
         any(.severity == 1 and (.message | test("brace"; "i")))
@@ -609,7 +611,8 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "diagnostics reports missing required property" {
-    lsts_diagnostics "fixtures/diag_missing_required.dts"
+    lsts_diagnostics "fixtures/diag_missing_required.dts" \
+        "fixtures/diag_missing_required.rpc.json"
     echo "$LSTS_RESPONSE" | jq -e '
         .params.diagnostics |
         any(.severity == 2 and (.message | test("clocks"; "i")))
@@ -623,7 +626,8 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "diagnostics reports undocumented property" {
-    lsts_diagnostics "fixtures/diag_undocumented_prop.dts"
+    lsts_diagnostics "fixtures/diag_undocumented_prop.dts" \
+        "fixtures/diag_undocumented_prop.rpc.json"
     echo "$LSTS_RESPONSE" | jq -e '
         .params.diagnostics |
         any(.severity == 2 and (.message | test("my-fake-property"; "i")))

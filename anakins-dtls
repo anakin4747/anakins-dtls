@@ -1642,7 +1642,7 @@ check_binding_diagnostics() {
         local bf="${compat_binding_cache[$cv]}"
         [[ -z "$bf" || -n "${binding_doc_cache[$bf]+x}" ]] && continue
         binding_doc_cache["$bf"]=$(_get_binding_props "$bf")
-        binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{gsub(/[^#A-Za-z0-9_,.-]/,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
+        binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{sub(/^  - /,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
     done
 
     # Collect raw diagnostic strings "line|sev|message", then emit JSON via awk
