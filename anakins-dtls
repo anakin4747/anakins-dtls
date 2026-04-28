@@ -1033,6 +1033,16 @@ INCLUDE_DIRS=()
 
 # Given a macro name, the document text, and the root path, return
 # "header_rel_path:define_line" for the first matching #define, or empty.
+# Search for a #define of macro in a single header file. Returns "file:line" or empty.
+_search_macro_in_header() {
+    local macro="$1" header_file="$2"
+    [[ -f "$header_file" ]] || return 0
+    local lineno
+    lineno="$(grep -n "^#define ${macro}[[:space:]]" "$header_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+    [[ -z "$lineno" ]] && return 0
+    printf '%s:%s' "$header_file" "$lineno"
+}
+
 find_macro_location() {
     local macro="$1" doc_text="$2"
     [[ -n "$macro" ]] || return 0
@@ -1043,19 +1053,15 @@ find_macro_location() {
     includes="$(printf '%s' "$doc_text" | grep -o '#include <[^>]*>' | sed 's/#include <//;s/>//')" || true
     [[ -n "$includes" ]] || return 0
 
-    local inc_path header_file
+    local inc_path dir header_file result
     while IFS= read -r inc_path; do
         [[ -n "$inc_path" ]] || continue
         for dir in "${INCLUDE_DIRS[@]}"; do
             header_file="${dir}/${inc_path}"
-            if [[ -f "$header_file" ]]; then
-                local lineno
-                lineno="$(grep -n "^#define ${macro}[[:space:]]" "$header_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
-                if [[ -n "$lineno" ]]; then
-                    printf '%s:%s' "$header_file" "$lineno"
-                    return 0
-                fi
-            fi
+            result="$(_search_macro_in_header "$macro" "$header_file")"
+            [[ -n "$result" ]] || continue
+            printf '%s' "$result"
+            return 0
         done
     done <<< "$includes"
     return 0
@@ -1089,48 +1095,20 @@ find_macro_doc() {
 # Definition helpers
 # ---------------------------------------------------------------------------
 
-# Check if the cursor is on a quoted string within a compatible = ... line.
-# Outputs the compatible value string (without quotes) or empty.
-compatible_value_at() {
-    local text="$1" line="$2" character="$3"
-    local line_text
-    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
-    printf '%s' "$line_text" | grep -q 'compatible[[:space:]]*=' || return 0
-
-    # Find which quoted string the cursor falls within
-    local pos=0 in_quote=0 start=0 ch
-    local len=${#line_text}
-    local i=0
+# Scan line_text for a quoted string that contains the cursor.
+# strict=1: cursor strictly between quotes; strict=0: cursor on or between quotes.
+_quoted_string_at_char() {
+    local line_text="$1" character="$2" strict="$3"
+    local len=${#line_text} i=0 in_quote=0 start=0 ch
     while [[ $i -lt $len ]]; do
         ch="${line_text:$i:1}"
         if [[ "$ch" == '"' ]]; then
             if [[ $in_quote -eq 0 ]]; then
-                in_quote=1
-                start=$i
+                in_quote=1; start=$i
             else
                 in_quote=0
-                if [[ $character -gt $start && $character -le $i ]]; then
-                    # cursor is inside this quoted string
-                    printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
-                    return 0
-                fi
-            fi
-        fi
-        (( i++ )) || true
-    done
-    # Also check if cursor is right on the opening quote
-    i=0
-    in_quote=0
-    start=0
-    while [[ $i -lt $len ]]; do
-        ch="${line_text:$i:1}"
-        if [[ "$ch" == '"' ]]; then
-            if [[ $in_quote -eq 0 ]]; then
-                in_quote=1
-                start=$i
-            else
-                in_quote=0
-                if [[ $character -ge $start && $character -le $i ]]; then
+                if [[ $strict -eq 1 && $character -gt $start && $character -le $i ]] || \
+                   [[ $strict -eq 0 && $character -ge $start && $character -le $i ]]; then
                     printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
                     return 0
                 fi
@@ -1139,6 +1117,20 @@ compatible_value_at() {
         (( i++ )) || true
     done
     return 0
+}
+
+# Check if the cursor is on a quoted string within a compatible = ... line.
+# Outputs the compatible value string (without quotes) or empty.
+compatible_value_at() {
+    local text="$1" line="$2" character="$3"
+    local line_text
+    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+    printf '%s' "$line_text" | grep -q 'compatible[[:space:]]*=' || return 0
+    # Try strict match first (cursor inside quotes), then loose (cursor on quote)
+    local result
+    result="$(_quoted_string_at_char "$line_text" "$character" 1)"
+    [[ -n "$result" ]] && { printf '%s' "$result"; return 0; }
+    _quoted_string_at_char "$line_text" "$character" 0
 }
 
 # Send a definition Location response.
@@ -1151,6 +1143,30 @@ send_definition() {
         '{"jsonrpc":"2.0","id":$id,"result":{"uri":$uri,"range":{"start":{"line":$line,"character":0},"end":{"line":$line,"character":0}}}}')"
 }
 
+# Find property definition in binding file or its $ref'd files. Returns "file:line" or empty.
+_find_prop_in_binding() {
+    local prop="$1" binding_file="$2"
+    local prop_line
+    prop_line="$(grep -n "^  ${prop}:" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+    if [[ -n "$prop_line" ]]; then
+        printf '%s:%s' "$binding_file" "$prop_line"
+        return 0
+    fi
+    # Follow $ref one level deep
+    local ref_line ref_file abs_ref
+    while IFS= read -r ref_line; do
+        ref_file="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
+        [[ -z "$ref_file" ]] && continue
+        abs_ref="$(find "$BINDINGS_DIR" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)"
+        [[ -z "$abs_ref" ]] && continue
+        prop_line="$(grep -n "^  ${prop}:" "$abs_ref" 2>/dev/null | head -1 | cut -d: -f1)" || true
+        [[ -z "$prop_line" ]] && continue
+        printf '%s:%s' "$abs_ref" "$prop_line"
+        return 0
+    done < <(grep '\$ref:' "$binding_file")
+    return 0
+}
+
 handle_definition() {
     local body="$1"
     local def_uri def_line def_char def_id def_text
@@ -1160,19 +1176,15 @@ handle_definition() {
     def_id=$(printf '%s' "$body" | jq -r '.id')
     def_text="${DOC_TEXT[$def_uri]:-}"
 
-    if [[ -z "$def_text" ]]; then
-        send "$(jq -n --argjson id "$def_id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
-        return
-    fi
+    [[ -z "$def_text" ]] && { send_null "$def_id"; return; }
 
     # 1. Check if cursor is on a compatible value string
     local compat_val
     compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
     if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
-        local binding_file
+        local binding_file file_line
         binding_file="$(grep -rl "$compat_val" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
         if [[ -n "$binding_file" ]]; then
-            local file_line
             file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
             file_line=$(( file_line - 1 ))
             [[ $file_line -lt 0 ]] && file_line=0
@@ -1185,68 +1197,52 @@ handle_definition() {
     local def_word
     def_word="$(word_at "$def_text" "$def_line" "$def_char")"
     if [[ -n "$def_word" ]] && [[ "$def_word" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
-        local macro_loc
+        local macro_loc mfile mline
         macro_loc="$(find_macro_location "$def_word" "$def_text")"
         if [[ -n "$macro_loc" ]]; then
-            local mfile mline
             mfile="${macro_loc%:*}"
-            mline="${macro_loc##*:}"
-            mline=$(( mline - 1 ))
+            mline=$(( ${macro_loc##*:} - 1 ))
             [[ $mline -lt 0 ]] && mline=0
             send_definition "$def_id" "$mfile" "$mline"
             return
         fi
     fi
 
-    # 3. Check if cursor is on a property name — try spec first for standard properties, then binding
-    if [[ -n "$def_word" ]]; then
-        # Check spec first — standard DTS properties go to spec
-        if [[ -n "$SPEC_DIR" ]]; then
-            local spec_result spec_file spec_line
-            spec_result="$(grep -rn "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
-            if [[ -n "$spec_result" ]]; then
-                spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
-                spec_line="$(printf '%s' "$spec_result" | cut -d: -f2)"
-                spec_line=$(( spec_line - 1 ))
-                [[ $spec_line -lt 0 ]] && spec_line=0
-                send_definition "$def_id" "$spec_file" "$spec_line"
-                return
-            fi
-        fi
-        # Fall back to binding YAML
-        local node_compat
-        node_compat="$(node_compatible_at "$def_text" "$def_line")"
-        if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
-            local binding_file
-            while IFS= read -r binding_file; do
-                local prop_line
-                prop_line="$(grep -n "^  ${def_word}:" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
-                if [[ -n "$prop_line" ]]; then
-                    prop_line=$(( prop_line - 1 ))
-                    [[ $prop_line -lt 0 ]] && prop_line=0
-                    send_definition "$def_id" "$binding_file" "$prop_line"
-                    return
-                fi
-                # Follow $ref one level deep
-                local ref_line ref_file abs_ref
-                while IFS= read -r ref_line; do
-                    ref_file="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
-                    [[ -z "$ref_file" ]] && continue
-                    abs_ref="$(find "$BINDINGS_DIR" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)"
-                    [[ -z "$abs_ref" ]] && continue
-                    prop_line="$(grep -n "^  ${def_word}:" "$abs_ref" 2>/dev/null | head -1 | cut -d: -f1)" || true
-                    if [[ -n "$prop_line" ]]; then
-                        prop_line=$(( prop_line - 1 ))
-                        [[ $prop_line -lt 0 ]] && prop_line=0
-                        send_definition "$def_id" "$abs_ref" "$prop_line"
-                        return
-                    fi
-                done < <(grep '\$ref:' "$binding_file")
-            done < <(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort)
+    [[ -z "$def_word" ]] && { send_null "$def_id"; return; }
+
+    # 3. Check spec for standard DTS properties
+    if [[ -n "$SPEC_DIR" ]]; then
+        local spec_result spec_file spec_line
+        spec_result="$(grep -rn "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
+        if [[ -n "$spec_result" ]]; then
+            spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
+            spec_line=$(( $(printf '%s' "$spec_result" | cut -d: -f2) - 1 ))
+            [[ $spec_line -lt 0 ]] && spec_line=0
+            send_definition "$def_id" "$spec_file" "$spec_line"
+            return
         fi
     fi
 
-    send "$(jq -n --argjson id "$def_id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
+    # 4. Fall back to binding YAML (with $ref following)
+    local node_compat
+    node_compat="$(node_compatible_at "$def_text" "$def_line")"
+    if [[ -z "$node_compat" ]] || [[ -z "$BINDINGS_DIR" ]]; then
+        send_null "$def_id"
+        return
+    fi
+    local binding_file location
+    while IFS= read -r binding_file; do
+        location="$(_find_prop_in_binding "$def_word" "$binding_file")"
+        [[ -z "$location" ]] && continue
+        local prop_file prop_line
+        prop_file="${location%:*}"
+        prop_line=$(( ${location##*:} - 1 ))
+        [[ $prop_line -lt 0 ]] && prop_line=0
+        send_definition "$def_id" "$prop_file" "$prop_line"
+        return
+    done < <(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort)
+
+    send_null "$def_id"
 }
 
 # ---------------------------------------------------------------------------
@@ -1419,15 +1415,12 @@ handle_hover() {
 
     # Check if cursor is on a compatible value string (e.g. "regulator-fixed")
     if [[ -n "$BINDINGS_DIR" ]]; then
-        local compat_val
+        local compat_val compat_hover
         compat_val="$(compatible_value_at "$text" "$line" "$character")"
-        if [[ -n "$compat_val" ]]; then
-            local compat_hover
-            compat_hover="$(find_compatible_value_hover "$compat_val" "$BINDINGS_DIR")"
-            if [[ -n "$compat_hover" ]]; then
-                send_hover "$id" "$compat_hover"
-                return
-            fi
+        compat_hover="$([[ -n "$compat_val" ]] && find_compatible_value_hover "$compat_val" "$BINDINGS_DIR" || true)"
+        if [[ -n "$compat_hover" ]]; then
+            send_hover "$id" "$compat_hover"
+            return
         fi
     fi
 
@@ -1439,27 +1432,30 @@ handle_hover() {
         binding_doc=""
     fi
 
-    BT=$'\`'
-    if [[ -n "$binding_doc" ]]; then
-        if [[ -n "$standard_doc" ]]; then
-            send_hover "$id" "$standard_doc
+    _send_hover_result "$id" "$word" "$standard_doc" "$binding_doc" "$compat" "$text"
+}
+
+# Dispatch hover result based on available docs.
+_send_hover_result() {
+    local id="$1" word="$2" standard_doc="$3" binding_doc="$4" compat="$5" text="$6"
+    local BT=$'\`'
+    if [[ -n "$binding_doc" ]] && [[ -n "$standard_doc" ]]; then
+        send_hover "$id" "$standard_doc
 
 ---
 
 **From binding** ($BT$compat$BT):
 
 $binding_doc"
-        else
-            send_hover "$id" "## $word
+    elif [[ -n "$binding_doc" ]]; then
+        send_hover "$id" "## $word
 
 **From binding** ($BT$compat$BT):
 
 $binding_doc"
-        fi
     elif [[ -n "$standard_doc" ]]; then
         send_hover "$id" "$standard_doc"
     else
-        # Try CPP macro lookup as final fallback
         local macro_doc
         macro_doc="$(find_macro_doc "$word" "$text")"
         if [[ -n "$macro_doc" ]]; then
