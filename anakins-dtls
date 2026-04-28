@@ -67,7 +67,13 @@ send_null() {
 
 COMPATIBLE_DOC='## compatible
 
-Specifies a list of strings that identify the device. Strings are from most specific to least specific and allow a driver to match against a family of similar devices.
+**Value type:** `<stringlist>`
+
+The *compatible* property value consists of one or more strings that define the specific programming model for the device. This list of strings should be used by a client program for device driver selection. The property value consists of a concatenated list of null-terminated strings, from most specific to most general. They allow a device to express its compatibility with a family of similar devices, potentially allowing a single device driver to match against several devices.
+
+The recommended format is `"manufacturer,model"`, where `manufacturer` is a string describing the name of the manufacturer (such as a stock ticker symbol), and `model` specifies the model number.
+
+The compatible string should consist only of lowercase letters, digits, and dashes, and should start with a letter. A single comma is typically only used following a vendor prefix. Underscores should not be used.
 
 ```dts
 /* Qualcomm SM8550 — arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -75,20 +81,34 @@ compatible = "qcom,sm8550";
 
 /* Raspberry Pi 4B — arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
 compatible = "raspberrypi,4-model-b", "brcm,bcm2711";
+
+/* Driver fallback — arch/arm/boot/dts/fsl/mpc8572ds.dts */
+compatible = "fsl,mpc8641", "ns16550";
 ```'
 
 MODEL_DOC='## model
 
-A string that specifies the manufacturer'"'"'s model number of the device. The recommended format is `"manufacturer,model"`.
+**Value type:** `<string>`
+
+The *model* property value is a `<string>` that specifies the manufacturer'"'"'s model number of the device.
+
+The recommended format is `"manufacturer,model"`, where `manufacturer` is a string describing the name of the manufacturer (such as a stock ticker symbol), and `model` specifies the model number.
 
 ```dts
 /* arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
 model = "Raspberry Pi 4 Model B";
+
+/* arch/arm/boot/dts/fsl/mpc8349emitx.dts */
+model = "fsl,MPC8349EMITX";
 ```'
 
 DEVICE_TYPE_DOC='## device_type
 
-Specifies the device'"'"'s type. Only used on `cpu` and `memory` nodes in modern device trees.
+**Value type:** `<string>`
+
+The *device_type* property was used in IEEE 1275 to describe the device'"'"'s FCode programming model. Because the Devicetree Specification does not have FCode, new use of the property is deprecated, and it should be included only on `cpu` and `memory` nodes for compatibility with IEEE 1275–derived devicetrees.
+
+For `memory` nodes the value shall be `"memory"`. For `cpu` nodes the value shall be `"cpu"`.
 
 ```dts
 /* arch/arm/boot/dts/aspeed-g5.dtsi */
@@ -96,11 +116,27 @@ memory@80000000 {
     device_type = "memory";
     reg = <0x80000000 0x0>;
 };
+
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+cpu0: cpu@0 {
+    device_type = "cpu";
+    reg = <0x0 0x0>;
+};
 ```'
 
 STATUS_DOC='## status
 
-Indicates the operational status of a device. Valid values are `"okay"`, `"disabled"`, `"reserved"`, `"fail"`, and `"fail-sss"`.
+**Value type:** `<string>`
+
+The *status* property indicates the operational status of a device. The lack of a *status* property should be treated as if the property existed with the value of `"okay"`.
+
+Valid values:
+
+- `"okay"` — Indicates the device is operational.
+- `"disabled"` — Indicates that the device is not presently operational, but it might become operational in the future (for example, something is not plugged in, or switched off). Refer to the device binding for details on what disabled means for a given device.
+- `"reserved"` — Indicates that the device is operational, but should not be used. Typically this is used for devices that are controlled by another software component, such as platform firmware.
+- `"fail"` — Indicates that the device is not operational. A serious error was detected in the device, and it is unlikely to become operational without repair.
+- `"fail-sss"` — Indicates that the device is not operational. A serious error was detected in the device and it is unlikely to become operational without repair. The *sss* portion of the value is specific to the device and indicates the error condition detected.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -112,19 +148,29 @@ uart0: serial@a84000 {
 
 PHANDLE_DOC='## phandle
 
-Specifies a numerical identifier for a node that is unique in the device tree. Used by other nodes to reference this node.
+**Value type:** `<u32>`
+
+The *phandle* property specifies a numerical identifier for a node that is unique within the devicetree. The *phandle* property value is used by other nodes that need to refer to the node associated with the property.
+
+Note: Most devicetrees in DTS format will not contain explicit phandle properties. The DTC tool automatically inserts the `phandle` properties when the DTS is compiled into the binary DTB format.
 
 ```dts
-/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
-pio: pinctrl@300b000 {
-    compatible = "allwinner,sun50i-h6-pinctrl";
-    phandle = <0x01>;
+pic@10000000 {
+    phandle = <1>;
+    interrupt-controller;
+    reg = <0x10000000 0x100>;
+};
+
+another-device-node {
+    interrupt-parent = <1>;
 };
 ```'
 
 LINUX_PHANDLE_DOC='## linux,phandle
 
-Legacy alias for `phandle`. Older device trees used this property; `phandle` is preferred in new device trees.
+**Value type:** `<u32>`
+
+Deprecated form of the *phandle* property. Older versions of devicetrees may be encountered that contain this property. For compatibility, a client program might want to support `linux,phandle` if a `phandle` property is not present. The meaning and use of the two properties is identical. New devicetrees should use `phandle` instead.
 
 ```dts
 cpu@0 {
@@ -135,7 +181,9 @@ cpu@0 {
 
 LABEL_DOC='## label
 
-A human-readable string describing the device represented by the node.
+**Value type:** `<string>`
+
+The *label* property defines a human-readable string describing a device. The binding for a given device specifies the exact meaning of the property for that device.
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3.dts */
@@ -148,7 +196,11 @@ leds {
 
 REG_DOC='## reg
 
-Specifies the address and size of a register block or memory region belonging to the device. Encoded as `<address size>` pairs according to the parent'"'"'s `#address-cells` and `#size-cells`.
+**Value type:** `<prop-encoded-array>` encoded as an arbitrary number of *(address, length)* pairs
+
+The *reg* property describes the address of the device'"'"'s resources within the address space defined by its parent bus. Most commonly this means the offsets and lengths of memory-mapped IO register blocks, but may have a different meaning on some bus types. Addresses in the address space defined by the root node are CPU real addresses.
+
+The value is a `<prop-encoded-array>`, composed of an arbitrary number of pairs of address and length, `<address length>`. The number of `<u32>` cells required to specify the address and length are bus-specific and are specified by the `#address-cells` and `#size-cells` properties in the parent of the device node. If the parent node specifies a value of 0 for `#size-cells`, the length field in the value of *reg* shall be omitted.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -156,11 +208,18 @@ uart7: serial@880000 {
     compatible = "qcom,geni-uart";
     reg = <0x00880000 0x200>;
 };
+
+/* Two register blocks — soc with #address-cells=<1> #size-cells=<1> */
+device@0 {
+    reg = <0x3000 0x20 0xFE00 0x100>;
+};
 ```'
 
 REG_NAMES_DOC='## reg-names
 
-A list of strings providing names for the corresponding entries in the `reg` property. Each name identifies a named register region.
+**Value type:** `<stringlist>`
+
+A list of strings providing names for the corresponding entries in the `reg` property. Each name identifies a named register region. The number of strings must equal the number of *(address, length)* pairs in the `reg` property.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -173,9 +232,30 @@ pcie0: pci@1c00000 {
 
 RANGES_DOC='## ranges
 
-Defines the mapping between child bus addresses and parent bus addresses. An empty `ranges` means a 1:1 mapping. Each entry is `<child-addr parent-addr length>`.
+**Value type:** `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of *(child-bus-address, parent-bus-address, length)* triplets
+
+The *ranges* property provides a means of defining a mapping or translation between the address space of the bus (the child address space) and the address space of the bus node'"'"'s parent (the parent address space).
+
+Each triplet specifies:
+- *child-bus-address*: a physical address within the child bus'"'"' address space. The number of cells is determined by `#address-cells` of this node.
+- *parent-bus-address*: a physical address within the parent bus'"'"' address space. The number of cells is determined by `#address-cells` of the node that defines the parent'"'"'s address space.
+- *length*: the size of the range in the child'"'"'s address space. The number of cells is determined by `#size-cells` of this node.
+
+If the property is defined with an `<empty>` value, it specifies that the parent and child address space is identical, and no address translation is required. If the property is not present in a bus node, it is assumed that no mapping exists between children of the node and the parent address space.
 
 ```dts
+/* Address translation example */
+soc {
+    compatible = "simple-bus";
+    #address-cells = <1>;
+    #size-cells = <1>;
+    ranges = <0x0 0xe0000000 0x00100000>;
+
+    serial@4600 {
+        reg = <0x4600 0x100>; /* maps to parent 0xe0004600 */
+    };
+};
+
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
 pcie0: pci@1c00000 {
     #address-cells = <3>;
@@ -186,7 +266,14 @@ pcie0: pci@1c00000 {
 
 DMA_RANGES_DOC='## dma-ranges
 
-Defines the mapping between DMA-capable child bus addresses and parent bus addresses. Similar format to `ranges`.
+**Value type:** `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of *(child-bus-address, parent-bus-address, length)* triplets
+
+The *dma-ranges* property is used to describe the direct memory access (DMA) structure of a memory-mapped bus whose devicetree parent can be accessed from DMA operations originating from the bus. It provides a means of defining a mapping or translation between the physical address space of the bus and the physical address space of the parent of the bus.
+
+Each triplet specifies:
+- *child-bus-address*: a physical address within the child bus'"'"' address space. The number of cells depends on the bus and can be determined from `#address-cells` of this node.
+- *parent-bus-address*: a physical address within the parent bus'"'"' address space. The number of cells is determined from `#address-cells` of the node that defines the parent'"'"'s address space.
+- *length*: the size of the range in the child'"'"'s address space. The number of cells is determined from `#size-cells` of this node.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -197,7 +284,11 @@ pcie0: pci@1c00000 {
 
 DMA_COHERENT_DOC='## dma-coherent
 
-Presence of this property indicates that the device is DMA coherent and hardware-maintained cache coherency is provided.
+**Value type:** `<empty>`
+
+For architectures which are by default non-coherent for I/O, the *dma-coherent* property is used to indicate a device is capable of coherent DMA operations. Some architectures have coherent DMA by default and this property is not applicable.
+
+The presence of this property alone (no value required) marks the device as DMA-coherent.
 
 ```dts
 /* arch/arm64/boot/dts/amazon/al/alpine-v2.dtsi */
@@ -209,19 +300,41 @@ pcie@fb000000 {
 
 ADDRESS_CELLS_DOC='## #address-cells
 
-Specifies the number of `<u32>` cells used to encode the address field in child nodes'"'"' `reg` properties.
+**Value type:** `<u32>`
+
+The *#address-cells* property defines the number of `<u32>` cells used to encode the address field in a child node'"'"'s `reg` property.
+
+The *#address-cells* and *#size-cells* properties may be used in any device node that has children in the devicetree hierarchy and describes how child device nodes should be addressed. They are not inherited from ancestors in the devicetree — they shall be explicitly defined.
+
+A spec-compliant boot program shall supply `#address-cells` on all nodes that have children. If missing, a client program should assume a default value of 2 for `#address-cells`.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
 soc: soc@0 {
     #address-cells = <2>;
     #size-cells = <2>;
+};
+
+/* Single-cell addressing */
+soc {
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    serial@4600 {
+        reg = <0x4600 0x100>;
+    };
 };
 ```'
 
 SIZE_CELLS_DOC='## #size-cells
 
-Specifies the number of `<u32>` cells used to encode the size field in child nodes'"'"' `reg` properties.
+**Value type:** `<u32>`
+
+The *#size-cells* property defines the number of `<u32>` cells used to encode the size field in a child node'"'"'s `reg` property.
+
+The *#address-cells* and *#size-cells* properties may be used in any device node that has children in the devicetree hierarchy and describes how child device nodes should be addressed. They are not inherited from ancestors in the devicetree — they shall be explicitly defined.
+
+A spec-compliant boot program shall supply `#size-cells` on all nodes that have children. If missing, a client program should assume a default value of 1 for `#size-cells`. A value of 0 means the size field in `reg` shall be omitted.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -229,22 +342,45 @@ soc: soc@0 {
     #address-cells = <2>;
     #size-cells = <2>;
 };
+
+/* /cpus uses #size-cells = <0> — no size in cpu reg */
+cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+    cpu@0 {
+        reg = <0>;
+    };
+};
 ```'
 
 INTERRUPTS_DOC='## interrupts
 
-Specifies the interrupt(s) generated by the device. The encoding depends on the interrupt controller'"'"'s `#interrupt-cells` value.
+**Value type:** `<prop-encoded-array>` encoded as an arbitrary number of interrupt specifiers
+
+The *interrupts* property of a device node defines the interrupt or interrupts that are generated by the device. The value of the *interrupts* property consists of an arbitrary number of interrupt specifiers. The format of an interrupt specifier is defined by the binding of the interrupt domain root — specifically the `#interrupt-cells` property of the interrupt controller.
+
+*interrupts* is overridden by the *interrupts-extended* property and normally only one or the other should be used. If both are present, *interrupts-extended* takes precedence.
 
 ```dts
-/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi — 3-cell GIC specifier */
 uart7: serial@880000 {
     interrupts = <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>;
+};
+
+/* Open PIC — 2-cell specifier: number + level/sense */
+device {
+    interrupts = <0xA 8>;
 };
 ```'
 
 INTERRUPTS_EXTENDED_DOC='## interrupts-extended
 
-Specifies the interrupt(s) generated by the device in extended form, allowing each interrupt to reference a different interrupt controller.
+**Value type:** `<phandle> <prop-encoded-array>`
+
+The *interrupts-extended* property lists the interrupt(s) generated by a device. *interrupts-extended* should be used instead of *interrupts* when a device is connected to multiple interrupt controllers as it encodes a parent phandle with each interrupt specifier.
+
+The *interrupts* and *interrupts-extended* properties are mutually exclusive. A device node should use one or the other, but not both. If both are present, *interrupts-extended* takes precedence.
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
@@ -252,11 +388,20 @@ mmc0: mmc@4020000 {
     interrupts-extended = <&gic GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>,
                           <&r_intc 6 IRQ_TYPE_LEVEL_HIGH>;
 };
+
+/* pic uses #interrupt-cells=<2>, gic uses #interrupt-cells=<1> */
+device {
+    interrupts-extended = <&pic 0xA 8>, <&gic 0xda>;
+};
 ```'
 
 INTERRUPT_PARENT_DOC='## interrupt-parent
 
-A phandle reference to the interrupt controller that handles interrupts for this device. Inherited by children if not overridden.
+**Value type:** `<phandle>`
+
+Because the hierarchy of the nodes in the interrupt tree might not match the devicetree, the *interrupt-parent* property is available to make the definition of an interrupt parent explicit. The value is the phandle to the interrupt parent node (the interrupt controller). If this property is missing from a device, its interrupt parent is assumed to be its devicetree parent.
+
+When set on a bus or container node (e.g. the root `/` node), it is inherited by all children that do not override it.
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
@@ -267,31 +412,51 @@ A phandle reference to the interrupt controller that handles interrupts for this
 
 INTERRUPT_CELLS_DOC='## #interrupt-cells
 
-Specifies the number of `<u32>` cells required to encode an interrupt specifier for the interrupt controller.
+**Value type:** `<u32>`
+
+The *#interrupt-cells* property defines the number of cells required to encode an interrupt specifier for an interrupt domain. This property is required on interrupt controller nodes and interrupt nexus nodes.
+
+For example, an Open PIC interrupt controller uses 2 cells (interrupt number + level/sense); an ARM GIC uses 3 cells (type + number + flags).
 
 ```dts
-/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi — ARM GIC v3: 3 cells */
 gic: interrupt-controller@17100000 {
     compatible = "arm,gic-v3";
     #interrupt-cells = <3>;
+};
+
+/* Open PIC: 2 cells */
+open_pic: interrupt-controller@13370000 {
+    interrupt-controller;
+    #address-cells = <0>;
+    #interrupt-cells = <2>;
 };
 ```'
 
 INTERRUPT_CONTROLLER_DOC='## interrupt-controller
 
-Presence of this property marks the node as an interrupt controller. No value required.
+**Value type:** `<empty>`
+
+The presence of an *interrupt-controller* property defines a node as an interrupt controller node. No value is required — the presence of the property is sufficient.
+
+An interrupt controller is a physical device and will need a driver to handle interrupts routed through it. It may also cascade into another interrupt domain.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
 gic: interrupt-controller@17100000 {
     compatible = "arm,gic-v3";
     interrupt-controller;
+    #interrupt-cells = <3>;
 };
 ```'
 
 WAKEUP_SOURCE_DOC='## wakeup-source
 
-Presence of this property indicates the device can be used as a wakeup source. Replaces the deprecated `gpio-key,wakeup` property.
+**Value type:** `<empty>`
+
+Presence of this property indicates the device can be used as a wakeup source, allowing it to wake the system from a suspended state. The presence of the property alone (no value) is sufficient.
+
+This property replaces the deprecated `gpio-key,wakeup` property used in older devicetrees.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
@@ -303,7 +468,11 @@ key-vol-down {
 
 CLOCKS_DOC='## clocks
 
-A list of phandle and clock specifier pairs, one pair per clock input to the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + clock-specifier pairs
+
+A list of phandle and clock specifier pairs, one pair per clock input required by the device. The number of cells in each clock specifier is determined by the `#clock-cells` property of the referenced clock provider node.
+
+Used together with `clock-names` to identify each clock by name.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -316,7 +485,9 @@ uart7: serial@880000 {
 
 CLOCK_NAMES_DOC='## clock-names
 
-A list of strings providing names for the corresponding entries in the `clocks` property.
+**Value type:** `<stringlist>`
+
+A list of strings providing names for the corresponding entries in the `clocks` property. Each string identifies one clock input. The number of strings must equal the number of phandle+specifier pairs in `clocks`.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -329,19 +500,35 @@ uart7: serial@880000 {
 
 CLOCK_CELLS_DOC='## #clock-cells
 
-Specifies the number of cells in a clock specifier. Used by clock provider nodes.
+**Value type:** `<u32>`
+
+The *#clock-cells* property defines the number of cells required to encode a clock specifier for this clock provider. A value of 0 means no additional specifier cells are needed (a single fixed clock). A value of 1 means one cell (the clock ID) follows the phandle in `clocks` references.
 
 ```dts
-/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi — multi-clock provider */
 gcc: clock-controller@100000 {
     compatible = "qcom,sm8550-gcc";
     #clock-cells = <1>;
+};
+
+/* Single fixed clock — #clock-cells = <0> */
+clk_apb: clk_apb {
+    compatible = "fixed-clock";
+    #clock-cells = <0>;
+    clock-frequency = <24000000>;
 };
 ```'
 
 CLOCK_FREQUENCY_DOC='## clock-frequency
 
-Specifies the frequency, in Hz, of a clock.
+**Value type:** `<prop-encoded-array>`
+
+Specifies the frequency of a clock in Hz. The value is a `<prop-encoded-array>` in one of two forms:
+
+- A 32-bit integer consisting of one `<u32>` specifying the frequency.
+- A 64-bit integer represented as a `<u64>` specifying the frequency.
+
+For serial devices, specifies the frequency in Hertz of the baud rate generator'"'"'s input clock.
 
 ```dts
 /* arch/arm/boot/dts/aspeed-g5.dtsi */
@@ -350,11 +537,18 @@ clk_clkin: clk_clkin {
     #clock-cells = <0>;
     clock-frequency = <25000000>;
 };
+
+/* arch/arm64/boot/dts/fsl/mpc8572ds.dts */
+cpu@0 {
+    clock-frequency = <825000000>;
+};
 ```'
 
 BUS_FREQUENCY_DOC='## bus-frequency
 
-Specifies the frequency, in Hz, of a bus clock.
+**Value type:** `<prop-encoded-array>`
+
+Specifies the current frequency, in Hz, of the bus. Older versions of devicetrees may contain this property on CPU nodes. The recommended practice is to represent the frequency of a bus on the bus node using a `clock-frequency` property instead. The value format is the same as `clock-frequency`.
 
 ```dts
 /* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */
@@ -363,16 +557,28 @@ bus-frequency = <0>;
 
 TIMEBASE_FREQUENCY_DOC='## timebase-frequency
 
-Specifies the frequency, in Hz, at which the timebase and decrementer registers are updated (PowerPC).
+**Value type:** `<prop-encoded-array>`
+
+Specifies the current frequency at which the timebase and decrementer registers are updated, in Hertz. Used primarily on PowerPC architectures. The value is a `<prop-encoded-array>` in one of two forms:
+
+- A 32-bit integer consisting of one `<u32>` specifying the frequency.
+- A 64-bit integer represented as a `<u64>`.
 
 ```dts
-/* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */
-timebase-frequency = <0>;
+/* arch/arm64/boot/dts/fsl/mpc8572ds.dts */
+cpu@0 {
+    timebase-frequency = <82500000>; /* 82.5 MHz */
+    clock-frequency = <825000000>;   /* 825 MHz */
+};
 ```'
 
 RESETS_DOC='## resets
 
-A list of phandle and reset specifier pairs, one pair per reset signal for the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + reset-specifier pairs
+
+A list of phandle and reset specifier pairs, one pair per reset signal consumed by the device. The number of cells in each reset specifier is determined by the `#reset-cells` property of the referenced reset controller node.
+
+Used together with `reset-names` to identify each reset signal by name.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -384,7 +590,9 @@ uart7: serial@880000 {
 
 RESET_NAMES_DOC='## reset-names
 
-A list of strings providing names for the corresponding entries in the `resets` property.
+**Value type:** `<stringlist>`
+
+A list of strings providing names for the corresponding entries in the `resets` property. Each string identifies one reset signal. The number of strings must equal the number of phandle+specifier pairs in `resets`.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -396,7 +604,9 @@ uart7: serial@880000 {
 
 RESET_CELLS_DOC='## #reset-cells
 
-Specifies the number of cells in a reset specifier. Used by reset controller nodes.
+**Value type:** `<u32>`
+
+The *#reset-cells* property defines the number of cells required to encode a reset specifier for this reset controller. Used by reset controller nodes to indicate how many `<u32>` cells follow the phandle in `resets` references.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -408,7 +618,11 @@ gcc: clock-controller@100000 {
 
 GPIOS_DOC='## gpios
 
-A list of GPIO specifiers, one per GPIO consumed by the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + gpio-specifier pairs
+
+A list of GPIO specifiers, one per GPIO consumed by the device. The number of cells in each GPIO specifier is determined by the `#gpio-cells` property of the referenced GPIO controller node.
+
+Used together with `gpio-names` (if named) to identify each GPIO by purpose.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
@@ -420,7 +634,9 @@ reg_usb_vbus: regulator-usb-vbus {
 
 GPIO_CONTROLLER_DOC='## gpio-controller
 
-Presence of this property marks the node as a GPIO controller.
+**Value type:** `<empty>`
+
+The presence of a *gpio-controller* property marks the node as a GPIO controller. No value is required — the presence of the property is sufficient.
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
@@ -433,7 +649,9 @@ pio: pinctrl@300b000 {
 
 GPIO_CELLS_DOC='## #gpio-cells
 
-Specifies the number of cells in a GPIO specifier.
+**Value type:** `<u32>`
+
+The *#gpio-cells* property defines the number of cells required to encode a GPIO specifier for this GPIO controller. Used by GPIO controller nodes to indicate how many `<u32>` cells follow the phandle in GPIO references. A common value is 2 (pin number + flags).
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
@@ -445,7 +663,14 @@ pio: pinctrl@300b000 {
 
 GPIO_RANGES_DOC='## gpio-ranges
 
-Specifies the mapping between a GPIO controller and a pin controller. Format: `<pinctrl-phandle pinctrl-base gpio-base count>`.
+**Value type:** `<prop-encoded-array>`
+
+Specifies the mapping between a GPIO controller and a pin controller. This property enables pinctrl-gpio cooperation. The format is one or more entries of `<pinctrl-phandle gpio-base pin-base count>`, where:
+
+- *pinctrl-phandle*: phandle to the pin controller node
+- *gpio-base*: first GPIO number in this range
+- *pin-base*: first pin number in the pin controller for this range
+- *count*: number of pins in this range
 
 ```dts
 /* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
@@ -457,7 +682,11 @@ pio: pinctrl@300b000 {
 
 PINCTRL_0_DOC='## pinctrl-0
 
-A list of phandles referring to pin configuration nodes, one per state. `pinctrl-0` is the default (active) state.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandles
+
+A list of phandles referring to pin configuration nodes, selecting the pin states for state index 0. `pinctrl-0` is typically the default (active) state. Additional states are specified with `pinctrl-1`, `pinctrl-2`, etc.
+
+The state name for each `pinctrl-N` index is given by the corresponding entry in the `pinctrl-names` property.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -470,7 +699,9 @@ uart7: serial@880000 {
 
 PINCTRL_NAMES_DOC='## pinctrl-names
 
-A list of strings providing names for the pin control states indexed by `pinctrl-N` properties.
+**Value type:** `<stringlist>`
+
+A list of strings providing names for the pin control states indexed by `pinctrl-N` properties. The first string names state 0 (`pinctrl-0`), the second names state 1 (`pinctrl-1`), and so on. The string `"default"` conventionally names the active/operational state.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -483,7 +714,11 @@ uart7: serial@880000 {
 
 DMAS_DOC='## dmas
 
-A list of phandle and DMA specifier pairs, one pair per DMA channel used by the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + dma-specifier pairs
+
+A list of phandle and DMA specifier pairs, one pair per DMA channel used by the device. The number of cells in each DMA specifier is determined by the `#dma-cells` property of the referenced DMA controller node.
+
+Used together with `dma-names` to identify each DMA channel by name.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -496,7 +731,9 @@ uart7: serial@880000 {
 
 DMA_NAMES_DOC='## dma-names
 
-A list of strings providing names for the corresponding entries in the `dmas` property.
+**Value type:** `<stringlist>`
+
+A list of strings providing names for the corresponding entries in the `dmas` property. Each string identifies one DMA channel. The number of strings must equal the number of phandle+specifier pairs in `dmas`.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -509,7 +746,9 @@ uart7: serial@880000 {
 
 DMA_CELLS_DOC='## #dma-cells
 
-Specifies the number of cells in a DMA specifier. Used by DMA controller nodes.
+**Value type:** `<u32>`
+
+The *#dma-cells* property defines the number of cells required to encode a DMA specifier for this DMA controller. Used by DMA controller nodes to indicate how many `<u32>` cells follow the phandle in `dmas` references.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -521,7 +760,9 @@ gpi_dma1: dma-controller@a00000 {
 
 POWER_DOMAINS_DOC='## power-domains
 
-A list of phandle and power domain specifier pairs, one per power domain consumed by the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + power-domain-specifier pairs
+
+A list of phandle and power domain specifier pairs, one per power domain consumed by the device. The number of cells in each power domain specifier is determined by the `#power-domain-cells` property of the referenced power domain provider node.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -532,7 +773,9 @@ uart7: serial@880000 {
 
 IOMMUS_DOC='## iommus
 
-A list of phandle and IOMMU specifier pairs specifying the IOMMU master interfaces of the device.
+**Value type:** `<prop-encoded-array>` encoded as a list of phandle + iommu-specifier pairs
+
+A list of phandle and IOMMU specifier pairs specifying the IOMMU master interfaces of the device. Each pair identifies an IOMMU controller and the stream ID (or equivalent specifier) used by the device on that IOMMU.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -544,7 +787,9 @@ usb_1: usb@a6f8800 {
 
 MSI_PARENT_DOC='## msi-parent
 
-A phandle to the MSI controller for the device.
+**Value type:** `<phandle>` or `<prop-encoded-array>`
+
+A phandle (with optional MSI specifier cells) to the MSI controller for the device. Specifies which MSI controller handles MSI/MSI-X interrupts for this device.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -556,7 +801,9 @@ pcie0: pci@1c00000 {
 
 MSI_CELLS_DOC='## #msi-cells
 
-Specifies the number of cells in an MSI specifier. Used by MSI controller nodes.
+**Value type:** `<u32>`
+
+The *#msi-cells* property defines the number of cells required to encode an MSI specifier for this MSI controller. Used by MSI controller nodes to indicate how many `<u32>` cells follow the phandle in `msi-parent` references.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -568,7 +815,11 @@ pcie0_msi: msi-controller@1c0e0040 {
 
 ALIASES_DOC='## aliases
 
-The `/aliases` node defines aliases for other device tree nodes. Each property maps a short alias string to a full node path.
+The `/aliases` node defines aliases for device tree nodes. A devicetree may have an aliases node (`/aliases`) that defines one or more alias properties. The aliases node shall be at the root of the devicetree and have the node name `/aliases`.
+
+Each property of the `/aliases` node defines an alias. The property name specifies the alias name. The property value specifies the full path to a node in the devicetree. Alias names shall be lowercase text strings of 1 to 31 characters consisting of digits (0-9), lowercase letters (a-z), and dashes (-).
+
+A client program may use an alias property name to refer to a full device path.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
@@ -576,22 +827,46 @@ aliases {
     serial0 = &uart7;
     serial1 = &uart14;
 };
+
+/* DTS spec example */
+aliases {
+    serial0 = "/simple-bus@fe000000/serial@llc500";
+    ethernet0 = "/simple-bus@fe000000/ethernet@31c000";
+};
 ```'
 
 CHOSEN_DOC='## chosen
 
-The `/chosen` node specifies runtime parameters chosen or specified by the system firmware. It does not represent a real device.
+The `/chosen` node does not represent a real device in the system but describes parameters chosen or specified by the system firmware at run time. It shall be a child of the root node.
+
+Common properties in `/chosen`:
+
+- `bootargs` — kernel boot arguments string
+- `stdout-path` — path (or alias) to the boot console output device
+- `stdin-path` — path (or alias) to the boot console input device
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
 chosen {
     stdout-path = "serial0:115200n8";
 };
+
+/* DTS spec example */
+chosen {
+    bootargs = "root=/dev/nfs rw nfsroot=192.168.1.1 console=ttyS0,115200";
+};
 ```'
 
 MEMORY_DOC='## memory
 
-The `/memory` node describes the physical memory layout of the system. Every device tree must have at least one memory node.
+A memory device node is required for all devicetrees and describes the physical memory layout for the system. If a system has multiple ranges of memory, multiple memory nodes can be created, or the ranges can be specified in the `reg` property of a single memory node.
+
+The *unit-name* component of the node name shall be `memory`.
+
+Required properties:
+
+- `device_type` — shall be `"memory"`
+- `reg` — consists of an arbitrary number of address and size pairs specifying the physical address and size of the memory ranges
 
 ```dts
 /* arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
@@ -599,11 +874,35 @@ memory@0 {
     device_type = "memory";
     reg = <0x0 0x0 0x0 0x40000000>;
 };
+
+/* Two separate memory ranges (#address-cells=<2> #size-cells=<2>) */
+memory@0 {
+    device_type = "memory";
+    reg = <0x000000000 0x00000000 0x00000000 0x80000000>;
+};
+memory@100000000 {
+    device_type = "memory";
+    reg = <0x000000001 0x00000000 0x00000001 0x00000000>;
+};
 ```'
 
 RESERVED_MEMORY_DOC='## reserved-memory
 
-The `/reserved-memory` node is a parent node for child nodes describing memory regions reserved for specific purposes.
+Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. Child nodes describe particular reserved memory regions, usually designed for special usage by various device drivers.
+
+Required properties on the `/reserved-memory` parent node:
+
+- `#address-cells` — shall match root node value
+- `#size-cells` — shall match root node value
+- `ranges` — shall be empty (identity mapping)
+
+Child node properties (each describes one reserved region):
+
+- `reg` — for static allocations: physical address and size
+- `size` — for dynamic allocations: size in bytes
+- `no-map` — if present, the OS must not create a virtual mapping of the region
+- `reusable` — the OS can use the region with the constraint that drivers can reclaim it
+- `compatible` — e.g. `"shared-dma-pool"` for shared DMA buffer pools
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -621,7 +920,14 @@ reserved-memory {
 
 CPUS_DOC='## cpus
 
-The `/cpus` node is required by all device trees. It contains child nodes representing each processor in the system.
+A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the system'"'"'s CPUs.
+
+Required properties:
+
+- `#address-cells` — specifies how many cells each element of the `reg` property array takes in children of this node
+- `#size-cells` — shall be 0 (no size is required in child `reg` properties)
+
+Properties common to all CPUs may be placed in the `/cpus` node instead of repeating them in each child `cpu` node.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550.dtsi */
@@ -639,7 +945,11 @@ cpus {
 
 STDOUT_PATH_DOC='## stdout-path
 
-A string specifying the device to use for boot console output. May include baud/parity options separated by a colon.
+**Value type:** `<string>`
+
+A string that specifies the full path to the node representing the device to be used for boot console output. If the character ":" is present in the value it terminates the path. The value may be an alias. If the `stdin-path` property is not specified, `stdout-path` should be assumed to define the input device as well.
+
+Note: Older versions of devicetrees may contain a deprecated form of this property called `linux,stdout-path`. The meaning and use of the two properties is identical.
 
 ```dts
 /* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
@@ -650,9 +960,17 @@ chosen {
 
 BOOTARGS_DOC='## bootargs
 
-A string specifying the kernel boot parameters to be passed to the Linux kernel command line.
+**Value type:** `<string>`
+
+A string that specifies the boot arguments for the client program. The value could potentially be a null string if no boot arguments are required.
 
 ```dts
+/* DTS spec example */
+chosen {
+    bootargs = "root=/dev/nfs rw nfsroot=192.168.1.1 console=ttyS0,115200";
+};
+
+/* Common Linux usage */
 chosen {
     bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rootwait";
 };
@@ -660,7 +978,11 @@ chosen {
 
 INITRD_START_DOC='## initrd-start
 
-Specifies the physical start address of an initial ramdisk image. Written by firmware/bootloader.
+**Value type:** `<u32>` or `<u64>`
+
+Specifies the physical start address of an initial ramdisk (initrd) image loaded by the bootloader. Written by firmware or bootloader before passing control to the kernel. Used together with `linux,initrd-end`.
+
+Note: This property is typically written as `linux,initrd-start` in the `/chosen` node by the bootloader.
 
 ```dts
 chosen {
@@ -671,7 +993,11 @@ chosen {
 
 INITRD_END_DOC='## initrd-end
 
-Specifies the physical end address (exclusive) of an initial ramdisk image. Written by firmware/bootloader.
+**Value type:** `<u32>` or `<u64>`
+
+Specifies the physical end address (exclusive) of an initial ramdisk (initrd) image loaded by the bootloader. Written by firmware or bootloader before passing control to the kernel. Used together with `linux,initrd-start`.
+
+Note: This property is typically written as `linux,initrd-end` in the `/chosen` node by the bootloader.
 
 ```dts
 chosen {
@@ -682,7 +1008,9 @@ chosen {
 
 KASLR_SEED_DOC='## kaslr-seed
 
-A 64-bit value provided by firmware to seed the kernel address space layout randomization (KASLR).
+**Value type:** `<u64>`
+
+A 64-bit value provided by firmware or bootloader to seed the kernel address space layout randomization (KASLR). The value should be a cryptographically random number. When present in the `/chosen` node, the Linux kernel uses it as entropy for KASLR.
 
 ```dts
 chosen {
