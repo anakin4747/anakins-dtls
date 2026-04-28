@@ -1501,6 +1501,7 @@ collect_diagnostics() {
             lineno = NR - 1
             line = $0
             sub(/\/\/.*$/, "", line)
+            gsub(/\/\*[^*]*\*\//, "", line)
 
             if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_,-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/)
                 diags[nd++] = make(lineno, 1, "Missing semicolon")
