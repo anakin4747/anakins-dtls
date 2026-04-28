@@ -38,6 +38,22 @@ recv2() {
     IFS= read -r -N "$cl" -t 5 BODY <&"$READ_FD"
 }
 
+# recv_response: skip notifications (messages with "method" but no "id"),
+# keep reading until we get a response (has "id", no "method").
+recv_response() {
+    local deadline=$(( SECONDS + 10 ))
+    while (( SECONDS < deadline )); do
+        recv2 || return 1
+        # Skip if it looks like a notification (has "method" key)
+        if printf '%s' "$BODY" | jq -e 'has("method")' >/dev/null 2>&1; then
+            continue
+        fi
+        return 0
+    done
+    echo 'recv_response: timed out' >&2
+    return 1
+}
+
 coproc SRV { "$SERVER"; }
 exec {WRITE_FD}>&"${SRV[1]}"
 exec {READ_FD}<&"${SRV[0]}"
@@ -50,7 +66,7 @@ send2 "{\"jsonrpc\":\"2.0\",\"method\":\"initialized\",\"params\":{}}"
 send2 "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didOpen\",\"params\":{\"textDocument\":{\"uri\":\"${URI}\",\"languageId\":\"dts\",\"version\":1,\"text\":${TEXT_JSON}}}}"
 
 send2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"textDocument/hover\",\"params\":{\"textDocument\":{\"uri\":\"${URI}\"},\"position\":{\"line\":${LSP_LINE},\"character\":${LSP_COL}}}}"
-recv2
+recv_response
 
 printf '%s' "$BODY" | jq -c . > "$OUT"
 
