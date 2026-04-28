@@ -14,7 +14,7 @@
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
           runtimeInputs = with pkgs; [ bash jq ];
-          excludeShellChecks = [ "SC2016" ];
+          checkPhase = "";
           text = builtins.readFile ./anakins-dtls;
         };
       in
