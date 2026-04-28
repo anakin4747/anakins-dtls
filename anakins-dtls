@@ -1218,8 +1218,7 @@ handle_definition() {
         node_compat="$(node_compatible_at "$def_text" "$def_line")"
         if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
             local binding_file
-            binding_file="$(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
-            if [[ -n "$binding_file" ]]; then
+            while IFS= read -r binding_file; do
                 local prop_line
                 prop_line="$(grep -n "^  ${def_word}:" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
                 if [[ -n "$prop_line" ]]; then
@@ -1228,7 +1227,22 @@ handle_definition() {
                     send_definition "$def_id" "$binding_file" "$prop_line"
                     return
                 fi
-            fi
+                # Follow $ref one level deep
+                local ref_line ref_file abs_ref
+                while IFS= read -r ref_line; do
+                    ref_file="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
+                    [[ -z "$ref_file" ]] && continue
+                    abs_ref="$(find "$BINDINGS_DIR" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)"
+                    [[ -z "$abs_ref" ]] && continue
+                    prop_line="$(grep -n "^  ${def_word}:" "$abs_ref" 2>/dev/null | head -1 | cut -d: -f1)" || true
+                    if [[ -n "$prop_line" ]]; then
+                        prop_line=$(( prop_line - 1 ))
+                        [[ $prop_line -lt 0 ]] && prop_line=0
+                        send_definition "$def_id" "$abs_ref" "$prop_line"
+                        return
+                    fi
+                done < <(grep '\$ref:' "$binding_file")
+            done < <(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort)
         fi
     fi
 
@@ -1244,8 +1258,38 @@ node_compatible_at() {
     printf '%s' "$above" | grep -o 'compatible = "[^"]*"' | tail -1 | grep -o '"[^"]*"' | head -1 | tr -d '"'  || true
 }
 
+# Extract property description from a single YAML binding file.
+extract_property_doc() {
+    local prop="$1" yaml_file="$2"
+    awk -v prop="$prop" '
+        /^properties:/ { in_props=1; next }
+        in_props && /^[^ ]/ && !/^  / { in_props=0 }
+        in_props && match($0, "^  "prop":") { in_prop=1; next }
+        in_prop {
+            if (match($0, "^  [^ ]")) { in_prop=0; next }
+            if (match($0, "^    description:")) {
+                in_desc=1
+                sub(/^    description:[[:space:]]*[|>]?[[:space:]]*/, "", $0)
+                if (length($0) > 0) desc=$0
+                next
+            }
+            if (in_desc) {
+                if (match($0, "^      ")) {
+                    sub(/^      /, "", $0)
+                    if (length(desc) > 0) desc=desc "\n" $0
+                    else desc=$0
+                } else {
+                    in_desc=0
+                }
+            }
+        }
+        END { print desc }
+    ' "$yaml_file" | sed '/^[[:space:]]*$/d' | head -20
+}
+
 # Given a compatible string, a property name, and the bindings directory,
 # return the property description from the matching binding YAML file.
+# Follows $ref includes one level deep.
 find_binding_doc() {
     local compatible="$1" prop="$2" bindings_dir="$3"
     [[ -d "$bindings_dir" ]] || return 0
@@ -1254,36 +1298,57 @@ find_binding_doc() {
 
     local file desc
     while IFS= read -r file; do
-        desc="$(awk -v prop="$prop" '
-            /^properties:/ { in_props=1; next }
-            in_props && /^[^ ]/ && !/^  / { in_props=0 }
-            in_props && match($0, "^  " prop ":") { in_prop=1; next }
-            in_prop {
-                if (match($0, "^  [^ ]")) { in_prop=0; next }
-                if (match($0, "^    description:")) {
-                    in_desc=1
-                    sub(/^    description:[[:space:]]*[|>]?[[:space:]]*/, "", $0)
-                    if (length($0) > 0) desc=$0
-                    next
-                }
-                if (in_desc) {
-                    if (match($0, "^      ")) {
-                        sub(/^      /, "", $0)
-                        if (length(desc) > 0) desc=desc "\n" $0
-                        else desc=$0
-                    } else {
-                        in_desc=0
-                    }
-                }
-            }
-            END { print desc }
-        ' "$file" | sed '/^[[:space:]]*$/d' | head -20)"
+        desc="$(extract_property_doc "$prop" "$file")"
         if [[ -n "$desc" ]]; then
             printf '%s' "$desc"
             return 0
         fi
-    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null | sort)
+        # Follow $ref includes one level deep
+        local ref_line ref_file abs_ref
+        while IFS= read -r ref_line; do
+            ref_file="$(printf '%s' "$ref_line" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')"
+            [[ -z "$ref_file" ]] && continue
+            abs_ref="$(find "$bindings_dir" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)"
+            [[ -z "$abs_ref" ]] && continue
+            desc="$(extract_property_doc "$prop" "$abs_ref")"
+            if [[ -n "$desc" ]]; then
+                printf '%s' "$desc"
+                return 0
+            fi
+        done < <(grep '\$ref:' "$file")
+    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort)
     return 0
+}
+
+# Given a compatible value string and the bindings directory,
+# return a markdown hover doc for the binding itself.
+find_compatible_value_hover() {
+    local compat_val="$1" bindings_dir="$2"
+    [[ -n "$compat_val" ]] || return 0
+    [[ -d "$bindings_dir" ]] || return 0
+
+    # Try patterns from most-specific to least-specific to find the canonical binding
+    local binding_file
+    # 1. const: <compat> (exact const match)
+    binding_file="$(grep -rl "^        const: ${compat_val}$\|^          const: ${compat_val}$" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+    # 2. enum entry: "- <compat>" (exact enum entry)
+    if [[ -z "$binding_file" ]]; then
+        binding_file="$(grep -rl "^      - ${compat_val}$" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+    fi
+    # 3. Fallback: any occurrence
+    if [[ -z "$binding_file" ]]; then
+        binding_file="$(grep -rl "${compat_val}" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+    fi
+    [[ -z "$binding_file" ]] && return 0
+
+    local desc
+    desc="$(awk '/^description:/{found=1; next} found && /^[a-zA-Z$]/{exit} found{print}' "$binding_file" | sed '/^[[:space:]]*$/d' | sed 's/^  //')"
+    [[ -z "$desc" ]] && return 0
+
+    local rel_path
+    rel_path="${binding_file#${bindings_dir}/}"
+
+    printf '## %s\n\n**Binding:** `%s`\n\n%s' "$compat_val" "$rel_path" "$desc"
 }
 
 handle_hover() {
@@ -1351,6 +1416,20 @@ handle_hover() {
             fi
             ;;
     esac
+
+    # Check if cursor is on a compatible value string (e.g. "regulator-fixed")
+    if [[ -n "$BINDINGS_DIR" ]]; then
+        local compat_val
+        compat_val="$(compatible_value_at "$text" "$line" "$character")"
+        if [[ -n "$compat_val" ]]; then
+            local compat_hover
+            compat_hover="$(find_compatible_value_hover "$compat_val" "$BINDINGS_DIR")"
+            if [[ -n "$compat_hover" ]]; then
+                send_hover "$id" "$compat_hover"
+                return
+            fi
+        fi
+    fi
 
     # Binding-aware augmentation
     compat="$(node_compatible_at "$text" "$line")" || compat=""

@@ -537,3 +537,39 @@ teardown() {
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:845:18" \
         "fixtures/definition_macro_GIC_SPI.rpc.json"
 }
+
+# ---------------------------------------------------------------------------
+# Hover: compatible string value → binding description
+# Real source: tests/linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi
+#   line 50: compatible = "regulator-fixed";  cursor on "regulator-fixed"
+# ---------------------------------------------------------------------------
+
+@test "hover over compatible string returns binding description" {
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:50:20" \
+        "fixtures/hover_compatible_value_regulator_fixed.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# Hover: regulator-min-microvolt → found via $ref in regulator.yaml
+# Real source: tests/linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi
+#   line 53: regulator-min-microvolt = <1800000>;
+# ---------------------------------------------------------------------------
+
+@test "hover over regulator-min-microvolt returns binding doc via \$ref" {
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:53:5" \
+        "fixtures/hover_regulator_min_microvolt.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: regulator-min-microvolt → navigates via $ref to regulator.yaml
+# Real source: tests/linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi
+#   line 53: regulator-min-microvolt = <1800000>;
+# ---------------------------------------------------------------------------
+
+@test "definition on regulator-min-microvolt navigates via \$ref" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:53:5" \
+        "fixtures/definition_regulator_min_microvolt.rpc.json"
+}
