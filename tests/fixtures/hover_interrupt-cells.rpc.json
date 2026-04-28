@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## #interrupt-cells\n\nSpecifies the number of `<u32>` cells required to encode an interrupt specifier for the interrupt controller.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\ngic: interrupt-controller@17100000 {\n    compatible = \"arm,gic-v3\";\n    #interrupt-cells = <3>;\n};\n```"}}}

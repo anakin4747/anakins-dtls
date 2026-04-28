@@ -1,0 +1,819 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+command -v jq > /dev/null || { printf 'anakins-dtls: jq is required but not found in PATH\n' >&2; exit 1; }
+
+# Send a JSON-RPC message with a Content-Length header on stdout.
+send() {
+    local body="$1"
+    local len
+    len="$(printf '%s' "$body" | wc -c)"
+    printf "Content-Length: %d\r\n\r\n%s" "$len" "$body"
+}
+
+# Read one JSON-RPC message from stdin into BODY.
+recv() {
+    local line content_length=0
+
+    while IFS= read -r line; do
+        line="${line%$'\r'}"
+        [[ -z "$line" ]] && break
+        if [[ "$line" =~ ^Content-Length:\ ([0-9]+)$ ]]; then
+            content_length="${BASH_REMATCH[1]}"
+        fi
+    done
+
+    [[ "$content_length" -eq 0 ]] && return 1
+
+    IFS= read -r -N "$content_length" BODY
+}
+
+# Return the whitespace-delimited token at the given line and character.
+# Strips trailing =, ;, <, ", > so that "compatible = " returns "compatible".
+word_at() {
+    local text="$1" line="$2" character="$3"
+    local line_text before after token word rest
+    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+    before="${line_text:0:$((character + 1))}"
+    word="${before##*[$'\t =;<>\"@{']}"
+    after="${line_text:${#before}}"
+    rest="${after%%[$'\t =;<>\"@{']*}"
+    token="${word}${rest}"
+    # Strip any leading/trailing punctuation that snuck in
+    token="${token%%[=;<>\"@{]*}"
+    printf '%s' "$token"
+}
+
+# Send a hover response with a markdown value.
+send_hover() {
+    local id="$1" doc="$2"
+    local value
+    value="$(jq -cn --arg v "$doc" '$v')"
+    send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"contents\":{\"kind\":\"markdown\",\"value\":${value}}}}"
+}
+
+# Send a null result (no hover available).
+send_null() {
+    local id="$1"
+    send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":null}"
+}
+
+# ---------------------------------------------------------------------------
+# Hover documentation strings
+# ---------------------------------------------------------------------------
+
+COMPATIBLE_DOC='## compatible
+
+Specifies a list of strings that identify the device. Strings are from most specific to least specific and allow a driver to match against a family of similar devices.
+
+```dts
+/* Qualcomm SM8550 — arch/arm64/boot/dts/qcom/sm8550.dtsi */
+compatible = "qcom,sm8550";
+
+/* Raspberry Pi 4B — arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
+compatible = "raspberrypi,4-model-b", "brcm,bcm2711";
+```'
+
+MODEL_DOC='## model
+
+A string that specifies the manufacturer'"'"'s model number of the device. The recommended format is `"manufacturer,model"`.
+
+```dts
+/* arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
+model = "Raspberry Pi 4 Model B";
+```'
+
+DEVICE_TYPE_DOC='## device_type
+
+Specifies the device'"'"'s type. Only used on `cpu` and `memory` nodes in modern device trees.
+
+```dts
+/* arch/arm/boot/dts/aspeed-g5.dtsi */
+memory@80000000 {
+    device_type = "memory";
+    reg = <0x80000000 0x0>;
+};
+```'
+
+STATUS_DOC='## status
+
+Indicates the operational status of a device. Valid values are `"okay"`, `"disabled"`, `"reserved"`, `"fail"`, and `"fail-sss"`.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart0: serial@a84000 {
+    compatible = "qcom,geni-uart";
+    status = "disabled";
+};
+```'
+
+PHANDLE_DOC='## phandle
+
+Specifies a numerical identifier for a node that is unique in the device tree. Used by other nodes to reference this node.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+pio: pinctrl@300b000 {
+    compatible = "allwinner,sun50i-h6-pinctrl";
+    phandle = <0x01>;
+};
+```'
+
+LINUX_PHANDLE_DOC='## linux,phandle
+
+Legacy alias for `phandle`. Older device trees used this property; `phandle` is preferred in new device trees.
+
+```dts
+cpu@0 {
+    linux,phandle = <1>;
+    phandle = <1>;
+};
+```'
+
+LABEL_DOC='## label
+
+A human-readable string describing the device represented by the node.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3.dts */
+leds {
+    led-0 {
+        label = "orangepi:red:status";
+    };
+};
+```'
+
+REG_DOC='## reg
+
+Specifies the address and size of a register block or memory region belonging to the device. Encoded as `<address size>` pairs according to the parent'"'"'s `#address-cells` and `#size-cells`.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    compatible = "qcom,geni-uart";
+    reg = <0x00880000 0x200>;
+};
+```'
+
+REG_NAMES_DOC='## reg-names
+
+A list of strings providing names for the corresponding entries in the `reg` property. Each name identifies a named register region.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+pcie0: pci@1c00000 {
+    reg = <0x01c00000 0x3000>,
+          <0x01c03000 0x1000>;
+    reg-names = "parf", "phy";
+};
+```'
+
+RANGES_DOC='## ranges
+
+Defines the mapping between child bus addresses and parent bus addresses. An empty `ranges` means a 1:1 mapping. Each entry is `<child-addr parent-addr length>`.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+pcie0: pci@1c00000 {
+    #address-cells = <3>;
+    #size-cells = <2>;
+    ranges = <0x01000000 0x0 0x00000000 0x0 0x01c10000 0x0 0x00010000>;
+};
+```'
+
+DMA_RANGES_DOC='## dma-ranges
+
+Defines the mapping between DMA-capable child bus addresses and parent bus addresses. Similar format to `ranges`.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+pcie0: pci@1c00000 {
+    dma-ranges = <0x02000000 0x0 0x00000000 0x0 0x00000000 0x10 0x00000000>;
+};
+```'
+
+DMA_COHERENT_DOC='## dma-coherent
+
+Presence of this property indicates that the device is DMA coherent and hardware-maintained cache coherency is provided.
+
+```dts
+/* arch/arm64/boot/dts/amazon/al/alpine-v2.dtsi */
+pcie@fb000000 {
+    compatible = "amazon,alpine-v2-pcie";
+    dma-coherent;
+};
+```'
+
+ADDRESS_CELLS_DOC='## #address-cells
+
+Specifies the number of `<u32>` cells used to encode the address field in child nodes'"'"' `reg` properties.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+soc: soc@0 {
+    #address-cells = <2>;
+    #size-cells = <2>;
+};
+```'
+
+SIZE_CELLS_DOC='## #size-cells
+
+Specifies the number of `<u32>` cells used to encode the size field in child nodes'"'"' `reg` properties.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+soc: soc@0 {
+    #address-cells = <2>;
+    #size-cells = <2>;
+};
+```'
+
+INTERRUPTS_DOC='## interrupts
+
+Specifies the interrupt(s) generated by the device. The encoding depends on the interrupt controller'"'"'s `#interrupt-cells` value.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    interrupts = <GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>;
+};
+```'
+
+INTERRUPTS_EXTENDED_DOC='## interrupts-extended
+
+Specifies the interrupt(s) generated by the device in extended form, allowing each interrupt to reference a different interrupt controller.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+mmc0: mmc@4020000 {
+    interrupts-extended = <&gic GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>,
+                          <&r_intc 6 IRQ_TYPE_LEVEL_HIGH>;
+};
+```'
+
+INTERRUPT_PARENT_DOC='## interrupt-parent
+
+A phandle reference to the interrupt controller that handles interrupts for this device. Inherited by children if not overridden.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+/ {
+    interrupt-parent = <&gic>;
+};
+```'
+
+INTERRUPT_CELLS_DOC='## #interrupt-cells
+
+Specifies the number of `<u32>` cells required to encode an interrupt specifier for the interrupt controller.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+gic: interrupt-controller@17100000 {
+    compatible = "arm,gic-v3";
+    #interrupt-cells = <3>;
+};
+```'
+
+INTERRUPT_CONTROLLER_DOC='## interrupt-controller
+
+Presence of this property marks the node as an interrupt controller. No value required.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+gic: interrupt-controller@17100000 {
+    compatible = "arm,gic-v3";
+    interrupt-controller;
+};
+```'
+
+WAKEUP_SOURCE_DOC='## wakeup-source
+
+Presence of this property indicates the device can be used as a wakeup source. Replaces the deprecated `gpio-key,wakeup` property.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
+key-vol-down {
+    linux,code = <KEY_VOLUMEDOWN>;
+    wakeup-source;
+};
+```'
+
+CLOCKS_DOC='## clocks
+
+A list of phandle and clock specifier pairs, one pair per clock input to the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    clocks = <&gcc GCC_QUPV3_WRAP1_S7_CLK>,
+             <&gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>;
+    clock-names = "se", "m-ahb";
+};
+```'
+
+CLOCK_NAMES_DOC='## clock-names
+
+A list of strings providing names for the corresponding entries in the `clocks` property.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    clocks = <&gcc GCC_QUPV3_WRAP1_S7_CLK>,
+             <&gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>;
+    clock-names = "se", "m-ahb";
+};
+```'
+
+CLOCK_CELLS_DOC='## #clock-cells
+
+Specifies the number of cells in a clock specifier. Used by clock provider nodes.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+gcc: clock-controller@100000 {
+    compatible = "qcom,sm8550-gcc";
+    #clock-cells = <1>;
+};
+```'
+
+CLOCK_FREQUENCY_DOC='## clock-frequency
+
+Specifies the frequency, in Hz, of a clock.
+
+```dts
+/* arch/arm/boot/dts/aspeed-g5.dtsi */
+clk_clkin: clk_clkin {
+    compatible = "fixed-clock";
+    #clock-cells = <0>;
+    clock-frequency = <25000000>;
+};
+```'
+
+BUS_FREQUENCY_DOC='## bus-frequency
+
+Specifies the frequency, in Hz, of a bus clock.
+
+```dts
+/* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */
+bus-frequency = <0>;
+```'
+
+TIMEBASE_FREQUENCY_DOC='## timebase-frequency
+
+Specifies the frequency, in Hz, at which the timebase and decrementer registers are updated (PowerPC).
+
+```dts
+/* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */
+timebase-frequency = <0>;
+```'
+
+RESETS_DOC='## resets
+
+A list of phandle and reset specifier pairs, one pair per reset signal for the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    resets = <&gcc GCC_QUPV3_WRAP1_S7_BCR>;
+    reset-names = "qup";
+};
+```'
+
+RESET_NAMES_DOC='## reset-names
+
+A list of strings providing names for the corresponding entries in the `resets` property.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    resets = <&gcc GCC_QUPV3_WRAP1_S7_BCR>;
+    reset-names = "qup";
+};
+```'
+
+RESET_CELLS_DOC='## #reset-cells
+
+Specifies the number of cells in a reset specifier. Used by reset controller nodes.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+gcc: clock-controller@100000 {
+    compatible = "qcom,sm8550-gcc";
+    #reset-cells = <1>;
+};
+```'
+
+GPIOS_DOC='## gpios
+
+A list of GPIO specifiers, one per GPIO consumed by the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
+reg_usb_vbus: regulator-usb-vbus {
+    compatible = "regulator-fixed";
+    gpios = <&pm8550_gpios 11 GPIO_ACTIVE_HIGH>;
+};
+```'
+
+GPIO_CONTROLLER_DOC='## gpio-controller
+
+Presence of this property marks the node as a GPIO controller.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+pio: pinctrl@300b000 {
+    compatible = "allwinner,sun50i-h6-pinctrl";
+    gpio-controller;
+    #gpio-cells = <3>;
+};
+```'
+
+GPIO_CELLS_DOC='## #gpio-cells
+
+Specifies the number of cells in a GPIO specifier.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+pio: pinctrl@300b000 {
+    gpio-controller;
+    #gpio-cells = <3>;
+};
+```'
+
+GPIO_RANGES_DOC='## gpio-ranges
+
+Specifies the mapping between a GPIO controller and a pin controller. Format: `<pinctrl-phandle pinctrl-base gpio-base count>`.
+
+```dts
+/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */
+pio: pinctrl@300b000 {
+    gpio-controller;
+    gpio-ranges = <&pio 0 0 256>;
+};
+```'
+
+PINCTRL_0_DOC='## pinctrl-0
+
+A list of phandles referring to pin configuration nodes, one per state. `pinctrl-0` is the default (active) state.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    pinctrl-names = "default", "sleep";
+    pinctrl-0 = <&qup_uart7_default>;
+    pinctrl-1 = <&qup_uart7_sleep>;
+};
+```'
+
+PINCTRL_NAMES_DOC='## pinctrl-names
+
+A list of strings providing names for the pin control states indexed by `pinctrl-N` properties.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    pinctrl-names = "default", "sleep";
+    pinctrl-0 = <&qup_uart7_default>;
+    pinctrl-1 = <&qup_uart7_sleep>;
+};
+```'
+
+DMAS_DOC='## dmas
+
+A list of phandle and DMA specifier pairs, one pair per DMA channel used by the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    dmas = <&gpi_dma1 0 7 QCOM_GPI_UART>,
+           <&gpi_dma1 1 7 QCOM_GPI_UART>;
+    dma-names = "tx", "rx";
+};
+```'
+
+DMA_NAMES_DOC='## dma-names
+
+A list of strings providing names for the corresponding entries in the `dmas` property.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    dmas = <&gpi_dma1 0 7 QCOM_GPI_UART>,
+           <&gpi_dma1 1 7 QCOM_GPI_UART>;
+    dma-names = "tx", "rx";
+};
+```'
+
+DMA_CELLS_DOC='## #dma-cells
+
+Specifies the number of cells in a DMA specifier. Used by DMA controller nodes.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+gpi_dma1: dma-controller@a00000 {
+    compatible = "qcom,sm8550-gpi-dma";
+    #dma-cells = <3>;
+};
+```'
+
+POWER_DOMAINS_DOC='## power-domains
+
+A list of phandle and power domain specifier pairs, one per power domain consumed by the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+uart7: serial@880000 {
+    power-domains = <&rpmhpd RPMHPD_CX>;
+};
+```'
+
+IOMMUS_DOC='## iommus
+
+A list of phandle and IOMMU specifier pairs specifying the IOMMU master interfaces of the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+usb_1: usb@a6f8800 {
+    compatible = "qcom,sm8550-dwc3";
+    iommus = <&apps_smmu 0xe0 0x0>;
+};
+```'
+
+MSI_PARENT_DOC='## msi-parent
+
+A phandle to the MSI controller for the device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+pcie0: pci@1c00000 {
+    compatible = "qcom,pcie-sm8550";
+    msi-parent = <&pcie0_msi>;
+};
+```'
+
+MSI_CELLS_DOC='## #msi-cells
+
+Specifies the number of cells in an MSI specifier. Used by MSI controller nodes.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+pcie0_msi: msi-controller@1c0e0040 {
+    compatible = "qcom,pcie-msi";
+    #msi-cells = <1>;
+};
+```'
+
+ALIASES_DOC='## aliases
+
+The `/aliases` node defines aliases for other device tree nodes. Each property maps a short alias string to a full node path.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
+aliases {
+    serial0 = &uart7;
+    serial1 = &uart14;
+};
+```'
+
+CHOSEN_DOC='## chosen
+
+The `/chosen` node specifies runtime parameters chosen or specified by the system firmware. It does not represent a real device.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
+chosen {
+    stdout-path = "serial0:115200n8";
+};
+```'
+
+MEMORY_DOC='## memory
+
+The `/memory` node describes the physical memory layout of the system. Every device tree must have at least one memory node.
+
+```dts
+/* arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts */
+memory@0 {
+    device_type = "memory";
+    reg = <0x0 0x0 0x0 0x40000000>;
+};
+```'
+
+RESERVED_MEMORY_DOC='## reserved-memory
+
+The `/reserved-memory` node is a parent node for child nodes describing memory regions reserved for specific purposes.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+reserved-memory {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    ranges;
+
+    rmtfs_mem: memory@f7c00000 {
+        compatible = "qcom,rmtfs-memory";
+        reg = <0x0 0xf7c00000 0x0 0x280000>;
+    };
+};
+```'
+
+CPUS_DOC='## cpus
+
+The `/cpus` node is required by all device trees. It contains child nodes representing each processor in the system.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550.dtsi */
+cpus {
+    #address-cells = <2>;
+    #size-cells = <0>;
+
+    cpu0: cpu@0 {
+        compatible = "arm,cortex-a510";
+        device_type = "cpu";
+        reg = <0x0 0x0>;
+    };
+};
+```'
+
+STDOUT_PATH_DOC='## stdout-path
+
+A string specifying the device to use for boot console output. May include baud/parity options separated by a colon.
+
+```dts
+/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */
+chosen {
+    stdout-path = "serial0:115200n8";
+};
+```'
+
+BOOTARGS_DOC='## bootargs
+
+A string specifying the kernel boot parameters to be passed to the Linux kernel command line.
+
+```dts
+chosen {
+    bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rootwait";
+};
+```'
+
+INITRD_START_DOC='## initrd-start
+
+Specifies the physical start address of an initial ramdisk image. Written by firmware/bootloader.
+
+```dts
+chosen {
+    linux,initrd-start = <0x84000000>;
+    linux,initrd-end   = <0x84800000>;
+};
+```'
+
+INITRD_END_DOC='## initrd-end
+
+Specifies the physical end address (exclusive) of an initial ramdisk image. Written by firmware/bootloader.
+
+```dts
+chosen {
+    linux,initrd-start = <0x84000000>;
+    linux,initrd-end   = <0x84800000>;
+};
+```'
+
+KASLR_SEED_DOC='## kaslr-seed
+
+A 64-bit value provided by firmware to seed the kernel address space layout randomization (KASLR).
+
+```dts
+chosen {
+    kaslr-seed = <0xdeadbeef 0xcafebabe>;
+};
+```'
+
+# ---------------------------------------------------------------------------
+# Hover dispatch
+# ---------------------------------------------------------------------------
+
+handle_hover() {
+    local id="$1" text="$2" line="$3" character="$4"
+    local word
+    word="$(word_at "$text" "$line" "$character")"
+
+    case "$word" in
+        compatible)              send_hover "$id" "$COMPATIBLE_DOC" ;;
+        model)                   send_hover "$id" "$MODEL_DOC" ;;
+        device_type)             send_hover "$id" "$DEVICE_TYPE_DOC" ;;
+        status)                  send_hover "$id" "$STATUS_DOC" ;;
+        phandle)                 send_hover "$id" "$PHANDLE_DOC" ;;
+        linux,phandle)           send_hover "$id" "$LINUX_PHANDLE_DOC" ;;
+        label)                   send_hover "$id" "$LABEL_DOC" ;;
+        reg)                     send_hover "$id" "$REG_DOC" ;;
+        reg-names)               send_hover "$id" "$REG_NAMES_DOC" ;;
+        ranges)                  send_hover "$id" "$RANGES_DOC" ;;
+        dma-ranges)              send_hover "$id" "$DMA_RANGES_DOC" ;;
+        dma-coherent)            send_hover "$id" "$DMA_COHERENT_DOC" ;;
+        '#address-cells')        send_hover "$id" "$ADDRESS_CELLS_DOC" ;;
+        '#size-cells')           send_hover "$id" "$SIZE_CELLS_DOC" ;;
+        interrupts)              send_hover "$id" "$INTERRUPTS_DOC" ;;
+        interrupts-extended)     send_hover "$id" "$INTERRUPTS_EXTENDED_DOC" ;;
+        interrupt-parent)        send_hover "$id" "$INTERRUPT_PARENT_DOC" ;;
+        '#interrupt-cells')      send_hover "$id" "$INTERRUPT_CELLS_DOC" ;;
+        interrupt-controller)    send_hover "$id" "$INTERRUPT_CONTROLLER_DOC" ;;
+        wakeup-source)           send_hover "$id" "$WAKEUP_SOURCE_DOC" ;;
+        clocks)                  send_hover "$id" "$CLOCKS_DOC" ;;
+        clock-names)             send_hover "$id" "$CLOCK_NAMES_DOC" ;;
+        '#clock-cells')          send_hover "$id" "$CLOCK_CELLS_DOC" ;;
+        clock-frequency)         send_hover "$id" "$CLOCK_FREQUENCY_DOC" ;;
+        bus-frequency)           send_hover "$id" "$BUS_FREQUENCY_DOC" ;;
+        timebase-frequency)      send_hover "$id" "$TIMEBASE_FREQUENCY_DOC" ;;
+        resets)                  send_hover "$id" "$RESETS_DOC" ;;
+        reset-names)             send_hover "$id" "$RESET_NAMES_DOC" ;;
+        '#reset-cells')          send_hover "$id" "$RESET_CELLS_DOC" ;;
+        gpios)                   send_hover "$id" "$GPIOS_DOC" ;;
+        gpio-controller)         send_hover "$id" "$GPIO_CONTROLLER_DOC" ;;
+        '#gpio-cells')           send_hover "$id" "$GPIO_CELLS_DOC" ;;
+        gpio-ranges)             send_hover "$id" "$GPIO_RANGES_DOC" ;;
+        pinctrl-names)           send_hover "$id" "$PINCTRL_NAMES_DOC" ;;
+        dmas)                    send_hover "$id" "$DMAS_DOC" ;;
+        dma-names)               send_hover "$id" "$DMA_NAMES_DOC" ;;
+        '#dma-cells')            send_hover "$id" "$DMA_CELLS_DOC" ;;
+        power-domains)           send_hover "$id" "$POWER_DOMAINS_DOC" ;;
+        iommus)                  send_hover "$id" "$IOMMUS_DOC" ;;
+        msi-parent)              send_hover "$id" "$MSI_PARENT_DOC" ;;
+        '#msi-cells')            send_hover "$id" "$MSI_CELLS_DOC" ;;
+        aliases)                 send_hover "$id" "$ALIASES_DOC" ;;
+        chosen)                  send_hover "$id" "$CHOSEN_DOC" ;;
+        memory)                  send_hover "$id" "$MEMORY_DOC" ;;
+        reserved-memory)         send_hover "$id" "$RESERVED_MEMORY_DOC" ;;
+        cpus)                    send_hover "$id" "$CPUS_DOC" ;;
+        stdout-path)             send_hover "$id" "$STDOUT_PATH_DOC" ;;
+        bootargs)                send_hover "$id" "$BOOTARGS_DOC" ;;
+        initrd-start|'linux,initrd-start') send_hover "$id" "$INITRD_START_DOC" ;;
+        initrd-end|'linux,initrd-end')     send_hover "$id" "$INITRD_END_DOC" ;;
+        kaslr-seed)              send_hover "$id" "$KASLR_SEED_DOC" ;;
+        *)
+            # pinctrl-N pattern
+            if [[ "$word" =~ ^pinctrl-[0-9]+$ ]]; then
+                send_hover "$id" "$PINCTRL_0_DOC"
+            else
+                send_null "$id"
+            fi
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Request parsing
+# ---------------------------------------------------------------------------
+
+parse_request() {
+    local parsed
+    parsed="$(printf '%s' "$BODY" | jq -r '
+        (.method // ""),
+        (.id // ""),
+        (.params.textDocument.uri // ""),
+        (.params.position.line // ""),
+        (.params.position.character // "")
+    ')"
+    { IFS= read -r method
+      IFS= read -r id
+      IFS= read -r uri
+      IFS= read -r line
+      IFS= read -r character
+    } <<< "$parsed" || :
+}
+
+# ---------------------------------------------------------------------------
+# Document store
+# ---------------------------------------------------------------------------
+
+declare -A DOC_TEXT
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+while recv; do
+    parse_request
+
+    case "$method" in
+        initialize)
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1}}}}"
+            ;;
+        initialized)
+            ;;
+        textDocument/didOpen)
+            text="$(printf '%s' "$BODY" | jq -r '.params.textDocument.text')"
+            DOC_TEXT["$uri"]="$text"
+            ;;
+        textDocument/didChange)
+            text="$(printf '%s' "$BODY" | jq -r '.params.contentChanges[-1].text')"
+            DOC_TEXT["$uri"]="$text"
+            ;;
+        textDocument/hover)
+            handle_hover "$id" "${DOC_TEXT["$uri"]:-}" "$line" "$character"
+            ;;
+        exit)
+            exit 0
+            ;;
+    esac
+done

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## msi-parent\n\nA phandle to the MSI controller for the device.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\npcie0: pci@1c00000 {\n    compatible = \"qcom,pcie-sm8550\";\n    msi-parent = <&pcie0_msi>;\n};\n```"}}}

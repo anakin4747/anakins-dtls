@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## timebase-frequency\n\nSpecifies the frequency, in Hz, at which the timebase and decrementer registers are updated (PowerPC).\n\n```dts\n/* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */\ntimebase-frequency = <0>;\n```"}}}

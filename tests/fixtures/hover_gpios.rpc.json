@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## gpios\n\nA list of GPIO specifiers, one per GPIO consumed by the device.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */\nreg_usb_vbus: regulator-usb-vbus {\n    compatible = \"regulator-fixed\";\n    gpios = <&pm8550_gpios 11 GPIO_ACTIVE_HIGH>;\n};\n```"}}}

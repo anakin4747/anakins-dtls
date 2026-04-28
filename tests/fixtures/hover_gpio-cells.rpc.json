@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## #gpio-cells\n\nSpecifies the number of cells in a GPIO specifier.\n\n```dts\n/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */\npio: pinctrl@300b000 {\n    gpio-controller;\n    #gpio-cells = <3>;\n};\n```"}}}

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## interrupt-parent\n\nA phandle reference to the interrupt controller that handles interrupts for this device. Inherited by children if not overridden.\n\n```dts\n/* arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi */\n/ {\n    interrupt-parent = <&gic>;\n};\n```"}}}

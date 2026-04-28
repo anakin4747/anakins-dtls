@@ -1,0 +1,6 @@
+// Minimal fixture: kaslr-seed is not present in Linux kernel DTS source files.
+/ {
+	chosen {
+		kaslr-seed = <0xdeadbeef 0xcafebabe>;
+	};
+};
