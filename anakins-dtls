@@ -1215,7 +1215,8 @@ handle_definition() {
     # 3. Check spec for standard DTS properties
     if [[ -n "$SPEC_DIR" ]]; then
         local spec_result spec_file spec_line
-        spec_result="$(rg -n "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
+        # Match the word as a standalone RST section heading or a ``word`` node reference
+        spec_result="$(rg -n "^${def_word}$|^\`\`/${def_word}\`\`|^.. _sect-standard-properties-${def_word}:" "$SPEC_DIR" 2>/dev/null | head -1)" || true
         if [[ -n "$spec_result" ]]; then
             spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
             spec_line=$(( $(printf '%s' "$spec_result" | cut -d: -f2) - 1 ))
