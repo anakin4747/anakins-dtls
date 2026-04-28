@@ -9,9 +9,11 @@ command -v jq > /dev/null || { printf 'anakins-dtls: jq is required but not foun
 # Send a JSON-RPC message with a Content-Length header on stdout.
 send() {
     local body="$1"
-    local len
+    local len _lock="/tmp/anakins-dtls-send-$$.lock"
     len="$(printf '%s' "$body" | wc -c)"
+    while ! mkdir "$_lock" 2>/dev/null; do sleep 0.01; done
     printf "Content-Length: %d\r\n\r\n%s" "$len" "$body"
+    rmdir "$_lock" 2>/dev/null || true
 }
 
 # Read one JSON-RPC message from stdin into BODY.
@@ -1183,7 +1185,7 @@ handle_definition() {
     compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
     if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
         local binding_file file_line
-        binding_file="$(grep -rl "$compat_val" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+        binding_file="$(rg -l "$compat_val" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort | head -1)" || true
         if [[ -n "$binding_file" ]]; then
             file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
             file_line=$(( file_line - 1 ))
@@ -1213,7 +1215,7 @@ handle_definition() {
     # 3. Check spec for standard DTS properties
     if [[ -n "$SPEC_DIR" ]]; then
         local spec_result spec_file spec_line
-        spec_result="$(grep -rn "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
+        spec_result="$(rg -n "^${def_word}$" "$SPEC_DIR" 2>/dev/null | head -1)" || true
         if [[ -n "$spec_result" ]]; then
             spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
             spec_line=$(( $(printf '%s' "$spec_result" | cut -d: -f2) - 1 ))
@@ -1240,7 +1242,7 @@ handle_definition() {
         [[ $prop_line -lt 0 ]] && prop_line=0
         send_definition "$def_id" "$prop_file" "$prop_line"
         return
-    done < <(grep -rl "$node_compat" "$BINDINGS_DIR" 2>/dev/null | grep '\.yaml$' | sort)
+    done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort)
 
     send_null "$def_id"
 }
@@ -1312,7 +1314,7 @@ find_binding_doc() {
                 return 0
             fi
         done < <(grep '\$ref:' "$file")
-    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort)
+    done < <(rg -l "$compatible" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort)
     return 0
 }
 
@@ -1326,14 +1328,14 @@ find_compatible_value_hover() {
     # Try patterns from most-specific to least-specific to find the canonical binding
     local binding_file
     # 1. const: <compat> (exact const match)
-    binding_file="$(grep -rl "^        const: ${compat_val}$\|^          const: ${compat_val}$" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+    binding_file="$(rg -l "^        const: ${compat_val}$|^          const: ${compat_val}$" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort | head -1)" || true
     # 2. enum entry: "- <compat>" (exact enum entry)
     if [[ -z "$binding_file" ]]; then
-        binding_file="$(grep -rl "^      - ${compat_val}$" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+        binding_file="$(rg -l "^      - ${compat_val}$" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort | head -1)" || true
     fi
     # 3. Fallback: any occurrence
     if [[ -z "$binding_file" ]]; then
-        binding_file="$(grep -rl "${compat_val}" "$bindings_dir" 2>/dev/null | grep '\.yaml$' | sort | head -1)" || true
+        binding_file="$(rg -l "${compat_val}" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort | head -1)" || true
     fi
     [[ -z "$binding_file" ]] && return 0
 
@@ -1467,6 +1469,241 @@ $binding_doc"
 }
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
+
+# publish_diagnostics <uri> <text>
+# Send a textDocument/publishDiagnostics notification. Runs in background
+# so the main loop remains responsive to incoming requests.
+publish_diagnostics() {
+    local uri="$1" text="$2"
+    (
+        local diagnostics
+        diagnostics="$(collect_diagnostics "$text")"
+        send "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/publishDiagnostics\",\"params\":{\"uri\":${uri},\"diagnostics\":${diagnostics}}}"
+    ) &
+}
+
+# collect_diagnostics <text>
+# Emit a JSON array of diagnostics for the document text.
+collect_diagnostics() {
+    local text="$1"
+
+    # Single gawk pass for syntax diagnostics
+    local syntax_diags
+    syntax_diags="$(printf '%s' "$text" | gawk '
+        function make(lineno, sev, msg) {
+            gsub(/"/, "\\\"", msg)
+            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
+        }
+        {
+            lineno = NR - 1
+            line = $0
+            sub(/\/\/.*$/, "", line)
+
+            if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_,-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/)
+                diags[nd++] = make(lineno, 1, "Missing semicolon")
+
+            if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
+                diags[nd++] = make(lineno, 1, "Missing semicolon: expected }; not }")
+
+            l = line
+            while (match(l, /[{}]/)) {
+                c = substr(l, RSTART, 1)
+                l = substr(l, RSTART + 1)
+                if (c == "{") { depth++; last_open = lineno }
+                else if (depth > 0) depth--
+                else diags[nd++] = make(lineno, 1, "Unbalanced brace: unexpected }")
+            }
+        }
+        END {
+            if (depth > 0)
+                diags[nd++] = make(last_open, 1, "Unbalanced brace: unclosed {")
+            printf "["
+            for (i = 0; i < nd; i++) {
+                if (i > 0) printf ","
+                printf "%s", diags[i]
+            }
+            printf "]"
+        }
+    ')"
+
+    # Only run binding diagnostics on small files (≤500 lines) to stay responsive
+    local line_count
+    line_count=$(printf '%s' "$text" | wc -l)
+    if [[ -n "$BINDINGS_DIR" ]] && (( line_count <= 500 )); then
+        local binding_diags
+        binding_diags="$(check_binding_diagnostics "$text")"
+        printf '%s\n%s' "$syntax_diags" "$binding_diags" | jq -cs 'add'
+    else
+        printf '%s' "$syntax_diags"
+    fi
+}
+
+# Standard DT properties that are always valid.
+_is_standard_prop() {
+    case "$1" in
+        compatible|reg|reg-names|status|phandle|linux,phandle|label|\
+        ranges|dma-ranges|dma-coherent|\
+        '#address-cells'|'#size-cells'|\
+        interrupts|interrupts-extended|interrupt-parent|\
+        '#interrupt-cells'|interrupt-controller|wakeup-source|\
+        clocks|clock-names|'#clock-cells'|clock-frequency|\
+        bus-frequency|timebase-frequency|\
+        resets|reset-names|'#reset-cells'|\
+        gpios|gpio-controller|'#gpio-cells'|gpio-ranges|\
+        pinctrl-names|dmas|dma-names|'#dma-cells'|\
+        power-domains|iommus|msi-parent|'#msi-cells'|device_type|model)
+            return 0 ;;
+    esac
+    [[ "$1" =~ ^pinctrl-[0-9]+$ ]] && return 0
+    return 1
+}
+
+# _get_binding_props <binding_file>
+# Output documented property names from the binding (following $ref one level).
+_get_binding_props() {
+    local binding_file="$1"
+    awk '/^properties:/{p=1;next} p && /^[^ ]/{p=0} p && /^  [A-Za-z#][A-Za-z0-9_#,.-]*:/{sub(/:.*$/,""); sub(/^  /,""); print}' "$binding_file" 2>/dev/null || true
+    local ref_file abs_ref
+    while IFS= read -r ref_file; do
+        ref_file=$(printf '%s' "$ref_file" | grep -o '\$ref:[^#]*\.yaml' | sed 's/\$ref:[[:space:]]*//')
+        [[ -z "$ref_file" ]] && continue
+        abs_ref=$(find "$BINDINGS_DIR" -name "$(basename "$ref_file")" 2>/dev/null | sort | head -1)
+        [[ -z "$abs_ref" ]] && continue
+        awk '/^properties:/{p=1;next} p && /^[^ ]/{p=0} p && /^  [A-Za-z#][A-Za-z0-9_#,.-]*:/{sub(/:.*$/,""); sub(/^  /,""); print}' "$abs_ref" 2>/dev/null || true
+    done < <(grep '\$ref:' "$binding_file" 2>/dev/null)
+}
+
+# check_binding_diagnostics <text>
+# Returns a JSON array of binding-related diagnostics.
+# Caches binding lookups per unique compatible string to avoid repeated greps.
+check_binding_diagnostics() {
+    local text="$1"
+
+    # Parse nodes: each output line is "lineno\tcompat\tprop1\tprop2..."
+    local nodes
+    nodes=$(printf '%s' "$text" | gawk '
+        {
+            lineno = NR - 1
+            line = $0
+            sub(/\/\/.*$/, "", line)
+
+            l = line
+            while (match(l, /[{}]/)) {
+                c = substr(l, RSTART, 1)
+                l = substr(l, RSTART + 1)
+                if (c == "{") depth++
+                else if (depth > 0) depth--
+            }
+
+            if (match(line, /compatible[[:space:]]*=[[:space:]]*"([^"]*)"/, arr)) {
+                compat = arr[1]
+                compat_line = lineno
+                compat_depth = depth
+                delete props
+                np = 0
+            }
+
+            if (compat != "" && match(line, /^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$)/, arr))
+                props[np++] = arr[1]
+
+            if (compat != "" && depth < compat_depth) {
+                printf "%d\t%s", compat_line, compat
+                for (i = 0; i < np; i++) printf "\t%s", props[i]
+                printf "\n"
+                compat = ""
+            }
+        }
+        END {
+            if (compat != "") {
+                printf "%d\t%s", compat_line, compat
+                for (i = 0; i < np; i++) printf "\t%s", props[i]
+                printf "\n"
+            }
+        }
+    ' 2>/dev/null)
+
+    [[ -z "$nodes" ]] && { printf '[]'; return; }
+
+    declare -A compat_binding_cache
+    while IFS=$'\t' read -r _l compat _rest; do
+        [[ -z "$compat" || -n "${compat_binding_cache[$compat]+x}" ]] && continue
+        local bf
+        bf=$(rg -l "$compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort | head -1)
+        compat_binding_cache["$compat"]="${bf:-}"
+    done <<< "$nodes"
+
+    # Cache binding_file→doc_props and binding_file→required_list
+    declare -A binding_doc_cache binding_req_cache
+    local cv
+    for cv in "${!compat_binding_cache[@]}"; do
+        local bf="${compat_binding_cache[$cv]}"
+        [[ -z "$bf" || -n "${binding_doc_cache[$bf]+x}" ]] && continue
+        binding_doc_cache["$bf"]=$(_get_binding_props "$bf")
+        binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{gsub(/[^#A-Za-z0-9_,.-]/,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
+    done
+
+    # Collect raw diagnostic strings "line|sev|message", then emit JSON via awk
+    local raw_diags=()
+    while IFS=$'\t' read -r compat_line compat rest; do
+        [[ -z "$compat" ]] && continue
+        local binding_file="${compat_binding_cache[$compat]:-}"
+        [[ -z "$binding_file" ]] && continue
+
+        IFS=$'\t' read -ra node_props <<< "$rest"
+
+        declare -A doc_map
+        unset doc_map; declare -A doc_map
+        while IFS= read -r dp; do
+            [[ -n "$dp" ]] && doc_map["$dp"]=1
+        done <<< "${binding_doc_cache[$binding_file]}"
+
+        declare -A node_map
+        unset node_map; declare -A node_map
+        for p in "${node_props[@]}"; do
+            [[ -n "$p" ]] && node_map["$p"]=1
+        done
+
+        for prop in "${!node_map[@]}"; do
+            _is_standard_prop "$prop" && continue
+            [[ -n "${doc_map[$prop]:-}" ]] && continue
+            raw_diags+=("${compat_line}|2|Property '${prop}' is not documented in the binding for '${compat}'")
+        done
+
+        while IFS= read -r req; do
+            [[ -z "$req" ]] && continue
+            [[ -n "${node_map[$req]:-}" ]] && continue
+            raw_diags+=("${compat_line}|2|Required property '${req}' missing for '${compat}'")
+        done <<< "${binding_req_cache[$binding_file]}"
+    done <<< "$nodes"
+
+    if [[ ${#raw_diags[@]} -eq 0 ]]; then
+        printf '[]'
+        return
+    fi
+
+    # Build JSON array from raw_diags using a single awk pass
+    printf '%s\n' "${raw_diags[@]}" | gawk -F'|' '
+        function escape(s) { gsub(/"/, "\\\"", s); return s }
+        NF >= 3 {
+            l = $1 + 0; s = $2 + 0
+            # Rejoin message parts (message may contain |)
+            msg = $3; for (i = 4; i <= NF; i++) msg = msg "|" $i
+            diags[nd++] = sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", l, l, s, escape(msg))
+        }
+        END {
+            printf "["
+            for (i = 0; i < nd; i++) {
+                if (i > 0) printf ","
+                printf "%s", diags[i]
+            }
+            printf "]"
+        }
+    '
+}
+
 # Request parsing
 # ---------------------------------------------------------------------------
 
@@ -1493,8 +1730,9 @@ parse_request() {
 
 declare -A DOC_TEXT
 
-# ---------------------------------------------------------------------------
-# Main loop
+# Kill all background jobs when the server exits.
+trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
+
 # ---------------------------------------------------------------------------
 
 while recv; do
@@ -1524,17 +1762,19 @@ while recv; do
                 "${root_path}/tests/linux/arch/arm64/include"; do
                 [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
             done
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1}}}}"
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
             ;;
         initialized)
             ;;
         textDocument/didOpen)
             text="$(printf '%s' "$BODY" | jq -r '.params.textDocument.text')"
             DOC_TEXT["$uri"]="$text"
+            publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
             ;;
         textDocument/didChange)
             text="$(printf '%s' "$BODY" | jq -r '.params.contentChanges[-1].text')"
             DOC_TEXT["$uri"]="$text"
+            publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
             ;;
         textDocument/hover)
             handle_hover "$id" "${DOC_TEXT["$uri"]:-}" "$line" "$character"
