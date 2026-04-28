@@ -1,3 +1,6 @@
 [submodule "tests/lsts"]
 	path = tests/lsts
 	url = git@github.com:anakin4747/lsts.git
+[submodule "tests/devicetree-specification"]
+	path = tests/devicetree-specification
+	url = https://github.com/devicetree-org/devicetree-specification.git
