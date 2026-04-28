@@ -4,3 +4,7 @@
 [submodule "tests/devicetree-specification"]
 	path = tests/devicetree-specification
 	url = https://github.com/devicetree-org/devicetree-specification.git
+[submodule "tests/linux"]
+	path = tests/linux
+	url = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+	shallow = true
