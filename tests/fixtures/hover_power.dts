@@ -1,6 +1,0 @@
-/ {
-	power-domains = <&rpmhpd 1>;
-	iommus = <&apps_smmu 0xe0 0x0>;
-	msi-parent = <&pcie0_msi>;
-	#msi-cells = <1>;
-};

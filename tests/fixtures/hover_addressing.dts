@@ -1,9 +1,0 @@
-/ {
-	reg = <0x00880000 0x200>;
-	reg-names = "uart";
-	ranges;
-	dma-ranges = <0x02000000 0x0 0x0 0x0 0x0 0x10 0x0>;
-	dma-coherent;
-	#address-cells = <2>;
-	#size-cells = <2>;
-};

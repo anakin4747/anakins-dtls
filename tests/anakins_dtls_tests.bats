@@ -35,48 +35,50 @@ teardown() {
 
 # ---------------------------------------------------------------------------
 # Core structure keywords
-# Real Linux source: arch/arm64/boot/dts/qcom/sm8550.dtsi (stable linux.git)
+# Real Linux source: arch/arm64/boot/dts/qcom/sm8550.dtsi
+#   model: arch/arm64/boot/dts/qcom/sm8550-qrd.dts
+#   phandle/linux,phandle: fixtures/hover_phandle.dts (not in Linux DTS source)
 # ---------------------------------------------------------------------------
 
 @test "hover over compatible returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:38:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
         "fixtures/hover_compatible.rpc.json"
 }
 
 @test "hover over model returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550-qrd.dts:21:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550-qrd.dts:22:2" \
         "fixtures/hover_model.rpc.json"
 }
 
 @test "hover over device_type returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:69:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:70:4" \
         "fixtures/hover_device_type.rpc.json"
 }
 
 @test "hover over status returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:870:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:871:4" \
         "fixtures/hover_status.rpc.json"
 }
 
 @test "hover over phandle returns documentation" {
     lsts_hover \
-        "fixtures/hover_phandle.dts:2:1" \
+        "fixtures/hover_phandle.dts:3:2" \
         "fixtures/hover_phandle.rpc.json"
 }
 
 @test "hover over linux,phandle returns documentation" {
     lsts_hover \
-        "fixtures/hover_phandle.dts:3:1" \
+        "fixtures/hover_phandle.dts:4:2" \
         "fixtures/hover_linux_phandle.rpc.json"
 }
 
 @test "hover over label returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2763:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2764:5" \
         "fixtures/hover_label.rpc.json"
 }
 
@@ -87,43 +89,43 @@ teardown() {
 
 @test "hover over reg returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:71:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:72:4" \
         "fixtures/hover_reg.rpc.json"
 }
 
 @test "hover over reg-names returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1967:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1968:4" \
         "fixtures/hover_reg-names.rpc.json"
 }
 
 @test "hover over ranges returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:480:2" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:481:3" \
         "fixtures/hover_ranges.rpc.json"
 }
 
 @test "hover over dma-ranges returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:820:2" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:821:3" \
         "fixtures/hover_dma-ranges.rpc.json"
 }
 
 @test "hover over dma-coherent returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:869:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:870:4" \
         "fixtures/hover_dma-coherent.rpc.json"
 }
 
 @test "hover over #address-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:31:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:32:2" \
         "fixtures/hover_address-cells.rpc.json"
 }
 
 @test "hover over #size-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:32:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:33:2" \
         "fixtures/hover_size-cells.rpc.json"
 }
 
@@ -135,37 +137,37 @@ teardown() {
 
 @test "hover over interrupts returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:401:2" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:402:3" \
         "fixtures/hover_interrupts.rpc.json"
 }
 
 @test "hover over interrupts-extended returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:737:2" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:738:3" \
         "fixtures/hover_interrupts-extended.rpc.json"
 }
 
 @test "hover over interrupt-parent returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:29:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:30:2" \
         "fixtures/hover_interrupt-parent.rpc.json"
 }
 
 @test "hover over #interrupt-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:754:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:755:4" \
         "fixtures/hover_interrupt-cells.rpc.json"
 }
 
 @test "hover over interrupt-controller returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:753:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:754:4" \
         "fixtures/hover_interrupt-controller.rpc.json"
 }
 
 @test "hover over wakeup-source returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/freescale/imx8mn-var-som.dtsi:91:2" \
+        "linux/arch/arm64/boot/dts/freescale/imx8mn-var-som.dtsi:92:3" \
         "fixtures/hover_wakeup-source.rpc.json"
 }
 
@@ -178,37 +180,37 @@ teardown() {
 
 @test "hover over clocks returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:50:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:51:4" \
         "fixtures/hover_clocks.rpc.json"
 }
 
 @test "hover over clock-names returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:877:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:878:4" \
         "fixtures/hover_clock-names.rpc.json"
 }
 
 @test "hover over #clock-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:40:4" \
         "fixtures/hover_clock-cells.rpc.json"
 }
 
 @test "hover over clock-frequency returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3397:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3398:5" \
         "fixtures/hover_clock-frequency.rpc.json"
 }
 
 @test "hover over bus-frequency returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/freescale/fsl-ls1043a.dtsi:670:3" \
+        "linux/arch/arm64/boot/dts/freescale/fsl-ls1043a.dtsi:671:4" \
         "fixtures/hover_bus-frequency.rpc.json"
 }
 
 @test "hover over timebase-frequency returns documentation" {
     lsts_hover \
-        "linux/arch/powerpc/boot/dts/stxssa8555.dts:38:3" \
+        "linux/arch/powerpc/boot/dts/stxssa8555.dts:39:4" \
         "fixtures/hover_timebase-frequency.rpc.json"
 }
 
@@ -219,19 +221,19 @@ teardown() {
 
 @test "hover over resets returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2030:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2031:4" \
         "fixtures/hover_resets.rpc.json"
 }
 
 @test "hover over reset-names returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2031:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:2032:4" \
         "fixtures/hover_reset-names.rpc.json"
 }
 
 @test "hover over #reset-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:829:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:830:4" \
         "fixtures/hover_reset-cells.rpc.json"
 }
 
@@ -243,25 +245,25 @@ teardown() {
 
 @test "hover over gpios returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:43:3" \
+        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:44:4" \
         "fixtures/hover_gpios.rpc.json"
 }
 
 @test "hover over gpio-controller returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3094:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3095:4" \
         "fixtures/hover_gpio-controller.rpc.json"
 }
 
 @test "hover over #gpio-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3095:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3096:4" \
         "fixtures/hover_gpio-cells.rpc.json"
 }
 
 @test "hover over gpio-ranges returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3096:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3097:4" \
         "fixtures/hover_gpio-ranges.rpc.json"
 }
 
@@ -272,19 +274,19 @@ teardown() {
 
 @test "hover over pinctrl-names returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:891:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:892:5" \
         "fixtures/hover_pinctrl-names.rpc.json"
 }
 
 @test "hover over pinctrl-0 returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:892:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:893:5" \
         "fixtures/hover_pinctrl-0.rpc.json"
 }
 
 @test "hover over pinctrl-1 (pattern match) returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3389:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:3390:4" \
         "fixtures/hover_pinctrl-1.rpc.json"
 }
 
@@ -295,19 +297,19 @@ teardown() {
 
 @test "hover over dmas returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:903:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:904:5" \
         "fixtures/hover_dmas.rpc.json"
 }
 
 @test "hover over dma-names returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:905:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:906:5" \
         "fixtures/hover_dma-names.rpc.json"
 }
 
 @test "hover over #dma-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:852:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:853:4" \
         "fixtures/hover_dma-cells.rpc.json"
 }
 
@@ -319,25 +321,25 @@ teardown() {
 
 @test "hover over power-domains returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:75:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:76:4" \
         "fixtures/hover_power-domains.rpc.json"
 }
 
 @test "hover over iommus returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:868:3" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:869:4" \
         "fixtures/hover_iommus.rpc.json"
 }
 
 @test "hover over msi-parent returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/freescale/fsl-ls1043a.dtsi:921:3" \
+        "linux/arch/arm64/boot/dts/freescale/fsl-ls1043a.dtsi:922:4" \
         "fixtures/hover_msi-parent.rpc.json"
 }
 
 @test "hover over #msi-cells returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:5323:4" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:5324:5" \
         "fixtures/hover_msi-cells.rpc.json"
 }
 
@@ -350,31 +352,31 @@ teardown() {
 
 @test "hover over aliases node returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/cavium/thunder-88xx.dts:57:1" \
+        "linux/arch/arm64/boot/dts/cavium/thunder-88xx.dts:58:2" \
         "fixtures/hover_aliases.rpc.json"
 }
 
 @test "hover over chosen node returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:34:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:35:2" \
         "fixtures/hover_chosen.rpc.json"
 }
 
 @test "hover over memory node returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:393:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:394:2" \
         "fixtures/hover_memory.rpc.json"
 }
 
 @test "hover over reserved-memory node returns documentation" {
     lsts_hover \
-        "linux/arch/xtensa/boot/dts/kc705.dts:15:1" \
+        "linux/arch/xtensa/boot/dts/kc705.dts:16:2" \
         "fixtures/hover_reserved-memory.rpc.json"
 }
 
 @test "hover over cpus node returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:64:1" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:65:2" \
         "fixtures/hover_cpus.rpc.json"
 }
 
@@ -389,37 +391,37 @@ teardown() {
 
 @test "hover over stdout-path returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/freescale/imx8mp-venice-gw74xx.dts:32:2" \
+        "linux/arch/arm64/boot/dts/freescale/imx8mp-venice-gw74xx.dts:33:3" \
         "fixtures/hover_stdout-path.rpc.json"
 }
 
 @test "hover over bootargs returns documentation" {
     lsts_hover \
-        "linux/arch/xtensa/boot/dts/csp.dts:10:2" \
+        "linux/arch/xtensa/boot/dts/csp.dts:11:3" \
         "fixtures/hover_bootargs.rpc.json"
 }
 
 @test "hover over initrd-start returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/altera/socfpga_stratix10_swvp.dts:27:2" \
+        "linux/arch/arm64/boot/dts/altera/socfpga_stratix10_swvp.dts:28:3" \
         "fixtures/hover_initrd-start.rpc.json"
 }
 
 @test "hover over initrd-end returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/altera/socfpga_stratix10_swvp.dts:28:2" \
+        "linux/arch/arm64/boot/dts/altera/socfpga_stratix10_swvp.dts:29:3" \
         "fixtures/hover_initrd-end.rpc.json"
 }
 
 @test "hover over kaslr-seed returns documentation" {
     lsts_hover \
-        "fixtures/hover_kaslr.dts:3:2" \
+        "fixtures/hover_kaslr.dts:4:3" \
         "fixtures/hover_kaslr-seed.rpc.json"
 }
 
 @test "hover over unknown token returns null" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:0:0" \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1:1" \
         "fixtures/hover_null.rpc.json"
 }
 

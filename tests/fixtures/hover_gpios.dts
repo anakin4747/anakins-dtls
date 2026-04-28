@@ -1,6 +1,0 @@
-/ {
-	gpios = <&gpio 11 GPIO_ACTIVE_HIGH>;
-	gpio-controller;
-	#gpio-cells = <3>;
-	gpio-ranges = <&pio 0 0 256>;
-};

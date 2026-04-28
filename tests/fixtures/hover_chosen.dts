@@ -1,9 +1,0 @@
-/ {
-	chosen {
-		stdout-path = "serial0:115200n8";
-		bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rootwait";
-		initrd-start = <0x84000000>;
-		initrd-end = <0x84800000>;
-		kaslr-seed = <0xdeadbeef 0xcafebabe>;
-	};
-};
