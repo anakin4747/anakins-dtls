@@ -364,7 +364,7 @@ teardown() {
 
 @test "hover over memory node returns documentation" {
     lsts_hover \
-        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:394:2" \
+        "linux/arch/xtensa/boot/dts/lx60.dts:8:2" \
         "fixtures/hover_memory.rpc.json"
 }
 

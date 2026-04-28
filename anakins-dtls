@@ -1112,7 +1112,7 @@ handle_definition() {
     compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
     if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
         local binding_file file_line
-        binding_file="$(rg -l "$compat_val" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort | head -1)" || true
+        binding_file="$(rg -l "$compat_val" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat_val" | head -1)" || true
         if [[ -n "$binding_file" ]]; then
             file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
             file_line=$(( file_line - 1 ))
@@ -1170,13 +1170,30 @@ handle_definition() {
         [[ $prop_line -lt 0 ]] && prop_line=0
         send_definition "$def_id" "$prop_file" "$prop_line"
         return
-    done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort)
+    done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$node_compat")
 
     send_null "$def_id"
 }
 
 # ---------------------------------------------------------------------------
 # Extract the compatible string of the node enclosing the given line.
+# sort_binding_files_for_compat <compat>
+# Reads file paths from stdin, sorts so files whose path contains
+# a component of the compatible string come first.
+sort_binding_files_for_compat() {
+    local compat="$1"
+    awk -v compat="$compat" '{
+        n = split(compat, parts, /[,\/\.\-]/)
+        score = 9
+        for (i = 1; i <= n; i++) {
+            if (length(parts[i]) > 2 && index($0, parts[i]) > 0) { score = 1; break }
+        }
+        base = $0; gsub(/.*\//, "", base); gsub(/\.yaml$/, "", base)
+        if (base == compat) score = 0
+        print score "\t" $0
+    }' | sort | cut -f2
+}
+
 node_compatible_at() {
     local text="$1" line="$2"
     local above
@@ -1289,7 +1306,7 @@ find_binding_doc() {
             printf '%s' "$doc"
             return 0
         fi
-    done < <(rg -l "$compatible" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort)
+    done < <(rg -l "$compatible" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort_binding_files_for_compat "$compatible")
     return 0
 }
 
@@ -1625,7 +1642,7 @@ check_binding_diagnostics() {
     while IFS=$'\t' read -r _l compat _rest; do
         [[ -z "$compat" || -n "${compat_binding_cache[$compat]+x}" ]] && continue
         local bf
-        bf=$(rg -l "$compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort | head -1)
+        bf=$(rg -l "$compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat" | head -1)
         compat_binding_cache["$compat"]="${bf:-}"
     done <<< "$nodes"
 
