@@ -10,8 +10,16 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        anakins-dtls = pkgs.writeShellApplication {
+          name = "anakins-dtls";
+          runtimeInputs = with pkgs; [ bash jq ];
+          text = builtins.readFile ./anakins-dtls;
+        };
       in
       {
+        packages.default = anakins-dtls;
+
         devShells.default = pkgs.mkShell {
           name = "anakins-dtls";
 
@@ -20,11 +28,8 @@
             bats
             jq
             shellcheck
+            anakins-dtls
           ];
-
-          shellHook = ''
-            export PATH="$PWD:$PATH"
-          '';
         };
       });
 }
