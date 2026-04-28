@@ -21,6 +21,10 @@
             jq
             shellcheck
           ];
+
+          shellHook = ''
+            export PATH="$PWD:$PATH"
+          '';
         };
       });
 }
