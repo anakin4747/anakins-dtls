@@ -954,6 +954,7 @@ A 64-bit value used to seed the kernel address space layout randomization (KASLR
 # Global variables set during initialize
 BINDINGS_DIR=""
 SPEC_DIR=""
+LINUX_DIR=""
 INCLUDE_DIRS=()
 
 # ---------------------------------------------------------------------------
@@ -1341,6 +1342,32 @@ find_compatible_value_hover() {
     printf '## %s\n\n**Binding:** `%s`\n\n%s' "$compat_val" "$rel_path" "$desc"
 }
 
+# Search Linux kernel Documentation .txt binding files for a property.
+find_doc_in_txt_bindings() {
+    local prop="$1" linux_dir="$2"
+    local doc_dir="$linux_dir/Documentation/devicetree"
+    [[ -d "$doc_dir" ]] || return 1
+    local txt_file
+    txt_file="$(rg -l "^[[:space:]]*-[[:space:]]+${prop}[[:space:]]*:|^${prop}[[:space:]]+(is|are|property|specifies|contains|should|optional|required|phandle)" "$doc_dir" --glob '*.txt' 2>/dev/null | sort | head -1)"
+    [[ -z "$txt_file" ]] && return 1
+    awk -v prop="$prop" '
+        $0 ~ "^[[:space:]]*-[[:space:]]"prop"[[:space:]]*:|^"prop"[[:space:]]+(is|are|property|specifies|contains|should|optional|required|phandle)" { found=NR }
+        found && NR >= found-1 && NR <= found+15 { print }
+        found && NR > found+5 && /^$/ { exit }
+    ' "$txt_file"
+}
+
+# Search Linux kernel Documentation for any mention of a DT property.
+find_linux_doc_for_prop() {
+    local prop="$1" linux_dir="$2"
+    [[ -n "$linux_dir" ]] || return 1
+    [[ "$prop" =~ ^[a-zA-Z#][a-zA-Z0-9#_,-]*$ ]] || return 1
+    local result
+    result="$(find_doc_in_txt_bindings "$prop" "$linux_dir")"
+    [[ -n "$result" ]] && { printf '%s' "$result"; return 0; }
+    return 1
+}
+
 handle_hover() {
     local id="$1" text="$2" line="$3" character="$4"
     local word standard_doc compat binding_doc
@@ -1460,7 +1487,13 @@ $binding_doc"
         if [[ -n "$macro_doc" ]]; then
             send_hover "$id" "$macro_doc"
         else
-            send_null "$id"
+            local linux_doc
+            linux_doc="$(find_linux_doc_for_prop "$word" "$LINUX_DIR")" || linux_doc=""
+            if [[ -n "$linux_doc" ]]; then
+                send_hover "$id" "## ${word}\n\n**Source:** Linux kernel Documentation\n\n\`\`\`\n${linux_doc}\n\`\`\`"
+            else
+                send_null "$id"
+            fi
         fi
     fi
 }
@@ -1764,6 +1797,11 @@ while recv; do
                 SPEC_DIR="${root_path}/tests/devicetree-specification/source"
             else
                 SPEC_DIR="${root_path}/devicetree-specification/source"
+            fi
+            if [[ -d "${root_path}/tests/linux" ]]; then
+                LINUX_DIR="${root_path}/tests/linux"
+            elif [[ -d "${root_path}/linux" ]]; then
+                LINUX_DIR="${root_path}/linux"
             fi
             INCLUDE_DIRS=()
             for _idir in \
