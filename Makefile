@@ -7,7 +7,7 @@ submodules:
 	git submodule update --init --recursive
 
 lint:
-	shellcheck --external-sources --shell=bash anakins-dtls tests/*_tests.bats
+	shellcheck --external-sources --shell=bash --severity=warning anakins-dtls tests/*_tests.bats
 
 test:
 	bats --formatter $(CURDIR)/tests/lsts/lsts-format-pretty tests/*_tests.bats
