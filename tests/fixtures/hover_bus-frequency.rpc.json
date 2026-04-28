@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## bus-frequency\n\nSpecifies the frequency, in Hz, of a bus clock.\n\n```dts\n/* arch/powerpc/boot/dts/fsl/mpc8544ds.dts */\nbus-frequency = <0>;\n```"}}}

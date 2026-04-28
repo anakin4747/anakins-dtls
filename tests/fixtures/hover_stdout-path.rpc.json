@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## stdout-path\n\nA string specifying the device to use for boot console output. May include baud/parity options separated by a colon.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */\nchosen {\n    stdout-path = \"serial0:115200n8\";\n};\n```"}}}

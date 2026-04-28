@@ -1,7 +1,10 @@
-.PHONY: all test lint
+.PHONY: all test lint submodules
 
-all:
+all: submodules
 	nix --extra-experimental-features 'nix-command flakes' develop --command make test lint
+
+submodules:
+	git submodule update --init --recursive
 
 lint:
 	shellcheck --external-sources --shell=bash anakins-dtls tests/*_tests.bats

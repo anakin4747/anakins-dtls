@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## status\n\nIndicates the operational status of a device. Valid values are `\"okay\"`, `\"disabled\"`, `\"reserved\"`, `\"fail\"`, and `\"fail-sss\"`.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\nuart0: serial@a84000 {\n    compatible = \"qcom,geni-uart\";\n    status = \"disabled\";\n};\n```"}}}

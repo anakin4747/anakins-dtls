@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## aliases\n\nThe `/aliases` node defines aliases for other device tree nodes. Each property maps a short alias string to a full node path.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */\naliases {\n    serial0 = &uart7;\n    serial1 = &uart14;\n};\n```"}}}

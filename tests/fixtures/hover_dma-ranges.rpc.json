@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## dma-ranges\n\nDefines the mapping between DMA-capable child bus addresses and parent bus addresses. Similar format to `ranges`.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\npcie0: pci@1c00000 {\n    dma-ranges = <0x02000000 0x0 0x00000000 0x0 0x00000000 0x10 0x00000000>;\n};\n```"}}}

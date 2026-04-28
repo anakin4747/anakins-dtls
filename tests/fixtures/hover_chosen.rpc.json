@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## chosen\n\nThe `/chosen` node specifies runtime parameters chosen or specified by the system firmware. It does not represent a real device.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550-qrd.dts */\nchosen {\n    stdout-path = \"serial0:115200n8\";\n};\n```"}}}

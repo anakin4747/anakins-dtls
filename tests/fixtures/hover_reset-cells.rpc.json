@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## #reset-cells\n\nSpecifies the number of cells in a reset specifier. Used by reset controller nodes.\n\n```dts\n/* arch/arm64/boot/dts/qcom/sm8550.dtsi */\ngcc: clock-controller@100000 {\n    compatible = \"qcom,sm8550-gcc\";\n    #reset-cells = <1>;\n};\n```"}}}
