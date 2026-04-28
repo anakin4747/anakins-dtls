@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## interrupt-names\n\n**From binding** (\\`qcom,sa8255p-geni-uart\\`):\n\nThe UART interrupt and optionally the RX in-band wakeup interrupt\nas not all UART instances have a wakeup-capable interrupt routed\nvia the PDC."}}}

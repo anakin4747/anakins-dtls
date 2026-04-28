@@ -419,6 +419,12 @@ teardown() {
         "fixtures/hover_kaslr-seed.rpc.json"
 }
 
+@test "hover over binding-only property returns binding description" {
+    lsts_hover \
+        "fixtures/hover_binding_interrupt_names.dts:9:3" \
+        "fixtures/hover_binding_interrupt_names.rpc.json"
+}
+
 @test "hover over unknown token returns null" {
     lsts_hover \
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1:1" \

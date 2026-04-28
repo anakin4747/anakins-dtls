@@ -1022,72 +1022,155 @@ chosen {
 # Hover dispatch
 # ---------------------------------------------------------------------------
 
+# Global variable set during initialize
+BINDINGS_DIR=""
+
+# Extract the compatible string of the node enclosing the given line.
+node_compatible_at() {
+    local text="$1" line="$2"
+    local above
+    above="$(printf '%s' "$text" | head -n "$((line + 1))")" || true
+    printf '%s' "$above" | grep -o 'compatible = "[^"]*"' | tail -1 | grep -o '"[^"]*"' | head -1 | tr -d '"'  || true
+}
+
+# Given a compatible string, a property name, and the bindings directory,
+# return the property description from the matching binding YAML file.
+find_binding_doc() {
+    local compatible="$1" prop="$2" bindings_dir="$3"
+    [[ -d "$bindings_dir" ]] || return 0
+    [[ -n "$compatible" ]] || return 0
+    [[ -n "$prop" ]] || return 0
+
+    local file desc
+    while IFS= read -r file; do
+        desc="$(awk -v prop="$prop" '
+            /^properties:/ { in_props=1; next }
+            in_props && /^[^ ]/ && !/^  / { in_props=0 }
+            in_props && match($0, "^  " prop ":") { in_prop=1; next }
+            in_prop {
+                if (match($0, "^  [^ ]")) { in_prop=0; next }
+                if (match($0, "^    description:")) {
+                    in_desc=1
+                    sub(/^    description:[[:space:]]*[|>]?[[:space:]]*/, "", $0)
+                    if (length($0) > 0) desc=$0
+                    next
+                }
+                if (in_desc) {
+                    if (match($0, "^      ")) {
+                        sub(/^      /, "", $0)
+                        if (length(desc) > 0) desc=desc "\n" $0
+                        else desc=$0
+                    } else {
+                        in_desc=0
+                    }
+                }
+            }
+            END { print desc }
+        ' "$file" | sed '/^[[:space:]]*$/d' | head -20)"
+        if [[ -n "$desc" ]]; then
+            printf '%s' "$desc"
+            return 0
+        fi
+    done < <(grep -rl "$compatible" "$bindings_dir" 2>/dev/null)
+    return 0
+}
+
 handle_hover() {
     local id="$1" text="$2" line="$3" character="$4"
-    local word
+    local word standard_doc compat binding_doc
     word="$(word_at "$text" "$line" "$character")"
+    standard_doc=""
 
     case "$word" in
-        compatible)              send_hover "$id" "$COMPATIBLE_DOC" ;;
-        model)                   send_hover "$id" "$MODEL_DOC" ;;
-        device_type)             send_hover "$id" "$DEVICE_TYPE_DOC" ;;
-        status)                  send_hover "$id" "$STATUS_DOC" ;;
-        phandle)                 send_hover "$id" "$PHANDLE_DOC" ;;
-        linux,phandle)           send_hover "$id" "$LINUX_PHANDLE_DOC" ;;
-        label)                   send_hover "$id" "$LABEL_DOC" ;;
-        reg)                     send_hover "$id" "$REG_DOC" ;;
-        reg-names)               send_hover "$id" "$REG_NAMES_DOC" ;;
-        ranges)                  send_hover "$id" "$RANGES_DOC" ;;
-        dma-ranges)              send_hover "$id" "$DMA_RANGES_DOC" ;;
-        dma-coherent)            send_hover "$id" "$DMA_COHERENT_DOC" ;;
-        '#address-cells')        send_hover "$id" "$ADDRESS_CELLS_DOC" ;;
-        '#size-cells')           send_hover "$id" "$SIZE_CELLS_DOC" ;;
-        interrupts)              send_hover "$id" "$INTERRUPTS_DOC" ;;
-        interrupts-extended)     send_hover "$id" "$INTERRUPTS_EXTENDED_DOC" ;;
-        interrupt-parent)        send_hover "$id" "$INTERRUPT_PARENT_DOC" ;;
-        '#interrupt-cells')      send_hover "$id" "$INTERRUPT_CELLS_DOC" ;;
-        interrupt-controller)    send_hover "$id" "$INTERRUPT_CONTROLLER_DOC" ;;
-        wakeup-source)           send_hover "$id" "$WAKEUP_SOURCE_DOC" ;;
-        clocks)                  send_hover "$id" "$CLOCKS_DOC" ;;
-        clock-names)             send_hover "$id" "$CLOCK_NAMES_DOC" ;;
-        '#clock-cells')          send_hover "$id" "$CLOCK_CELLS_DOC" ;;
-        clock-frequency)         send_hover "$id" "$CLOCK_FREQUENCY_DOC" ;;
-        bus-frequency)           send_hover "$id" "$BUS_FREQUENCY_DOC" ;;
-        timebase-frequency)      send_hover "$id" "$TIMEBASE_FREQUENCY_DOC" ;;
-        resets)                  send_hover "$id" "$RESETS_DOC" ;;
-        reset-names)             send_hover "$id" "$RESET_NAMES_DOC" ;;
-        '#reset-cells')          send_hover "$id" "$RESET_CELLS_DOC" ;;
-        gpios)                   send_hover "$id" "$GPIOS_DOC" ;;
-        gpio-controller)         send_hover "$id" "$GPIO_CONTROLLER_DOC" ;;
-        '#gpio-cells')           send_hover "$id" "$GPIO_CELLS_DOC" ;;
-        gpio-ranges)             send_hover "$id" "$GPIO_RANGES_DOC" ;;
-        pinctrl-names)           send_hover "$id" "$PINCTRL_NAMES_DOC" ;;
-        dmas)                    send_hover "$id" "$DMAS_DOC" ;;
-        dma-names)               send_hover "$id" "$DMA_NAMES_DOC" ;;
-        '#dma-cells')            send_hover "$id" "$DMA_CELLS_DOC" ;;
-        power-domains)           send_hover "$id" "$POWER_DOMAINS_DOC" ;;
-        iommus)                  send_hover "$id" "$IOMMUS_DOC" ;;
-        msi-parent)              send_hover "$id" "$MSI_PARENT_DOC" ;;
-        '#msi-cells')            send_hover "$id" "$MSI_CELLS_DOC" ;;
-        aliases)                 send_hover "$id" "$ALIASES_DOC" ;;
-        chosen)                  send_hover "$id" "$CHOSEN_DOC" ;;
-        memory)                  send_hover "$id" "$MEMORY_DOC" ;;
-        reserved-memory)         send_hover "$id" "$RESERVED_MEMORY_DOC" ;;
-        cpus)                    send_hover "$id" "$CPUS_DOC" ;;
-        stdout-path)             send_hover "$id" "$STDOUT_PATH_DOC" ;;
-        bootargs)                send_hover "$id" "$BOOTARGS_DOC" ;;
-        initrd-start|'linux,initrd-start') send_hover "$id" "$INITRD_START_DOC" ;;
-        initrd-end|'linux,initrd-end')     send_hover "$id" "$INITRD_END_DOC" ;;
-        kaslr-seed)              send_hover "$id" "$KASLR_SEED_DOC" ;;
+        compatible)              standard_doc="$COMPATIBLE_DOC" ;;
+        model)                   standard_doc="$MODEL_DOC" ;;
+        device_type)             standard_doc="$DEVICE_TYPE_DOC" ;;
+        status)                  standard_doc="$STATUS_DOC" ;;
+        phandle)                 standard_doc="$PHANDLE_DOC" ;;
+        linux,phandle)           standard_doc="$LINUX_PHANDLE_DOC" ;;
+        label)                   standard_doc="$LABEL_DOC" ;;
+        reg)                     standard_doc="$REG_DOC" ;;
+        reg-names)               standard_doc="$REG_NAMES_DOC" ;;
+        ranges)                  standard_doc="$RANGES_DOC" ;;
+        dma-ranges)              standard_doc="$DMA_RANGES_DOC" ;;
+        dma-coherent)            standard_doc="$DMA_COHERENT_DOC" ;;
+        '#address-cells')        standard_doc="$ADDRESS_CELLS_DOC" ;;
+        '#size-cells')           standard_doc="$SIZE_CELLS_DOC" ;;
+        interrupts)              standard_doc="$INTERRUPTS_DOC" ;;
+        interrupts-extended)     standard_doc="$INTERRUPTS_EXTENDED_DOC" ;;
+        interrupt-parent)        standard_doc="$INTERRUPT_PARENT_DOC" ;;
+        '#interrupt-cells')      standard_doc="$INTERRUPT_CELLS_DOC" ;;
+        interrupt-controller)    standard_doc="$INTERRUPT_CONTROLLER_DOC" ;;
+        wakeup-source)           standard_doc="$WAKEUP_SOURCE_DOC" ;;
+        clocks)                  standard_doc="$CLOCKS_DOC" ;;
+        clock-names)             standard_doc="$CLOCK_NAMES_DOC" ;;
+        '#clock-cells')          standard_doc="$CLOCK_CELLS_DOC" ;;
+        clock-frequency)         standard_doc="$CLOCK_FREQUENCY_DOC" ;;
+        bus-frequency)           standard_doc="$BUS_FREQUENCY_DOC" ;;
+        timebase-frequency)      standard_doc="$TIMEBASE_FREQUENCY_DOC" ;;
+        resets)                  standard_doc="$RESETS_DOC" ;;
+        reset-names)             standard_doc="$RESET_NAMES_DOC" ;;
+        '#reset-cells')          standard_doc="$RESET_CELLS_DOC" ;;
+        gpios)                   standard_doc="$GPIOS_DOC" ;;
+        gpio-controller)         standard_doc="$GPIO_CONTROLLER_DOC" ;;
+        '#gpio-cells')           standard_doc="$GPIO_CELLS_DOC" ;;
+        gpio-ranges)             standard_doc="$GPIO_RANGES_DOC" ;;
+        pinctrl-names)           standard_doc="$PINCTRL_NAMES_DOC" ;;
+        dmas)                    standard_doc="$DMAS_DOC" ;;
+        dma-names)               standard_doc="$DMA_NAMES_DOC" ;;
+        '#dma-cells')            standard_doc="$DMA_CELLS_DOC" ;;
+        power-domains)           standard_doc="$POWER_DOMAINS_DOC" ;;
+        iommus)                  standard_doc="$IOMMUS_DOC" ;;
+        msi-parent)              standard_doc="$MSI_PARENT_DOC" ;;
+        '#msi-cells')            standard_doc="$MSI_CELLS_DOC" ;;
+        aliases)                 standard_doc="$ALIASES_DOC" ;;
+        chosen)                  standard_doc="$CHOSEN_DOC" ;;
+        memory)                  standard_doc="$MEMORY_DOC" ;;
+        reserved-memory)         standard_doc="$RESERVED_MEMORY_DOC" ;;
+        cpus)                    standard_doc="$CPUS_DOC" ;;
+        stdout-path)             standard_doc="$STDOUT_PATH_DOC" ;;
+        bootargs)                standard_doc="$BOOTARGS_DOC" ;;
+        initrd-start|'linux,initrd-start') standard_doc="$INITRD_START_DOC" ;;
+        initrd-end|'linux,initrd-end')     standard_doc="$INITRD_END_DOC" ;;
+        kaslr-seed)              standard_doc="$KASLR_SEED_DOC" ;;
         *)
             # pinctrl-N pattern
             if [[ "$word" =~ ^pinctrl-[0-9]+$ ]]; then
-                send_hover "$id" "$PINCTRL_0_DOC"
-            else
-                send_null "$id"
+                standard_doc="$PINCTRL_0_DOC"
             fi
             ;;
     esac
+
+    # Binding-aware augmentation
+    compat="$(node_compatible_at "$text" "$line")" || compat=""
+    if [[ -n "$compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
+        binding_doc="$(find_binding_doc "$compat" "$word" "$BINDINGS_DIR")"
+    else
+        binding_doc=""
+    fi
+
+    BT=$'\`'
+    if [[ -n "$binding_doc" ]]; then
+        if [[ -n "$standard_doc" ]]; then
+            send_hover "$id" "$standard_doc
+
+---
+
+**From binding** ($BT$compat$BT):
+
+$binding_doc"
+        else
+            send_hover "$id" "## $word
+
+**From binding** ($BT$compat$BT):
+
+$binding_doc"
+        fi
+    elif [[ -n "$standard_doc" ]]; then
+        send_hover "$id" "$standard_doc"
+    else
+        send_null "$id"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -1126,6 +1209,15 @@ while recv; do
 
     case "$method" in
         initialize)
+            root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
+            root_path="${root_uri#file://}"
+            if [[ -d "${root_path}/tests/linux/Documentation/devicetree/bindings" ]]; then
+                BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+            elif [[ -d "${root_path}/linux/Documentation/devicetree/bindings" ]]; then
+                BINDINGS_DIR="${root_path}/linux/Documentation/devicetree/bindings"
+            else
+                BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+            fi
             send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1}}}}"
             ;;
         initialized)
