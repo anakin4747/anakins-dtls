@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Pre-commit hook: reject lsts_hover/definition/diagnostics calls without a fixture file
 
-set -euo pipefail
+set -uo pipefail  # no -e so grep non-match doesn't abort
 
-violations=$(git diff --cached --name-only | grep '_tests.bats$' | while read -r f; do
+violations=$(git diff --cached --name-only | grep '_tests.bats$' || true)
+[[ -z "$violations" ]] && exit 0
+
+bad=$(echo "$violations" | while read -r f; do
     awk '
     /lsts_hover[[:space:]]*\\|lsts_definition[[:space:]]*\\|lsts_diagnostics[[:space:]]/ {
         call_line = NR
@@ -22,8 +25,8 @@ violations=$(git diff --cached --name-only | grep '_tests.bats$' | while read -r
     ' "$f"
 done)
 
-if [[ -n "$violations" ]]; then
+if [[ -n "$bad" ]]; then
     echo "ERROR: snapshot mode detected — all lsts_hover/definition/diagnostics calls must have a fixture file:" >&2
-    echo "$violations" >&2
+    echo "$bad" >&2
     exit 1
 fi
