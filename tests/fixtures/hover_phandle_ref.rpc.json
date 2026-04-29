@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## cdns,xtensa-pic\n\n**Binding:** `interrupt-controller/cdns,xtensa-pic.yaml`\n\nXtensa Interrupt Distributor and Programmable Interrupt Controller (MX) and\nXtensa built-in Programmable Interrupt Controller (PIC)"}}}
