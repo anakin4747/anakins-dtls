@@ -528,6 +528,19 @@ teardown() {
 }
 
 # ---------------------------------------------------------------------------
+# go-to-definition: phandle reference → label definition
+# Source: arch/xtensa/boot/dts/xtfpga.dtsi line 6 col 22
+#   interrupt-parent = <&pic>;  cursor on &pic
+#   pic: is defined at line 27 (0-indexed: 26)
+# ---------------------------------------------------------------------------
+
+@test "definition on phandle reference navigates to label" {
+    lsts_definition \
+        "linux/arch/xtensa/boot/dts/xtfpga.dtsi:6:23" \
+        "fixtures/definition_phandle_ref.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
 # Hover: CPP macros
 # Real source: arch/arm64/boot/dts/qcom/sm8550.dtsi line 845 col 18
 #   interrupts = <GIC_SPI 229 ...>  cursor on GIC_SPI
@@ -769,5 +782,21 @@ teardown() {
     echo "$LSTS_RESPONSE" | jq -e '
         .params.diagnostics |
         any(.severity == 2 and (.message | test("compatible string"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Hover: phandle reference → shows referenced node's compatible binding docs
+# Source: arch/xtensa/boot/dts/xtfpga.dtsi line 6 col 23 (1-based)
+#   interrupt-parent = <&pic>;  cursor on &pic
+#   pic: has compatible = "cdns,xtensa-pic"
+# ---------------------------------------------------------------------------
+
+@test "hover over phandle reference shows referenced node compatible docs" {
+    lsts_hover \
+        "linux/arch/xtensa/boot/dts/xtfpga.dtsi:6:23" \
+        "fixtures/hover_phandle_ref.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result.contents.value | test("xtensa"; "i")
     '
 }

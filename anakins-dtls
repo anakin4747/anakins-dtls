@@ -1097,6 +1097,38 @@ _find_prop_in_binding() {
     return 0
 }
 
+# phandle_ref_at <text> <line> <character>
+# If cursor is on a &label reference, return the label name.
+phandle_ref_at() {
+    local text="$1" line="$2" character="$3"
+    local line_text
+    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+    # Extract all &word tokens and their positions, find the one spanning cursor
+    printf '%s' "$line_text" | awk -v cursor="$character" '
+        {
+            pos = 0
+            while (match(substr($0, pos+1), /&[A-Za-z_][A-Za-z0-9_]*/) ) {
+                start = pos + RSTART - 1
+                token = substr($0, pos + RSTART, RLENGTH)
+                end = start + RLENGTH
+                if (cursor >= start && cursor < end) {
+                    sub(/^&/, "", token)
+                    print token
+                    exit
+                }
+                pos = pos + RSTART + RLENGTH - 1
+            }
+        }
+    '
+}
+
+# find_label_line <text> <label>
+# Return the 1-indexed line number of "label:" definition in text.
+find_label_line() {
+    local text="$1" label="$2"
+    printf '%s' "$text" | grep -n "^[[:space:]]*${label}:" | head -1 | cut -d: -f1
+}
+
 handle_definition() {
     local body="$1"
     local def_uri def_line def_char def_id def_text
@@ -1107,6 +1139,20 @@ handle_definition() {
     def_text="${DOC_TEXT[$def_uri]:-}"
 
     [[ -z "$def_text" ]] && { send_null "$def_id"; return; }
+
+    # 0. Check if cursor is on a phandle reference (&label)
+    local phandle_label
+    phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")"
+    if [[ -n "$phandle_label" ]]; then
+        local label_line
+        label_line="$(find_label_line "$def_text" "$phandle_label")"
+        if [[ -n "$label_line" ]]; then
+            label_line=$(( label_line - 1 ))
+            local def_path="${def_uri#file://}"
+            send_definition "$def_id" "$def_path" "$label_line"
+            return
+        fi
+    fi
 
     # 1. Check if cursor is on a compatible value string
     local compat_val
@@ -1352,8 +1398,8 @@ find_doc_in_txt_bindings() {
     [[ -z "$txt_file" ]] && return 1
     awk -v prop="$prop" '
         $0 ~ "^[[:space:]]*-[[:space:]]"prop"[[:space:]]*:|^"prop"[[:space:]]+(is|are|property|specifies|contains|should|optional|required|phandle)" { found=NR }
-        found && NR >= found-1 && NR <= found+15 { print }
-        found && NR > found+5 && /^$/ { exit }
+        found && NR > found && /^[[:space:]]*-[[:space:]][a-zA-Z#]/ { exit }
+        found && NR >= found && NR <= found+10 { print }
     ' "$txt_file"
 }
 
@@ -1442,6 +1488,25 @@ handle_hover() {
         if [[ -n "$compat_hover" ]]; then
             send_hover "$id" "$compat_hover"
             return
+        fi
+    fi
+
+    # Check if cursor is on a phandle reference (&label)
+    if [[ -n "$BINDINGS_DIR" ]]; then
+        local phandle_lbl phandle_lbl_line phandle_compat phandle_hover
+        phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")"
+        if [[ -n "$phandle_lbl" ]]; then
+            phandle_lbl_line="$(find_label_line "$text" "$phandle_lbl")"
+            if [[ -n "$phandle_lbl_line" ]]; then
+                phandle_compat="$(node_compatible_at "$text" "$phandle_lbl_line")"
+                if [[ -n "$phandle_compat" ]]; then
+                    phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")"
+                    if [[ -n "$phandle_hover" ]]; then
+                        send_hover "$id" "$phandle_hover"
+                        return
+                    fi
+                fi
+            fi
         fi
     fi
 
