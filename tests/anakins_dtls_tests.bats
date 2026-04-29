@@ -855,3 +855,23 @@ teardown() {
         .result | map(.uri) | any(test("\\.dts|\\.dtsi"; "i"))
     '
 }
+
+# ---------------------------------------------------------------------------
+# Completion
+# ---------------------------------------------------------------------------
+
+@test "completion in a node offers standard DT properties" {
+    lsts_completion \
+        "fixtures/completion_uart.dts:7:3"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result.items | map(.label) | (contains(["compatible"]) and contains(["reg"]))
+    '
+}
+
+@test "completion in a node with compatible offers binding properties" {
+    lsts_completion \
+        "fixtures/completion_uart.dts:7:3"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result.items | map(.label) | (contains(["clocks"]) and contains(["clock-names"]))
+    '
+}

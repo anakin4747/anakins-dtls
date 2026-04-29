@@ -2105,6 +2105,67 @@ handle_references() {
     send "$(jq -n --argjson id "$id" --argjson refs "$json_array" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
 }
 
+
+handle_completion() {
+    local body="$1"
+    local uri line character id text
+    uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    line=$(printf '%s' "$body" | jq -r '.params.position.line')
+    character=$(printf '%s' "$body" | jq -r '.params.position.character')
+    id=$(printf '%s' "$body" | jq -r '.id')
+    text="${DOC_TEXT[$uri]:-}"
+
+    local items=() prop
+
+    local std_props=(compatible reg status model device_type phandle
+        "#address-cells" "#size-cells" ranges dma-ranges
+        interrupts interrupt-parent "#interrupt-cells" interrupt-controller
+        clocks clock-names "#clock-cells"
+        resets reset-names "#reset-cells"
+        gpios gpio-controller "#gpio-cells" gpio-ranges
+        pinctrl-0 pinctrl-names
+        dmas dma-names "#dma-cells"
+        power-domains iommus
+        reg-names label wakeup-source
+        stdout-path bootargs)
+
+    for prop in "${std_props[@]}"; do
+        items+=("$(jq -n --arg l "$prop" '{"label":$l,"kind":10,"detail":"Standard DT property"}')")
+    done
+
+    if [[ -n "${BINDINGS_DIR:-}" ]]; then
+        local compat=""
+        compat="$(node_compatible_at "$text" "$line")" || compat=""
+        if [[ -z "$compat" ]]; then
+            compat="$(printf '%s' "$text" | grep -oP 'compatible\s*=\s*"\K[^"]+' | head -1)" || compat=""
+        fi
+        if [[ -n "$compat" ]]; then
+            local binding_file=""
+            binding_file="$(rg -l "$compat" --glob='*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat" | head -1)" || binding_file=""
+            if [[ -n "$binding_file" ]]; then
+                local bname
+                bname="$(basename "$binding_file")"
+                while IFS= read -r prop; do
+                    [[ -z "$prop" ]] && continue
+                    items+=("$(jq -n --arg l "$prop" --arg d "From binding: $bname" '{"label":$l,"kind":10,"detail":$d}')")
+                done < <(_get_binding_props "$binding_file")
+            fi
+        fi
+    fi
+
+    local items_json first i
+    first=1
+    items_json="["
+    for i in "${items[@]:-}"; do
+        [[ -z "$i" ]] && continue
+        [[ $first -eq 0 ]] && items_json="${items_json},"
+        items_json="${items_json}${i}"
+        first=0
+    done
+    items_json="${items_json}]"
+    send "$(jq -n --argjson id "$id" --argjson items "$items_json" '{"jsonrpc":"2.0","id":$id,"result":{"isIncomplete":false,"items":$items}}')"
+}
+
 declare -A DOC_TEXT
 
 # Kill all background jobs when the server exits.
@@ -2174,6 +2235,9 @@ while recv; do
             ;;
         textDocument/references)
             handle_references "$BODY"
+            ;;
+        textDocument/completion)
+            handle_completion "$BODY"
             ;;
         exit)
             exit 0
