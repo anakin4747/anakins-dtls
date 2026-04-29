@@ -1367,7 +1367,7 @@ find_compatible_value_hover() {
     # Try patterns from most-specific to least-specific to find the canonical binding
     local binding_file
     # 1. const: <compat> (exact const match)
-    binding_file="$(rg -l "^        const: ${compat_val}$|^          const: ${compat_val}$" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort | head -1)" || true
+    binding_file="$(rg -l "^[[:space:]]+const: ${compat_val}$" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort_binding_files_for_compat "$compat_val" | head -1)" || true
     # 2. enum entry: "- <compat>" (exact enum entry)
     if [[ -z "$binding_file" ]]; then
         binding_file="$(rg -l "^      - ${compat_val}$" --glob '*.yaml' "$bindings_dir" 2>/dev/null | sort | head -1)" || true
