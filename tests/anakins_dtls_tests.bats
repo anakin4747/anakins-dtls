@@ -680,3 +680,94 @@ teardown() {
 
     printf '%s' "$LSTS_RESPONSE" | jq -e '.params.diagnostics | length == 0'
 }
+
+# ---------------------------------------------------------------------------
+# Diagnostics: duplicate property in same node
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports duplicate property in node" {
+    lsts_diagnostics "fixtures/diag_duplicate_prop.dts" \
+        "fixtures/diag_duplicate_prop.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("Duplicate property"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: invalid status value
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports invalid status value" {
+    lsts_diagnostics "fixtures/diag_invalid_status.dts" \
+        "fixtures/diag_invalid_status.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 1 and (.message | test("Invalid status value"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: reg cell count mismatch
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports reg cell count mismatch" {
+    lsts_diagnostics "fixtures/diag_reg_cells.dts" \
+        "fixtures/diag_reg_cells.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("reg cell count"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: deprecated linux,phandle
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports deprecated linux,phandle" {
+    lsts_diagnostics "fixtures/diag_linux_phandle.dts" \
+        "fixtures/diag_linux_phandle.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 4 and (.message | test("linux,phandle is deprecated"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: node unit-address mismatch
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports node unit-address mismatch" {
+    lsts_diagnostics "fixtures/diag_unit_addr.dts" \
+        "fixtures/diag_unit_addr.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("unit-address"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: duplicate node label
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports duplicate node label" {
+    lsts_diagnostics "fixtures/diag_duplicate_label.dts" \
+        "fixtures/diag_duplicate_label.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("Duplicate node label"; "i")))
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: compatible format
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports invalid compatible format" {
+    lsts_diagnostics "fixtures/diag_compat_format.dts" \
+        "fixtures/diag_compat_format.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("compatible string"; "i")))
+    '
+}

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_unit_addr.dts","diagnostics":[{"range":{"start":{"line":8,"character":0},"end":{"line":8,"character":100}},"severity":2,"message":"Node unit-address (0x1234) does not match first reg value (0x5678)"}]}}

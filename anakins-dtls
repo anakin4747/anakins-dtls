@@ -1532,7 +1532,7 @@ collect_diagnostics() {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
         }
-        BEGIN { angle = 0; depth = 0; nd = 0 }
+        BEGIN { angle = 0; depth = 0; nd = 0; Q = "\x27" }
         {
             lineno = NR - 1
             line = $0
@@ -1557,13 +1557,128 @@ collect_diagnostics() {
             if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
                 diags[nd++] = make(lineno, 1, "Missing semicolon: expected }; not }")
 
+            # --- depth tracking and per-node state ---
+            # Detect unit-address BEFORE brace loop so node_unit_addr is set correctly
+            if (line ~ /[A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+)[[:space:]]*\{/) {
+                if (match(line, /@([0-9a-fA-F]+)[[:space:]]*\{/, arr))
+                    pending_unit_addr = arr[1]
+                else if (match(line, /@([0-9a-fA-F]+)/, arr))
+                    pending_unit_addr = arr[1]
+            } else if (line ~ /[A-Za-z_][A-Za-z0-9_,-]*:[[:space:]]*[A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+)/) {
+                if (match(line, /@([0-9a-fA-F]+)/, arr))
+                    pending_unit_addr = arr[1]
+            } else {
+                pending_unit_addr = ""
+            }
+
+            prev_depth = depth
             l = line
             while (match(l, /[{}]/)) {
                 c = substr(l, RSTART, 1)
                 l = substr(l, RSTART + 1)
-                if (c == "{") { depth++; last_open = lineno }
-                else if (depth > 0) depth--
-                else diags[nd++] = make(lineno, 1, "Unbalanced brace: unexpected }")
+                if (c == "{") {
+                    depth++
+                    last_open = lineno
+                    # Inherit parent address-cells/size-cells for child reg validation
+                    child_addr_cells[depth] = addr_cells[depth - 1]
+                    child_size_cells[depth] = size_cells[depth - 1]
+                    # Reset per-node property tracking for new depth
+                    delete prop_seen[depth]
+                    node_has_linux_phandle[depth] = 0
+                    node_has_phandle[depth] = 0
+                    # Save node unit-address for this depth
+                    node_unit_addr[depth] = pending_unit_addr
+                    pending_unit_addr = ""
+                } else if (depth > 0) {
+                    # Leaving a node: check linux,phandle without phandle
+                    if (node_has_linux_phandle[depth] && !node_has_phandle[depth])
+                        diags[nd++] = make(linux_phandle_line[depth], 4, "linux,phandle is deprecated — use phandle instead")
+                    delete prop_seen[depth]
+                    delete node_unit_addr[depth]
+                    delete child_addr_cells[depth]
+                    delete child_size_cells[depth]
+                    depth--
+                } else {
+                    diags[nd++] = make(lineno, 1, "Unbalanced brace: unexpected }")
+                }
+            }
+
+            # Duplicate node label detection
+            if (match(line, /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:/, arr)) {
+                lbl = arr[1]
+                if (lbl in label_seen)
+                    diags[nd++] = make(lineno, 2, "Duplicate node label " Q lbl Q)
+                else
+                    label_seen[lbl] = lineno
+            }
+
+            # Property-level diagnostics (only inside nodes, depth > 0)
+            if (depth > 0 && match(line, /^[[:space:]]+([A-Za-z_#][A-Za-z0-9_,#.-]*)([[:space:]]*=|;)/, arr)) {
+                prop = arr[1]
+
+                # Duplicate property in same node
+                if (prop in prop_seen[depth])
+                    diags[nd++] = make(lineno, 2, "Duplicate property " Q prop Q " in node")
+                else
+                    prop_seen[depth][prop] = lineno
+
+                # Track phandle presence
+                if (prop == "phandle") node_has_phandle[depth] = 1
+                if (prop == "linux,phandle") {
+                    node_has_linux_phandle[depth] = 1
+                    linux_phandle_line[depth] = lineno
+                }
+
+                # #address-cells / #size-cells: store for child reg validation
+                if (prop == "#address-cells" && match(line, /<([0-9]+)>/, rarr))
+                    addr_cells[depth] = rarr[1] + 0
+                if (prop == "#size-cells" && match(line, /<([0-9]+)>/, rarr))
+                    size_cells[depth] = rarr[1] + 0
+
+                # status value check
+                if (prop == "status" && match(line, /status[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
+                    sv = rarr[1]
+                    if (sv != "okay" && sv != "disabled" && sv != "reserved" && sv != "fail" && sv !~ /^fail-/) {
+                        diags[nd++] = make(lineno, 1, "Invalid status value " Q sv Q " -- must be okay, disabled, reserved, fail, or fail-sss")
+                    }
+                }
+
+                # reg cell count mismatch
+                if (prop == "reg" && match(line, /reg[[:space:]]*=[[:space:]]*<([^>]+)>/, rarr)) {
+                    reg_str = rarr[1]
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "", reg_str)
+                    ncells = split(reg_str, tmp_cells, /[[:space:]]+/)
+                    ac = (depth - 1) in addr_cells ? addr_cells[depth - 1] : ""
+                    sc = (depth - 1) in size_cells ? size_cells[depth - 1] : ""
+                    if (ac != "" && sc != "") {
+                        stride = ac + sc
+                        if (stride > 0 && ncells % stride != 0)
+                            diags[nd++] = make(lineno, 2, "reg cell count (" ncells ") is not a multiple of #address-cells + #size-cells (" ac "+" sc "=" stride ")")
+                    }
+                }
+
+                # Node unit-address vs first reg value
+                if (prop == "reg" && node_unit_addr[depth] != "" && match(line, /reg[[:space:]]*=[[:space:]]*<([[:space:]]*0[xX]([0-9a-fA-F]+)|([0-9]+))/, rarr)) {
+                    if (rarr[2] != "") first_val = rarr[2]
+                    else first_val = sprintf("%x", rarr[3] + 0)
+                    unit = node_unit_addr[depth]
+                    # Normalize both to lowercase hex without leading zeros for comparison
+                    cmd1 = "printf %x 0x" unit; cmd1 | getline norm_unit; close(cmd1)
+                    cmd2 = "printf %x 0x" first_val; cmd2 | getline norm_val; close(cmd2)
+                    if (norm_unit != norm_val)
+                        diags[nd++] = make(lineno, 2, "Node unit-address (0x" unit ") does not match first reg value (0x" first_val ")")
+                }
+
+                # compatible format check
+                if (prop == "compatible" && match(line, /compatible[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
+                    cv = rarr[1]
+                    # Exceptions: well-known valid non-vendor-prefixed strings
+                    if (cv != "simple-bus" && cv != "simple-mfd" && cv != "fixed-clock" && cv != "regulator-fixed") {
+                        if (cv !~ /,/ || cv ~ /^[A-Z]/ || cv ~ /[[:space:]]/) {
+                            diags[nd++] = make(lineno, 2, "compatible string " Q cv Q " should follow vendor,model format")
+                        }
+                    }
+                }
             }
         }
         END {

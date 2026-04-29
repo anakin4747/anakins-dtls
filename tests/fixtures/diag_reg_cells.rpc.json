@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_reg_cells.dts","diagnostics":[{"range":{"start":{"line":8,"character":0},"end":{"line":8,"character":100}},"severity":2,"message":"reg cell count (2) is not a multiple of #address-cells + #size-cells (2+1=3)"}]}}

@@ -1,0 +1,16 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	foo: serial@a88000 {
+		compatible = "foo,bar";
+		reg = <0xa88000 0x7000>;
+	};
+
+	foo: uart@b00000 {
+		compatible = "foo,baz";
+		reg = <0xb00000 0x1000>;
+	};
+};

@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_duplicate_label.dts","diagnostics":[{"range":{"start":{"line":11,"character":0},"end":{"line":11,"character":100}},"severity":2,"message":"Duplicate node label 'foo'"}]}}
