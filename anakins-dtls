@@ -1129,6 +1129,48 @@ find_label_line() {
     printf '%s' "$text" | grep -n "^[[:space:]]*${label}:" | head -1 | cut -d: -f1
 }
 
+# find_label_in_includes <label> <current_file> [visited_file] [cleanup]
+# Search #include'd .dts/.dtsi files recursively for a label definition.
+# Returns "file:line_number" (1-indexed) or empty. Uses a visited-file set to
+# prevent infinite loops from circular includes.
+find_label_in_includes() {
+    local label="$1" current_file="$2"
+    local visited_file="${3:-$(mktemp)}"
+    local _cleanup="${4:-1}"
+
+    [[ -f "$current_file" ]] || return 1
+    grep -qxF "$current_file" "$visited_file" 2>/dev/null && return 1
+    printf '%s\n' "$current_file" >> "$visited_file"
+
+    local current_dir
+    current_dir="$(dirname "$current_file")"
+
+    while IFS= read -r inc_path; do
+        local abs_path
+        [[ "$inc_path" = /* ]] && abs_path="$inc_path" || abs_path="${current_dir}/${inc_path}"
+        [[ -f "$abs_path" ]] || continue
+
+        local line_num
+        line_num="$(grep -n "^[[:space:]]*${label}:" "$abs_path" | head -1 | cut -d: -f1)"
+        if [[ -n "$line_num" ]]; then
+            [[ "$_cleanup" == "1" ]] && rm -f "$visited_file"
+            printf '%s:%s' "$abs_path" "$line_num"
+            return 0
+        fi
+
+        local result
+        result="$(find_label_in_includes "$label" "$abs_path" "$visited_file" 0)"
+        if [[ -n "$result" ]]; then
+            [[ "$_cleanup" == "1" ]] && rm -f "$visited_file"
+            printf '%s' "$result"
+            return 0
+        fi
+    done < <(grep -oP '#include\s+"[^"]*\.(dts|dtsi)"' "$current_file" | grep -oP '"[^"]+"' | tr -d '"')
+
+    [[ "$_cleanup" == "1" ]] && rm -f "$visited_file"
+    return 1
+}
+
 handle_definition() {
     local body="$1"
     local def_uri def_line def_char def_id def_text
@@ -1150,6 +1192,18 @@ handle_definition() {
             label_line=$(( label_line - 1 ))
             local def_path="${def_uri#file://}"
             send_definition "$def_id" "$def_path" "$label_line"
+            return
+        fi
+        # Cross-file: search included files
+        local def_file_path="${def_uri#file://}"
+        local cross_result
+        cross_result="$(find_label_in_includes "$phandle_label" "$def_file_path")" || cross_result=""
+        if [[ -n "$cross_result" ]]; then
+            local cross_file cross_line
+            cross_file="${cross_result%:*}"
+            cross_line=$(( ${cross_result##*:} - 1 ))
+            [[ $cross_line -lt 0 ]] && cross_line=0
+            send_definition "$def_id" "$cross_file" "$cross_line"
             return
         fi
     fi
@@ -1200,24 +1254,35 @@ handle_definition() {
         fi
     fi
 
-    # 4. Fall back to binding YAML (with $ref following)
+    # 4. Fall back to binding YAML for node with compatible (with $ref following)
     local node_compat
     node_compat="$(node_compatible_at "$def_text" "$def_line")"
-    if [[ -z "$node_compat" ]] || [[ -z "$BINDINGS_DIR" ]]; then
-        send_null "$def_id"
-        return
+    if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
+        local binding_file location
+        while IFS= read -r binding_file; do
+            location="$(_find_prop_in_binding "$def_word" "$binding_file")"
+            [[ -z "$location" ]] && continue
+            local prop_file prop_line
+            prop_file="${location%:*}"
+            prop_line=$(( ${location##*:} - 1 ))
+            [[ $prop_line -lt 0 ]] && prop_line=0
+            send_definition "$def_id" "$prop_file" "$prop_line"
+            return
+        done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$node_compat")
     fi
-    local binding_file location
-    while IFS= read -r binding_file; do
-        location="$(_find_prop_in_binding "$def_word" "$binding_file")"
-        [[ -z "$location" ]] && continue
-        local prop_file prop_line
-        prop_file="${location%:*}"
-        prop_line=$(( ${location##*:} - 1 ))
-        [[ $prop_line -lt 0 ]] && prop_line=0
-        send_definition "$def_id" "$prop_file" "$prop_line"
-        return
-    done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$node_compat")
+
+    # 5. Global property search across all binding YAMLs
+    if [[ -n "$BINDINGS_DIR" ]]; then
+        local global_file global_line
+        while IFS= read -r global_file; do
+            global_line="$(grep -n "^  ${def_word}:" "$global_file" | head -1 | cut -d: -f1)"
+            if [[ -n "$global_line" ]]; then
+                global_line=$(( global_line - 1 ))
+                send_definition "$def_id" "$global_file" "$global_line"
+                return
+            fi
+        done < <(rg -l "^  ${def_word}:" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$def_word" | head -5)
+    fi
 
     send_null "$def_id"
 }
@@ -1500,15 +1565,28 @@ handle_hover() {
         local phandle_lbl phandle_lbl_line phandle_compat phandle_hover
         phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")" || phandle_lbl=""
         if [[ -n "$phandle_lbl" ]]; then
+            local phandle_lbl_line phandle_compat phandle_hover
             phandle_lbl_line="$(find_label_line "$text" "$phandle_lbl")" || phandle_lbl_line=""
-            if [[ -n "$phandle_lbl_line" ]]; then
+            if [[ -z "$phandle_lbl_line" ]]; then
+                # Cross-file lookup
+                local cur_file="${uri#file://}"
+                local cross_result
+                cross_result="$(find_label_in_includes "$phandle_lbl" "$cur_file")" || cross_result=""
+                if [[ -n "$cross_result" ]]; then
+                    local phandle_file_path phandle_file_line_num phandle_text
+                    phandle_file_path="${cross_result%:*}"
+                    phandle_file_line_num=$(( ${cross_result##*:} ))
+                    phandle_text="$(cat "$phandle_file_path" 2>/dev/null)"
+                    phandle_compat="$(node_compatible_at "$phandle_text" "$phandle_file_line_num")" || phandle_compat=""
+                fi
+            else
                 phandle_compat="$(node_compatible_at "$text" "$phandle_lbl_line")" || phandle_compat=""
-                if [[ -n "$phandle_compat" ]]; then
-                    phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")" || phandle_hover=""
-                    if [[ -n "$phandle_hover" ]]; then
-                        send_hover "$id" "$phandle_hover"
-                        return
-                    fi
+            fi
+            if [[ -n "${phandle_compat:-}" ]]; then
+                phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")" || phandle_hover=""
+                if [[ -n "$phandle_hover" ]]; then
+                    send_hover "$id" "$phandle_hover"
+                    return
                 fi
             fi
         fi
@@ -1533,14 +1611,12 @@ handle_hover() {
 # Dispatch hover result combining ALL available documentation sources.
 _send_hover_result() {
     local id="$1" word="$2" standard_doc="$3" binding_doc="$4" compat="$5" text="$6"
-    local BT=$'\`'
     local NL=$'\n'
     local parts="" sep=""
 
     # 1. Standard DT spec doc
     if [[ -n "$standard_doc" ]]; then
-        local NL2=$'\n'
-        parts+="${sep}**Source:** [Device Tree Specification](https://devicetree-specification.readthedocs.io/)${NL2}${NL2}${standard_doc}"
+        parts+="${sep}**Source:** [Device Tree Specification](https://devicetree-specification.readthedocs.io/)${NL}${NL}${standard_doc}"
         sep=$'\n\n---\n\n'
     fi
 
