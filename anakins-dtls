@@ -1477,9 +1477,9 @@ _send_hover_result() {
 
     # 2. Binding doc (from node compatible or global search)
     if [[ -n "$binding_doc" ]]; then
-        local binding_header="**From binding** (${BT}${compat}${BT}):"
-        [[ -z "$compat" ]] && binding_header="**From binding:**"
-        parts+="${sep}${binding_header}${NL}${NL}${binding_doc}"
+        local binding_source="**Source:** Linux kernel bindings"
+        [[ -n "$compat" ]] && binding_source="**Source:** Linux kernel bindings (\`${compat}\`)"
+        parts+="${sep}${binding_source}${NL}${NL}${binding_doc}"
         sep=$'\n\n---\n\n'
     fi
 
