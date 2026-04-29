@@ -1380,6 +1380,10 @@ find_compatible_value_hover() {
 
     local desc
     desc="$(awk '/^description:/{found=1; next} found && /^[a-zA-Z$]/{exit} found{print}' "$binding_file" | sed '/^[[:space:]]*$/d' | sed 's/^  //')"
+    # Fall back to title: if no description:
+    if [[ -z "$desc" ]]; then
+        desc="$(awk '/^title:/{sub(/^title:[[:space:]]*/,""); print; exit}' "$binding_file")"
+    fi
     [[ -z "$desc" ]] && return 0
 
     local rel_path
