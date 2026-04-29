@@ -613,6 +613,32 @@ teardown() {
 }
 
 # ---------------------------------------------------------------------------
+# Definition: cross-file phandle
+# Real source: arch/arm64/boot/dts/amlogic/meson-gxl-s905x-khadas-vim.dts line 41
+#   gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_LOW>;  cursor on &gpio_ao
+# gpio_ao: is defined in meson-gxl.dtsi line 152 (3 includes deep)
+# ---------------------------------------------------------------------------
+
+@test "definition on cross-file phandle navigates to included file" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/amlogic/meson-gxl-s905x-khadas-vim.dts:41:13" \
+        "fixtures/definition_cross_file_phandle.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# Definition: property name global binding search
+# Real source: arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi line 111
+#   buck1: BUCK1 { regulator-name = ... }  cursor on regulator-name
+# No compatible on BUCK1 node; global binding search finds regulator.yaml
+# ---------------------------------------------------------------------------
+
+@test "definition on property name navigates to binding YAML" {
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/freescale/imx91-phycore-som.dtsi:111:5" \
+        "fixtures/definition_property_name_global.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
 # Diagnostics: missing semicolon
 # Fixture: fixtures/diag_missing_semicolon.dts
 #   line 8: compatible = "foo,bar"  -- missing semicolon
