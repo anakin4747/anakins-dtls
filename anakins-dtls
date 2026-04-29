@@ -2047,6 +2047,64 @@ _find_linux_root() {
     return 1
 }
 
+
+handle_references() {
+    local body="$1"
+    local uri line character id text
+    uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    line=$(printf '%s' "$body" | jq -r '.params.position.line')
+    character=$(printf '%s' "$body" | jq -r '.params.position.character')
+    id=$(printf '%s' "$body" | jq -r '.id')
+    text="${DOC_TEXT[$uri]:-}"
+    [[ -z "$text" ]] && { send_null "$id"; return; }
+
+    local word
+    word="$(word_at "$text" "$line" "$character")"
+    word="${word%%:*}"
+    if [[ -z "$word" ]]; then
+        send "$(jq -n --argjson id "$id" '{"jsonrpc":"2.0","id":$id,"result":[]}')"
+        return
+    fi
+
+    local results=()
+
+    if [[ -n "${LINUX_DIR:-}" ]]; then
+        local pattern search_glob line_text
+        line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+
+        if printf '%s' "$line_text" | grep -qE "^[[:space:]]*${word}[[:space:]]*:"; then
+            pattern="&${word}"
+            search_glob="--glob=*.dts --glob=*.dtsi"
+        elif printf '%s' "$line_text" | grep -q 'compatible.*='; then
+            pattern="\"${word}\""
+            search_glob="--glob=*.dts --glob=*.dtsi --glob=*.yaml --glob=*.c --glob=*.h"
+        else
+            pattern=" ${word}:"
+            search_glob="--glob=*.yaml"
+        fi
+
+        while IFS= read -r match; do
+            local ref_file ref_line
+            ref_file="$(printf '%s' "$match" | cut -d: -f1)"
+            ref_line=$(( $(printf '%s' "$match" | cut -d: -f2) - 1 ))
+            [[ $ref_line -lt 0 ]] && ref_line=0
+            results+=("{\"uri\":\"file://${ref_file}\",\"range\":{\"start\":{\"line\":${ref_line},\"character\":0},\"end\":{\"line\":${ref_line},\"character\":100}}}")
+        done < <(rg -n "$pattern" $search_glob "$LINUX_DIR" 2>/dev/null)
+    fi
+
+    local json_array first r
+    first=1
+    json_array="["
+    for r in "${results[@]:-}"; do
+        [[ -z "$r" ]] && continue
+        [[ $first -eq 0 ]] && json_array="${json_array},"
+        json_array="${json_array}${r}"
+        first=0
+    done
+    json_array="${json_array}]"
+    send "$(jq -n --argjson id "$id" --argjson refs "$json_array" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
+}
+
 declare -A DOC_TEXT
 
 # Kill all background jobs when the server exits.
@@ -2113,6 +2171,9 @@ while recv; do
             ;;
         textDocument/definition)
             handle_definition "$BODY"
+            ;;
+        textDocument/references)
+            handle_references "$BODY"
             ;;
         exit)
             exit 0

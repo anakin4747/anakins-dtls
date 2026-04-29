@@ -826,3 +826,32 @@ teardown() {
         .result.contents.value | test("xtensa"; "i")
     '
 }
+
+# ---------------------------------------------------------------------------
+# References
+# ---------------------------------------------------------------------------
+
+@test "references for node label finds phandle usages" {
+    # pic: label defined at line 27 col 2 (1-based) in xtfpga.dtsi
+    # &pic is used in the same file at line 6
+    lsts_references \
+        "linux/arch/xtensa/boot/dts/xtfpga.dtsi:27:2"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result | type == "array" and length > 0
+    '
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result | map(.uri) | any(test("xtfpga|csp|virt|openrisc"; "i"))
+    '
+}
+
+@test "references for compatible string finds usages" {
+    # cursor on "cdns,xtensa-pic" at line 28 col 17 (1-based) in xtfpga.dtsi
+    lsts_references \
+        "linux/arch/xtensa/boot/dts/xtfpga.dtsi:28:17"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result | type == "array" and length > 0
+    '
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result | map(.uri) | any(test("\\.dts|\\.dtsi"; "i"))
+    '
+}
