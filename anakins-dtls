@@ -1686,7 +1686,7 @@ check_binding_diagnostics() {
         local bf="${compat_binding_cache[$cv]}"
         [[ -z "$bf" || -n "${binding_doc_cache[$bf]+x}" ]] && continue
         binding_doc_cache["$bf"]=$(_get_binding_props "$bf")
-        binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{sub(/^  - /,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
+        binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{sub(/^  - /,""); gsub(/[^A-Za-z0-9_#,.:-]/,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
     done
 
     # Collect raw diagnostic strings "line|sev|message", then emit JSON via awk
@@ -1772,6 +1772,16 @@ parse_request() {
 # Document store
 # ---------------------------------------------------------------------------
 
+# Walk up directory tree to find the Linux source tree root.
+_find_linux_root() {
+    local p="$1"
+    while [[ -n "$p" && "$p" != "/" ]]; do
+        [[ -d "$p/Documentation/devicetree/bindings" ]] && { printf '%s' "$p"; return 0; }
+        p="${p%/*}"
+    done
+    return 1
+}
+
 declare -A DOC_TEXT
 
 # Kill all background jobs when the server exits.
@@ -1786,16 +1796,6 @@ while recv; do
         initialize)
             root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
             root_path="${root_uri#file://}"
-            # Walk up from root_path to find the Linux source tree root
-            # (handles working inside linux/, linux/arch/, linux/drivers/, etc.)
-            _find_linux_root() {
-                local p="$1"
-                while [[ -n "$p" && "$p" != "/" ]]; do
-                    [[ -d "$p/Documentation/devicetree/bindings" ]] && { printf '%s' "$p"; return 0; }
-                    p="${p%/*}"
-                done
-                return 1
-            }
             if [[ -d "${root_path}/tests/linux/Documentation/devicetree/bindings" ]]; then
                 BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
                 LINUX_DIR="${root_path}/tests/linux"
