@@ -1142,10 +1142,10 @@ handle_definition() {
 
     # 0. Check if cursor is on a phandle reference (&label)
     local phandle_label
-    phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")"
+    phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")" || phandle_label=""
     if [[ -n "$phandle_label" ]]; then
         local label_line
-        label_line="$(find_label_line "$def_text" "$phandle_label")"
+        label_line="$(find_label_line "$def_text" "$phandle_label")" || label_line=""
         if [[ -n "$label_line" ]]; then
             label_line=$(( label_line - 1 ))
             local def_path="${def_uri#file://}"
@@ -1494,13 +1494,13 @@ handle_hover() {
     # Check if cursor is on a phandle reference (&label)
     if [[ -n "$BINDINGS_DIR" ]]; then
         local phandle_lbl phandle_lbl_line phandle_compat phandle_hover
-        phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")"
+        phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")" || phandle_lbl=""
         if [[ -n "$phandle_lbl" ]]; then
-            phandle_lbl_line="$(find_label_line "$text" "$phandle_lbl")"
+            phandle_lbl_line="$(find_label_line "$text" "$phandle_lbl")" || phandle_lbl_line=""
             if [[ -n "$phandle_lbl_line" ]]; then
-                phandle_compat="$(node_compatible_at "$text" "$phandle_lbl_line")"
+                phandle_compat="$(node_compatible_at "$text" "$phandle_lbl_line")" || phandle_compat=""
                 if [[ -n "$phandle_compat" ]]; then
-                    phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")"
+                    phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")" || phandle_hover=""
                     if [[ -n "$phandle_hover" ]]; then
                         send_hover "$id" "$phandle_hover"
                         return
