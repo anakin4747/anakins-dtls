@@ -1469,7 +1469,11 @@ _send_hover_result() {
     local parts="" sep=""
 
     # 1. Standard DT spec doc
-    [[ -n "$standard_doc" ]] && { parts+="${sep}${standard_doc}"; sep=$'\n\n---\n\n'; }
+    if [[ -n "$standard_doc" ]]; then
+        local NL2=$'\n'
+        parts+="${sep}**Source:** [Device Tree Specification](https://devicetree-specification.readthedocs.io/)${NL2}${NL2}${standard_doc}"
+        sep=$'\n\n---\n\n'
+    fi
 
     # 2. Binding doc (from node compatible or global search)
     if [[ -n "$binding_doc" ]]; then
