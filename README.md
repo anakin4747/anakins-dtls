@@ -2,7 +2,7 @@
 
 A Device Tree Language Server written in bash.
 
-> **Note:** This project was built entirely by an [OpenClaw](https://openclaw.ai) AI agent, driven through Telegram. The only time the human touched the code was to test it working in Neovim.
+> **Note:** This project was built entirely by an [OpenClaw](https://openclaw.ai) AI agent, driven through Telegram **from a phone**. The only time the human touched the code was to test it working in Neovim.
 
 ## Features
 
