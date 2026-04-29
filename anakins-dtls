@@ -1786,29 +1786,47 @@ while recv; do
         initialize)
             root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
             root_path="${root_uri#file://}"
+            # Walk up from root_path to find the Linux source tree root
+            # (handles working inside linux/, linux/arch/, linux/drivers/, etc.)
+            _find_linux_root() {
+                local p="$1"
+                while [[ -n "$p" && "$p" != "/" ]]; do
+                    [[ -d "$p/Documentation/devicetree/bindings" ]] && { printf '%s' "$p"; return 0; }
+                    p="${p%/*}"
+                done
+                return 1
+            }
             if [[ -d "${root_path}/tests/linux/Documentation/devicetree/bindings" ]]; then
                 BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+                LINUX_DIR="${root_path}/tests/linux"
             elif [[ -d "${root_path}/linux/Documentation/devicetree/bindings" ]]; then
                 BINDINGS_DIR="${root_path}/linux/Documentation/devicetree/bindings"
+                LINUX_DIR="${root_path}/linux"
+            elif [[ -d "${root_path}/Documentation/devicetree/bindings" ]]; then
+                BINDINGS_DIR="${root_path}/Documentation/devicetree/bindings"
+                LINUX_DIR="${root_path}"
             else
-                BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+                _linux_root="$(_find_linux_root "$root_path")"
+                if [[ -n "$_linux_root" ]]; then
+                    BINDINGS_DIR="${_linux_root}/Documentation/devicetree/bindings"
+                    LINUX_DIR="$_linux_root"
+                else
+                    BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+                    LINUX_DIR="${root_path}/tests/linux"
+                fi
             fi
             if [[ -d "${root_path}/tests/devicetree-specification/source" ]]; then
                 SPEC_DIR="${root_path}/tests/devicetree-specification/source"
             else
                 SPEC_DIR="${root_path}/devicetree-specification/source"
             fi
-            if [[ -d "${root_path}/tests/linux" ]]; then
-                LINUX_DIR="${root_path}/tests/linux"
-            elif [[ -d "${root_path}/linux" ]]; then
-                LINUX_DIR="${root_path}/linux"
-            fi
             INCLUDE_DIRS=()
             for _idir in \
+                "${LINUX_DIR}/include" \
+                "${LINUX_DIR}/arch/arm/include" \
+                "${LINUX_DIR}/arch/arm64/include" \
                 "${root_path}/tests/linux/include" \
-                "${root_path}/linux/include" \
-                "${root_path}/tests/linux/arch/arm/include" \
-                "${root_path}/tests/linux/arch/arm64/include"; do
+                "${root_path}/linux/include"; do
                 [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
             done
             send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
