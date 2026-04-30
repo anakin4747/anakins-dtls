@@ -1394,6 +1394,19 @@ _phandle_label_compat() {
     node_compatible_at "$phandle_text" "$phandle_line_num" || true
 }
 
+# Return compatible hover doc for a phandle reference at cursor, or empty.
+_hover_for_phandle_ref() {
+    local text="$1" line="$2" character="$3" bindings_dir="$4"
+    local phandle_lbl
+    phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")" || phandle_lbl=""
+    [[ -z "$phandle_lbl" ]] && return 0
+    local cur_file="${uri#file://}"
+    local phandle_compat
+    phandle_compat="$(_phandle_label_compat "$text" "$phandle_lbl" "$cur_file")" || phandle_compat=""
+    [[ -z "${phandle_compat:-}" ]] && return 0
+    find_compatible_value_hover "$phandle_compat" "$bindings_dir" || true
+}
+
 extract_property_doc() {
     local prop="$1" yaml_file="$2"
     awk -v prop="$prop" '
@@ -1616,18 +1629,11 @@ handle_hover() {
 
     # Check if cursor is on a phandle reference (&label)
     if [[ -n "$BINDINGS_DIR" ]]; then
-        local phandle_lbl phandle_compat phandle_hover
-        phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")" || phandle_lbl=""
-        if [[ -n "$phandle_lbl" ]]; then
-            local cur_file="${uri#file://}"
-            phandle_compat="$(_phandle_label_compat "$text" "$phandle_lbl" "$cur_file")" || phandle_compat=""
-            if [[ -n "${phandle_compat:-}" ]]; then
-                phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")" || phandle_hover=""
-                if [[ -n "$phandle_hover" ]]; then
-                    send_hover "$id" "$phandle_hover"
-                    return
-                fi
-            fi
+        local phandle_hover
+        phandle_hover="$(_hover_for_phandle_ref "$text" "$line" "$character" "$BINDINGS_DIR")" || phandle_hover=""
+        if [[ -n "$phandle_hover" ]]; then
+            send_hover "$id" "$phandle_hover"
+            return
         fi
     fi
 
@@ -2301,14 +2307,12 @@ handle_completion() {
         if [[ -n "$compat" ]]; then
             local binding_file=""
             binding_file="$(rg -l "$compat" --glob='*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat" | head -1)" || binding_file=""
-            if [[ -n "$binding_file" ]]; then
-                local bname
-                bname="$(basename "$binding_file")"
-                while IFS= read -r prop; do
-                    [[ -z "$prop" ]] && continue
-                    items+=("$(jq -n --arg l "$prop" --arg d "From binding: $bname" '{"label":$l,"kind":10,"detail":$d}')")
-                done < <(_get_binding_props "$binding_file")
-            fi
+            local bname="" prop
+            [[ -n "$binding_file" ]] && bname="$(basename "$binding_file")"
+            while IFS= read -r prop; do
+                [[ -z "$prop" ]] && continue
+                items+=("$(jq -n --arg l "$prop" --arg d "From binding: $bname" '{"label":$l,"kind":10,"detail":$d}')")
+            done < <([[ -n "$binding_file" ]] && _get_binding_props "$binding_file" || true)
         fi
     fi
 
@@ -2325,7 +2329,54 @@ handle_completion() {
     send "$(jq -n --argjson id "$id" --argjson items "$items_json" '{"jsonrpc":"2.0","id":$id,"result":{"isIncomplete":false,"items":$items}}')"
 }
 
+
 declare -A DOC_TEXT
+
+# Resolve Linux kernel source directory from the workspace root path.
+# Tries several well-known subdirectory layouts, then walks up the tree.
+_resolve_linux_dir() {
+    local root_path="$1"
+    if [[ -d "${root_path}/tests/linux/Documentation/devicetree/bindings" ]]; then
+        BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+        LINUX_DIR="${root_path}/tests/linux"
+    elif [[ -d "${root_path}/linux/Documentation/devicetree/bindings" ]]; then
+        BINDINGS_DIR="${root_path}/linux/Documentation/devicetree/bindings"
+        LINUX_DIR="${root_path}/linux"
+    elif [[ -d "${root_path}/Documentation/devicetree/bindings" ]]; then
+        BINDINGS_DIR="${root_path}/Documentation/devicetree/bindings"
+        LINUX_DIR="${root_path}"
+    else
+        local _linux_root
+        _linux_root="$(_find_linux_root "$root_path")" || _linux_root=""
+        if [[ -n "$_linux_root" ]]; then
+            BINDINGS_DIR="${_linux_root}/Documentation/devicetree/bindings"
+            LINUX_DIR="$_linux_root"
+        else
+            BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
+            LINUX_DIR="${root_path}/tests/linux"
+        fi
+    fi
+}
+
+# Populate SPEC_DIR and INCLUDE_DIRS from the workspace root path.
+_resolve_spec_and_includes() {
+    local root_path="$1"
+    if [[ -d "${root_path}/tests/devicetree-specification/source" ]]; then
+        SPEC_DIR="${root_path}/tests/devicetree-specification/source"
+    else
+        SPEC_DIR="${root_path}/devicetree-specification/source"
+    fi
+    INCLUDE_DIRS=()
+    local _idir
+    for _idir in \
+        "${LINUX_DIR}/include" \
+        "${LINUX_DIR}/arch/arm/include" \
+        "${LINUX_DIR}/arch/arm64/include" \
+        "${root_path}/tests/linux/include" \
+        "${root_path}/linux/include"; do
+        [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
+    done
+}
 
 # Kill all background jobs when the server exits.
 trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
@@ -2339,39 +2390,8 @@ while recv; do
         initialize)
             root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
             root_path="${root_uri#file://}"
-            if [[ -d "${root_path}/tests/linux/Documentation/devicetree/bindings" ]]; then
-                BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
-                LINUX_DIR="${root_path}/tests/linux"
-            elif [[ -d "${root_path}/linux/Documentation/devicetree/bindings" ]]; then
-                BINDINGS_DIR="${root_path}/linux/Documentation/devicetree/bindings"
-                LINUX_DIR="${root_path}/linux"
-            elif [[ -d "${root_path}/Documentation/devicetree/bindings" ]]; then
-                BINDINGS_DIR="${root_path}/Documentation/devicetree/bindings"
-                LINUX_DIR="${root_path}"
-            else
-                _linux_root="$(_find_linux_root "$root_path")"
-                if [[ -n "$_linux_root" ]]; then
-                    BINDINGS_DIR="${_linux_root}/Documentation/devicetree/bindings"
-                    LINUX_DIR="$_linux_root"
-                else
-                    BINDINGS_DIR="${root_path}/tests/linux/Documentation/devicetree/bindings"
-                    LINUX_DIR="${root_path}/tests/linux"
-                fi
-            fi
-            if [[ -d "${root_path}/tests/devicetree-specification/source" ]]; then
-                SPEC_DIR="${root_path}/tests/devicetree-specification/source"
-            else
-                SPEC_DIR="${root_path}/devicetree-specification/source"
-            fi
-            INCLUDE_DIRS=()
-            for _idir in \
-                "${LINUX_DIR}/include" \
-                "${LINUX_DIR}/arch/arm/include" \
-                "${LINUX_DIR}/arch/arm64/include" \
-                "${root_path}/tests/linux/include" \
-                "${root_path}/linux/include"; do
-                [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
-            done
+            _resolve_linux_dir "$root_path"
+            _resolve_spec_and_includes "$root_path"
             send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
             ;;
         initialized)
