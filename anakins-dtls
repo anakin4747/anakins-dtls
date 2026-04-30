@@ -2218,10 +2218,38 @@ handle_completion() {
 
     if [[ -n "${BINDINGS_DIR:-}" ]]; then
         local compat=""
-        compat="$(node_compatible_at "$text" "$line")" || compat=""
-        if [[ -z "$compat" ]]; then
-            compat="$(printf '%s' "$text" | grep -oP 'compatible\s*=\s*"\K[^"]+' | head -1)" || compat=""
-        fi
+        # Find the current node boundaries: scan backward to find the opening {
+        # then scan that entire block (forward too) for compatible =
+        local node_start node_end total_lines
+        total_lines="$(printf '%s' "$text" | wc -l)"
+        # Walk backward from cursor to find where current node opens
+        node_start="$(printf '%s' "$text" | awk -v cursor="$((line + 1))" '
+            NR <= cursor {
+                for (i=1;i<=length($0);i++) {
+                    c=substr($0,i,1)
+                    if (c=="{") depth++
+                    else if (c=="}") depth--
+                }
+                lines[NR]=$0; depths[NR]=depth
+            }
+            END {
+                target=depths[cursor]
+                for (i=cursor;i>=1;i--) {
+                    if (depths[i]==target-1) { print i; exit }
+                }
+                print 1
+            }
+        ')"
+        # Find the matching closing brace
+        node_end="$(printf '%s' "$text" | awk -v start="$((node_start))" -v cursor="$((line + 1))" '
+            NR < start { next }
+            { for (i=1;i<=length($0);i++) { c=substr($0,i,1); if(c=="{") d++; else if(c=="}") { d--; if(d<0){print NR; exit} } } }
+        ')"
+        [[ -z "$node_end" ]] && node_end="$total_lines"
+        # Extract compatible from within current node block
+        compat="$(printf '%s' "$text" | sed -n "${node_start},${node_end}p" | grep -oP 'compatible\s*=\s*"\K[^"]+' | head -1)" || compat=""
+        # Fall back to ancestor walk only if current node has no compatible
+        [[ -z "$compat" ]] && { compat="$(node_compatible_at "$text" "$line")" || compat=""; }
         if [[ -n "$compat" ]]; then
             local binding_file=""
             binding_file="$(rg -l "$compat" --glob='*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat" | head -1)" || binding_file=""
