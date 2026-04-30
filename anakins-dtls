@@ -2198,6 +2198,7 @@ handle_references() {
         done < <([[ -n "${search_glob:-}" && -n "${pattern:-}" ]] && rg -n --column "$pattern" $search_glob "$LINUX_DIR" 2>/dev/null || true)
     fi
 
+    # Build and emit sorted, deduplicated results array
     local json_array first r
     first=1
     json_array="["
@@ -2208,7 +2209,10 @@ handle_references() {
         first=0
     done
     json_array="${json_array}]"
-    send "$(jq -n --argjson id "$id" --argjson refs "$json_array" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
+    # Sort by URI for deterministic output
+    local sorted_json
+    sorted_json="$(printf '%s' "$json_array" | jq 'sort_by(.uri) | unique_by(.uri)' 2>/dev/null)" || sorted_json="$json_array"
+    send "$(jq -n --argjson id "$id" --argjson refs "$sorted_json" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
 }
 
 

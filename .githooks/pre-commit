@@ -8,7 +8,7 @@ violations=$(git diff --cached --name-only | grep '_tests.bats$' || true)
 
 bad=$(echo "$violations" | while read -r f; do
     awk '
-    /lsts_hover[[:space:]]*\\|lsts_definition[[:space:]]*\\|lsts_diagnostics[[:space:]]/ {
+    /lsts_hover[[:space:]]*\\|lsts_definition[[:space:]]*\\|lsts_diagnostics[[:space:]]|lsts_references[[:space:]]*\\|lsts_completion[[:space:]]*\\/ {
         call_line = NR
         fname = FILENAME
         has_fixture = 0
