@@ -1032,16 +1032,14 @@ _quoted_string_at_char() {
     local len=${#line_text} i=0 in_quote=0 start=0 ch
     while [[ $i -lt $len ]]; do
         ch="${line_text:$i:1}"
-        if [[ "$ch" == '"' ]]; then
-            if [[ $in_quote -eq 0 ]]; then
-                in_quote=1; start=$i
-            else
-                in_quote=0
-                if [[ $strict -eq 1 && $character -gt $start && $character -le $i ]] || \
-                   [[ $strict -eq 0 && $character -ge $start && $character -le $i ]]; then
-                    printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
-                    return 0
-                fi
+        if [[ "$ch" == '"' && $in_quote -eq 0 ]]; then
+            in_quote=1; start=$i
+        elif [[ "$ch" == '"' && $in_quote -ne 0 ]]; then
+            in_quote=0
+            if [[ ($strict -eq 1 && $character -gt $start && $character -le $i) || \
+                  ($strict -eq 0 && $character -ge $start && $character -le $i) ]]; then
+                printf '%s' "${line_text:$((start+1)):$((i-start-1))}"
+                return 0
             fi
         fi
         (( i++ )) || true
@@ -1189,6 +1187,35 @@ find_label_in_includes() {
     return 1
 }
 
+# Resolve &label to definition location in the same file.
+# Outputs "file:line:col" or nothing.
+_def_phandle_in_file() {
+    local text="$1" label="$2" uri="$3"
+    local label_line label_line_text label_col
+    label_line="$(find_label_line "$text" "$label")" || label_line=""
+    [[ -z "$label_line" ]] && return 0
+    label_line_text="$(printf '%s' "$text" | sed -n "${label_line}p")"
+    label_col="$(printf '%s' "$label_line_text" | grep -bo "${label}:" | head -1 | cut -d: -f1)" || label_col=0
+    label_line=$(( label_line - 1 ))
+    printf '%s:%s:%s' "${uri#file://}" "$label_line" "${label_col:-0}"
+}
+
+# Resolve &label to definition location across included files.
+# Outputs "file:line:col" or nothing.
+_def_phandle_cross_file() {
+    local label="$1" file_path="$2"
+    local cross_result cross_file cross_line cross_line_text cross_col
+    cross_result="$(find_label_in_includes "$label" "$file_path")" || cross_result=""
+    [[ -z "$cross_result" ]] && return 0
+    cross_file="${cross_result%:*}"
+    cross_line="${cross_result##*:}"
+    cross_line_text="$(sed -n "${cross_line}p" "$cross_file" 2>/dev/null)"
+    cross_col="$(printf '%s' "$cross_line_text" | grep -bo "${label}:" | head -1 | cut -d: -f1)" || cross_col=0
+    cross_line=$(( cross_line - 1 ))
+    [[ $cross_line -lt 0 ]] && cross_line=0
+    printf '%s:%s:%s' "$cross_file" "$cross_line" "${cross_col:-0}"
+}
+
 handle_definition() {
     local body="$1"
     local def_uri def_line def_char def_id def_text
@@ -1204,30 +1231,16 @@ handle_definition() {
     local phandle_label
     phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")" || phandle_label=""
     if [[ -n "$phandle_label" ]]; then
-        local label_line label_col
-        label_line="$(find_label_line "$def_text" "$phandle_label")" || label_line=""
-        if [[ -n "$label_line" ]]; then
-            local label_line_text
-            label_line_text="$(printf '%s' "$def_text" | sed -n "${label_line}p")"
-            label_col="$(printf '%s' "$label_line_text" | grep -bo "${phandle_label}:" | head -1 | cut -d: -f1)" || label_col=0
-            label_line=$(( label_line - 1 ))
-            local def_path="${def_uri#file://}"
-            send_definition "$def_id" "$def_path" "$label_line" "${label_col:-0}"
-            return
+        local loc
+        loc="$(_def_phandle_in_file "$def_text" "$phandle_label" "$def_uri")"
+        if [[ -z "$loc" ]]; then
+            loc="$(_def_phandle_cross_file "$phandle_label" "${def_uri#file://}")"
         fi
-        # Cross-file: search included files
-        local def_file_path="${def_uri#file://}"
-        local cross_result
-        cross_result="$(find_label_in_includes "$phandle_label" "$def_file_path")" || cross_result=""
-        if [[ -n "$cross_result" ]]; then
-            local cross_file cross_line cross_line_text cross_col
-            cross_file="${cross_result%:*}"
-            cross_line="${cross_result##*:}"
-            cross_line_text="$(sed -n "${cross_line}p" "$cross_file" 2>/dev/null)"
-            cross_col="$(printf '%s' "$cross_line_text" | grep -bo "${phandle_label}:" | head -1 | cut -d: -f1)" || cross_col=0
-            cross_line=$(( cross_line - 1 ))
-            [[ $cross_line -lt 0 ]] && cross_line=0
-            send_definition "$def_id" "$cross_file" "$cross_line" "${cross_col:-0}"
+        if [[ -n "$loc" ]]; then
+            local d_file d_line d_col
+            d_file="${loc%%:*}"; loc="${loc#*:}"
+            d_line="${loc%%:*}"; d_col="${loc##*:}"
+            send_definition "$def_id" "$d_file" "$d_line" "${d_col:-0}"
             return
         fi
     fi
@@ -1267,7 +1280,6 @@ handle_definition() {
     # 3. Check spec for standard DTS properties
     if [[ -n "$SPEC_DIR" ]]; then
         local spec_result spec_file spec_line
-        # Match the word as a standalone RST section heading or a ``word`` node reference
         spec_result="$(rg -n "^${def_word}$|^\`\`/${def_word}\`\`|^.. _sect-standard-properties-${def_word}:" "$SPEC_DIR" 2>/dev/null | head -1)" || true
         if [[ -n "$spec_result" ]]; then
             spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
@@ -1300,11 +1312,10 @@ handle_definition() {
         local global_file global_line
         while IFS= read -r global_file; do
             global_line="$(grep -n "^  ${def_word}:" "$global_file" | head -1 | cut -d: -f1)"
-            if [[ -n "$global_line" ]]; then
-                global_line=$(( global_line - 1 ))
-                send_definition "$def_id" "$global_file" "$global_line"
-                return
-            fi
+            [[ -z "$global_line" ]] && continue
+            global_line=$(( global_line - 1 ))
+            send_definition "$def_id" "$global_file" "$global_line"
+            return
         done < <(rg -l "^  ${def_word}:" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$def_word" | head -5)
     fi
 
@@ -1363,7 +1374,26 @@ node_compatible_at() {
     ' || true
 }
 
-# Extract property description from a single YAML binding file.
+# Resolve phandle label to its node compatible string.
+# Searches the current text and then cross-file includes.
+_phandle_label_compat() {
+    local text="$1" label="$2" cur_file="$3"
+    local lbl_line
+    lbl_line="$(find_label_line "$text" "$label")" || lbl_line=""
+    if [[ -n "$lbl_line" ]]; then
+        node_compatible_at "$text" "$lbl_line" || true
+        return 0
+    fi
+    local cross_result
+    cross_result="$(find_label_in_includes "$label" "$cur_file")" || cross_result=""
+    [[ -z "$cross_result" ]] && return 0
+    local phandle_file phandle_line_num phandle_text
+    phandle_file="${cross_result%:*}"
+    phandle_line_num=$(( ${cross_result##*:} ))
+    phandle_text="$(cat "$phandle_file" 2>/dev/null)"
+    node_compatible_at "$phandle_text" "$phandle_line_num" || true
+}
+
 extract_property_doc() {
     local prop="$1" yaml_file="$2"
     awk -v prop="$prop" '
@@ -1586,26 +1616,11 @@ handle_hover() {
 
     # Check if cursor is on a phandle reference (&label)
     if [[ -n "$BINDINGS_DIR" ]]; then
-        local phandle_lbl phandle_lbl_line phandle_compat phandle_hover
+        local phandle_lbl phandle_compat phandle_hover
         phandle_lbl="$(phandle_ref_at "$text" "$line" "$character")" || phandle_lbl=""
         if [[ -n "$phandle_lbl" ]]; then
-            local phandle_lbl_line phandle_compat phandle_hover
-            phandle_lbl_line="$(find_label_line "$text" "$phandle_lbl")" || phandle_lbl_line=""
-            if [[ -z "$phandle_lbl_line" ]]; then
-                # Cross-file lookup
-                local cur_file="${uri#file://}"
-                local cross_result
-                cross_result="$(find_label_in_includes "$phandle_lbl" "$cur_file")" || cross_result=""
-                if [[ -n "$cross_result" ]]; then
-                    local phandle_file_path phandle_file_line_num phandle_text
-                    phandle_file_path="${cross_result%:*}"
-                    phandle_file_line_num=$(( ${cross_result##*:} ))
-                    phandle_text="$(cat "$phandle_file_path" 2>/dev/null)"
-                    phandle_compat="$(node_compatible_at "$phandle_text" "$phandle_file_line_num")" || phandle_compat=""
-                fi
-            else
-                phandle_compat="$(node_compatible_at "$text" "$phandle_lbl_line")" || phandle_compat=""
-            fi
+            local cur_file="${uri#file://}"
+            phandle_compat="$(_phandle_label_compat "$text" "$phandle_lbl" "$cur_file")" || phandle_compat=""
             if [[ -n "${phandle_compat:-}" ]]; then
                 phandle_hover="$(find_compatible_value_hover "$phandle_compat" "$BINDINGS_DIR")" || phandle_hover=""
                 if [[ -n "$phandle_hover" ]]; then
@@ -2111,6 +2126,55 @@ _find_linux_root() {
 }
 
 
+
+# Convert a rg "file:line:col" match into a Location JSON object string, or empty.
+_match_to_location_json() {
+    local match="$1"
+    local ref_file _raw_line _raw_col ref_line ref_col
+    ref_file="$(printf '%s' "$match" | cut -d: -f1)"
+    _raw_line="$(printf '%s' "$match" | cut -d: -f2)"
+    _raw_col="$(printf '%s' "$match" | cut -d: -f3)"
+    [[ "$_raw_line" =~ ^[0-9]+$ ]] || return 0
+    [[ "$_raw_col" =~ ^[0-9]+$ ]] || _raw_col=1
+    ref_line=$(( _raw_line - 1 ))
+    ref_col=$(( _raw_col - 1 ))
+    [[ $ref_line -lt 0 ]] && ref_line=0
+    [[ $ref_col -lt 0 ]] && ref_col=0
+    printf '{"uri":"file://%s","range":{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}}}' \
+        "$ref_file" "$ref_line" "$ref_col" "$ref_line" "$ref_col"
+}
+
+# Collect phandle references for a label across all related DTS/DTSI files.
+# Outputs Location JSON strings, one per line.
+_find_label_refs() {
+    local label="$1" uri="$2" text="$3"
+    local cur_file="${uri#file://}"
+    local label_def_file same_line
+    same_line="$(find_label_line "$text" "$label")" || same_line=""
+    if [[ -n "$same_line" ]]; then
+        label_def_file="$cur_file"
+    else
+        local cross
+        cross="$(find_label_in_includes "$label" "$cur_file")" || cross=""
+        label_def_file="${cross%:*}"
+    fi
+    [[ -z "$label_def_file" ]] && return 0
+    [[ -z "${LINUX_DIR:-}" ]] && return 0
+    local dts_file_list
+    mapfile -t dts_file_list < <(
+        find_includers_of "$label_def_file" "${LINUX_DIR}/arch" 2>/dev/null
+        printf '%s\n' "$label_def_file"
+        grep -oP '#include[[:space:]]+"\K[^"]+(?=.*\.(dts|dtsi))' "$cur_file" 2>/dev/null | while read -r inc; do
+            [[ "$inc" = /* ]] && printf '%s\n' "$inc" || printf '%s\n' "$(dirname "$cur_file")/$inc"
+        done
+    )
+    while IFS= read -r match; do
+        local loc
+        loc="$(_match_to_location_json "$match")"
+        [[ -n "$loc" ]] && printf '%s\n' "$loc"
+    done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -n --column -F "&${label}" 2>/dev/null)
+}
+
 handle_references() {
     local body="$1"
     local uri line character id text
@@ -2136,45 +2200,9 @@ handle_references() {
         line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
 
         if printf '%s' "$line_text" | grep -qE "^[[:space:]]*${word}[[:space:]]*:"; then
-            pattern="&${word}"
-            # Find the file where this label is defined
-            local label_def_file cur_file
-            cur_file="${uri#file://}"
-            local same_line
-            same_line="$(find_label_line "$text" "$word")" || same_line=""
-            if [[ -n "$same_line" ]]; then
-                label_def_file="$cur_file"
-            else
-                local cross
-                cross="$(find_label_in_includes "$word" "$cur_file")" || cross=""
-                label_def_file="${cross%:*}"
-            fi
-            # Build the set of files that are in the same device tree family
-            local dts_file_list=()
-            if [[ -n "$label_def_file" ]] && [[ -n "${LINUX_DIR:-}" ]]; then
-                # Search only files that include the definition file (and files included from current file)
-                mapfile -t dts_file_list < <(
-                    find_includers_of "$label_def_file" "${LINUX_DIR}/arch" 2>/dev/null
-                    printf '%s\n' "$label_def_file"
-                    # Also include files included from current file (downward)
-                    grep -oP '#include[[:space:]]+"\K[^"]+(?=.*\.(dts|dtsi))' "$cur_file" 2>/dev/null | while read -r inc; do
-                        [[ "$inc" = /* ]] && printf '%s\n' "$inc" || printf '%s\n' "$(dirname "$cur_file")/$inc"
-                    done
-                )
-                while IFS= read -r match; do
-                    local ref_file ref_line ref_col _raw_line _raw_col
-                    ref_file="$(printf '%s' "$match" | cut -d: -f1)"
-                    _raw_line="$(printf '%s' "$match" | cut -d: -f2)"
-                    _raw_col="$(printf '%s' "$match" | cut -d: -f3)"
-                    [[ "$_raw_line" =~ ^[0-9]+$ ]] || continue
-                    [[ "$_raw_col" =~ ^[0-9]+$ ]] || _raw_col=1
-                    ref_line=$(( _raw_line - 1 ))
-                    ref_col=$(( _raw_col - 1 ))
-                    [[ $ref_line -lt 0 ]] && ref_line=0
-                    [[ $ref_col -lt 0 ]] && ref_col=0
-                    results+=("$(jq -n --arg f "file://${ref_file}" --argjson l "$ref_line" --argjson c "$ref_col" '{uri:$f,range:{start:{line:$l,character:$c},end:{line:$l,character:$c}}}')") 
-                done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -n --column -F "$pattern" 2>/dev/null)
-            fi
+            while IFS= read -r loc; do
+                [[ -n "$loc" ]] && results+=("$loc")
+            done < <(_find_label_refs "$word" "$uri" "$text")
         elif printf '%s' "$line_text" | grep -q 'compatible.*='; then
             pattern="\"${word}\""
             search_glob="--glob=*.dts --glob=*.dtsi --glob=*.yaml --glob=*.c --glob=*.h"
@@ -2184,17 +2212,9 @@ handle_references() {
         fi
 
         while IFS= read -r match; do
-            local ref_file ref_line ref_col _raw_line _raw_col
-            ref_file="$(printf '%s' "$match" | cut -d: -f1)"
-            _raw_line="$(printf '%s' "$match" | cut -d: -f2)"
-            _raw_col="$(printf '%s' "$match" | cut -d: -f3)"
-            [[ "$_raw_line" =~ ^[0-9]+$ ]] || continue
-            [[ "$_raw_col" =~ ^[0-9]+$ ]] || _raw_col=1
-            ref_line=$(( _raw_line - 1 ))
-            ref_col=$(( _raw_col - 1 ))
-            [[ $ref_line -lt 0 ]] && ref_line=0
-            [[ $ref_col -lt 0 ]] && ref_col=0
-            results+=("{\"uri\":\"file://${ref_file}\",\"range\":{\"start\":{\"line\":${ref_line},\"character\":${ref_col}},\"end\":{\"line\":${ref_line},\"character\":${ref_col}}}}") 
+            local loc
+            loc="$(_match_to_location_json "$match")"
+            [[ -n "$loc" ]] && results+=("$loc")
         done < <([[ -n "${search_glob:-}" && -n "${pattern:-}" ]] && rg -n --column "$pattern" $search_glob "$LINUX_DIR" 2>/dev/null || true)
     fi
 
@@ -2214,6 +2234,7 @@ handle_references() {
     sorted_json="$(printf '%s' "$json_array" | jq 'sort_by(.uri) | unique_by(.uri)' 2>/dev/null)" || sorted_json="$json_array"
     send "$(jq -n --argjson id "$id" --argjson refs "$sorted_json" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
 }
+
 
 
 handle_completion() {
