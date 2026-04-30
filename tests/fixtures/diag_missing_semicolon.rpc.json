@@ -1,1 +1,1 @@
-{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_missing_semicolon.dts","diagnostics":[{"range":{"start":{"line":7,"character":0},"end":{"line":7,"character":100}},"severity":1,"message":"Missing semicolon"}]}}
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_missing_semicolon.dts","diagnostics":[{"range":{"start":{"line":7,"character":2},"end":{"line":7,"character":12}},"severity":1,"message":"Missing semicolon"}]}}

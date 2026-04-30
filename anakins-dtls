@@ -1684,6 +1684,14 @@ collect_diagnostics() {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
         }
+        function make_at(lineno, sev, msg, col_start, col_end) {
+            gsub(/"/, "\\\"", msg)
+            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", lineno, col_start, lineno, col_end, sev, msg)
+        }
+        function col_of(line, pattern,    idx) {
+            idx = index(line, pattern)
+            return (idx > 0) ? idx - 1 : 0
+        }
         BEGIN { angle = 0; depth = 0; nd = 0; Q = "\x27" }
         {
             lineno = NR - 1
@@ -1703,8 +1711,10 @@ collect_diagnostics() {
             gsub(/[[:space:]]+$/, "", trimmed)
             continuation = (trimmed ~ /,$/ || angle > 0)
 
-            if (!continuation && line ~ /^[[:space:]]+[A-Za-z_#][A-Za-z0-9_,#-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/)
-                diags[nd++] = make(lineno, 1, "Missing semicolon")
+            if (!continuation && line ~ /^[[:space:]]+[A-Za-z_#][A-Za-z0-9_,#-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/) {
+                match(line, /[A-Za-z_#][A-Za-z0-9_,#-]*/); cs = RSTART-1; ce = cs+RLENGTH
+                diags[nd++] = make_at(lineno, 1, "Missing semicolon", cs, ce)
+            }
 
             if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
                 diags[nd++] = make(lineno, 1, "Missing semicolon: expected }; not }")
@@ -1770,7 +1780,7 @@ collect_diagnostics() {
 
                 # Duplicate property in same node
                 if (prop in prop_seen[depth])
-                    diags[nd++] = make(lineno, 2, "Duplicate property " Q prop Q " in node")
+                    { match(line, prop); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 2, "Duplicate property " Q prop Q " in node", cs, ce) }
                 else
                     prop_seen[depth][prop] = lineno
 
@@ -1791,7 +1801,7 @@ collect_diagnostics() {
                 if (prop == "status" && match(line, /status[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
                     sv = rarr[1]
                     if (sv != "okay" && sv != "disabled" && sv != "reserved" && sv != "fail" && sv !~ /^fail-/) {
-                        diags[nd++] = make(lineno, 1, "Invalid status value " Q sv Q " -- must be okay, disabled, reserved, fail, or fail-sss")
+                        { match(line, /"[^"]*"/); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 1, "Invalid status value " Q sv Q " -- must be okay, disabled, reserved, fail, or fail-sss", cs, ce) }
                     }
                 }
 
@@ -1827,7 +1837,7 @@ collect_diagnostics() {
                     # Exceptions: well-known valid non-vendor-prefixed strings
                     if (cv != "simple-bus" && cv != "simple-mfd" && cv != "fixed-clock" && cv != "regulator-fixed") {
                         if (cv !~ /,/ || cv ~ /^[A-Z]/ || cv ~ /[[:space:]]/) {
-                            diags[nd++] = make(lineno, 2, "compatible string " Q cv Q " should follow vendor,model format")
+                            { match(line, /"[^"]*"/); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 2, "compatible string " Q cv Q " should follow vendor,model format", cs, ce) }
                         }
                     }
                 }
