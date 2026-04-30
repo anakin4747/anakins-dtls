@@ -2230,7 +2230,7 @@ while recv; do
                 "${root_path}/linux/include"; do
                 [[ -d "$_idir" ]] && INCLUDE_DIRS+=("$_idir")
             done
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
             ;;
         initialized)
             ;;
