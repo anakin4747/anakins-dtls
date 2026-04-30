@@ -4,7 +4,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-command -v jq > /dev/null || { printf 'anakins-dtls: jq is required but not found in PATH\n' >&2; exit 1; }
+for _dep in jq rg gawk sed grep; do
+    command -v "$_dep" > /dev/null || { printf 'anakins-dtls: %s is required but not found in PATH\n' "$_dep" >&2; exit 1; }
+done
+unset _dep
 
 # Send a JSON-RPC message with a Content-Length header on stdout.
 send() {
