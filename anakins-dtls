@@ -1694,9 +1694,22 @@ publish_diagnostics() {
 collect_diagnostics() {
     local text="$1"
 
+    # Pre-build set of known valid compatibles (those with a binding YAML) to skip format check
+    # Only check compatibles that have no comma (the ones that might trigger the warning)
+    local known_compats=""
+    if [[ -n "${BINDINGS_DIR:-}" ]]; then
+        local no_comma_compats
+        no_comma_compats="$(printf '%s' "$text" | grep -oP 'compatible\s*=\s*"\K[^"]+' | grep -v ',' | sort -u)"
+        if [[ -n "$no_comma_compats" ]]; then
+            known_compats="$(printf '%s\n' "$no_comma_compats" | while read -r cv; do
+                rg -ql --fixed-strings "$cv" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null && printf '%s|' "$cv"
+            done)"
+        fi
+    fi
+
     # Single gawk pass for syntax diagnostics
     local syntax_diags
-    syntax_diags="$(printf '%s' "$text" | gawk '
+    syntax_diags="$(printf '%s' "$text" | gawk -v known_compats="$known_compats" '
         function make(lineno, sev, msg) {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
@@ -1866,8 +1879,8 @@ collect_diagnostics() {
                 # compatible format check
                 if (prop == "compatible" && match(line, /compatible[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
                     cv = rarr[1]
-                    # Exceptions: well-known valid non-vendor-prefixed strings
-                    if (cv != "simple-bus" && cv != "simple-mfd" && cv != "fixed-clock" && cv != "regulator-fixed") {
+                    # Skip format check if compatible is known (has a binding YAML) or is a well-known exception
+                    if (cv != "simple-bus" && cv != "simple-mfd" && cv != "fixed-clock" && cv != "regulator-fixed" && index(known_compats, cv "|") == 0) {
                         if (cv !~ /,/ || cv ~ /^[A-Z]/ || cv ~ /[[:space:]]/) {
                             { match(line, /"[^"]*"/); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 2, "compatible string " Q cv Q " should follow vendor,model format", cs, ce) }
                         }
