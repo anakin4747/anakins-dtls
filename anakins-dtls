@@ -1065,12 +1065,13 @@ compatible_value_at() {
 
 # Send a definition Location response.
 send_definition() {
-    local id="$1" file_path="$2" file_line="$3"
+    local id="$1" file_path="$2" file_line="$3" char_col="${4:-0}"
     send "$(jq -n \
         --argjson id "$id" \
         --arg uri "file://$file_path" \
         --argjson line "$file_line" \
-        '{"jsonrpc":"2.0","id":$id,"result":{"uri":$uri,"range":{"start":{"line":$line,"character":0},"end":{"line":$line,"character":0}}}}')"
+        --argjson col "$char_col" \
+        '{"jsonrpc":"2.0","id":$id,"result":{"uri":$uri,"range":{"start":{"line":$line,"character":$col},"end":{"line":$line,"character":$col}}}}')"
 }
 
 # Find property definition in binding file or its $ref'd files. Returns "file:line" or empty.
@@ -1186,12 +1187,15 @@ handle_definition() {
     local phandle_label
     phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")" || phandle_label=""
     if [[ -n "$phandle_label" ]]; then
-        local label_line
+        local label_line label_col
         label_line="$(find_label_line "$def_text" "$phandle_label")" || label_line=""
         if [[ -n "$label_line" ]]; then
+            local label_line_text
+            label_line_text="$(printf '%s' "$def_text" | sed -n "${label_line}p")"
+            label_col="$(printf '%s' "$label_line_text" | grep -bo "${phandle_label}:" | head -1 | cut -d: -f1)" || label_col=0
             label_line=$(( label_line - 1 ))
             local def_path="${def_uri#file://}"
-            send_definition "$def_id" "$def_path" "$label_line"
+            send_definition "$def_id" "$def_path" "$label_line" "${label_col:-0}"
             return
         fi
         # Cross-file: search included files
@@ -1199,11 +1203,14 @@ handle_definition() {
         local cross_result
         cross_result="$(find_label_in_includes "$phandle_label" "$def_file_path")" || cross_result=""
         if [[ -n "$cross_result" ]]; then
-            local cross_file cross_line
+            local cross_file cross_line cross_line_text cross_col
             cross_file="${cross_result%:*}"
-            cross_line=$(( ${cross_result##*:} - 1 ))
+            cross_line="${cross_result##*:}"
+            cross_line_text="$(sed -n "${cross_line}p" "$cross_file" 2>/dev/null)"
+            cross_col="$(printf '%s' "$cross_line_text" | grep -bo "${phandle_label}:" | head -1 | cut -d: -f1)" || cross_col=0
+            cross_line=$(( cross_line - 1 ))
             [[ $cross_line -lt 0 ]] && cross_line=0
-            send_definition "$def_id" "$cross_file" "$cross_line"
+            send_definition "$def_id" "$cross_file" "$cross_line" "${cross_col:-0}"
             return
         fi
     fi

@@ -1,1 +1,1 @@
-{"jsonrpc":"2.0","id":2,"result":{"uri":"file://$LSTS_ROOT/linux/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi","range":{"start":{"line":151,"character":0},"end":{"line":151,"character":0}}}}
+{"jsonrpc":"2.0","id":2,"result":{"uri":"file://$LSTS_ROOT/linux/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi","range":{"start":{"line":151,"character":2},"end":{"line":151,"character":2}}}}
