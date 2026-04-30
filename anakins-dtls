@@ -2152,7 +2152,6 @@ handle_references() {
             # Build the set of files that are in the same device tree family
             local dts_file_list=()
             if [[ -n "$label_def_file" ]] && [[ -n "${LINUX_DIR:-}" ]]; then
-                dts_dir="$(dirname "$label_def_file")"
                 # Search only files that include the definition file (and files included from current file)
                 mapfile -t dts_file_list < <(
                     find_includers_of "$label_def_file" "${LINUX_DIR}/arch" 2>/dev/null
