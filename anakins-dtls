@@ -1819,16 +1819,24 @@ collect_diagnostics() {
                     }
                 }
 
-                # Node unit-address vs first reg value
-                if (prop == "reg" && node_unit_addr[depth] != "" && match(line, /reg[[:space:]]*=[[:space:]]*<([[:space:]]*0[xX]([0-9a-fA-F]+)|([0-9]+))/, rarr)) {
-                    if (rarr[2] != "") first_val = rarr[2]
-                    else first_val = sprintf("%x", rarr[3] + 0)
+                # Node unit-address vs reg values (check all cells, handles multi-cell addresses)
+                if (prop == "reg" && node_unit_addr[depth] != "") {
                     unit = node_unit_addr[depth]
-                    # Normalize both to lowercase hex without leading zeros for comparison
                     cmd1 = "printf %x 0x" unit; cmd1 | getline norm_unit; close(cmd1)
-                    cmd2 = "printf %x 0x" first_val; cmd2 | getline norm_val; close(cmd2)
-                    if (norm_unit != norm_val)
-                        diags[nd++] = make(lineno, 2, "Node unit-address (0x" unit ") does not match first reg value (0x" first_val ")")
+                    # Extract all hex/decimal values from reg = <...>
+                    reg_part = line; sub(/.*reg[[:space:]]*=[[:space:]]*</, "", reg_part); sub(/>.*/, "", reg_part)
+                    n_cells = split(reg_part, cells, /[[:space:]]+/)
+                    matched = 0
+                    for (ci = 1; ci <= n_cells; ci++) {
+                        cell = cells[ci]; gsub(/[^0-9a-fA-FxX]/, "", cell)
+                        if (cell == "") continue
+                        cmd2 = "printf %x " cell; cmd2 | getline norm_cell; close(cmd2)
+                        if (norm_unit == norm_cell) { matched = 1; break }
+                    }
+                    if (!matched && n_cells > 0) {
+                        cmd3 = "printf %x " cells[1]; cmd3 | getline first_val; close(cmd3)
+                        diags[nd++] = make(lineno, 2, "Node unit-address (0x" unit ") does not match any reg cell value")
+                    }
                 }
 
                 # compatible format check
