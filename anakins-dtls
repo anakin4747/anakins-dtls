@@ -1973,6 +1973,8 @@ check_binding_diagnostics() {
                 compat = arr[1]
                 compat_line = lineno
                 compat_depth = depth
+                # Store column of the compatible value (the quoted string)
+                match(line, /"[^"]*"/); compat_col_start = RSTART - 1; compat_col_end = RSTART + RLENGTH - 1
                 delete props
                 np = 0
             }
@@ -1981,7 +1983,7 @@ check_binding_diagnostics() {
                 props[np++] = arr[1]
 
             if (compat != "" && depth < compat_depth) {
-                printf "%d\t%s", compat_line, compat
+                printf "%d\t%s\t%d\t%d", compat_line, compat, compat_col_start, compat_col_end
                 for (i = 0; i < np; i++) printf "\t%s", props[i]
                 printf "\n"
                 compat = ""
@@ -1989,7 +1991,7 @@ check_binding_diagnostics() {
         }
         END {
             if (compat != "") {
-                printf "%d\t%s", compat_line, compat
+                printf "%d\t%s\t%d\t%d", compat_line, compat, compat_col_start, compat_col_end
                 for (i = 0; i < np; i++) printf "\t%s", props[i]
                 printf "\n"
             }
@@ -2018,7 +2020,7 @@ check_binding_diagnostics() {
 
     # Collect raw diagnostic strings "line|sev|message", then emit JSON via awk
     local raw_diags=()
-    while IFS=$'\t' read -r compat_line compat rest; do
+    while IFS=$'\t' read -r compat_line compat compat_col_start compat_col_end rest; do
         [[ -z "$compat" ]] && continue
         local binding_file="${compat_binding_cache[$compat]:-}"
         [[ -z "$binding_file" ]] && continue
@@ -2040,13 +2042,13 @@ check_binding_diagnostics() {
         for prop in "${!node_map[@]}"; do
             _is_standard_prop "$prop" && continue
             [[ -n "${doc_map[$prop]:-}" ]] && continue
-            raw_diags+=("${compat_line}|2|Property '${prop}' is not documented in the binding for '${compat}'")
+            raw_diags+=("${compat_line}|${compat_col_start:-0}|${compat_col_end:-100}|2|Property '${prop}' is not documented in the binding for '${compat}'")
         done
 
         while IFS= read -r req; do
             [[ -z "$req" ]] && continue
             [[ -n "${node_map[$req]:-}" ]] && continue
-            raw_diags+=("${compat_line}|2|Required property '${req}' missing for '${compat}'")
+            raw_diags+=("${compat_line}|${compat_col_start:-0}|${compat_col_end:-100}|2|Required property '${req}' missing for '${compat}'")
         done <<< "${binding_req_cache[$binding_file]}"
     done <<< "$nodes"
 
@@ -2058,11 +2060,10 @@ check_binding_diagnostics() {
     # Build JSON array from raw_diags using a single awk pass
     printf '%s\n' "${raw_diags[@]}" | gawk -F'|' '
         function escape(s) { gsub(/"/, "\\\"", s); return s }
-        NF >= 3 {
-            l = $1 + 0; s = $2 + 0
-            # Rejoin message parts (message may contain |)
-            msg = $3; for (i = 4; i <= NF; i++) msg = msg "|" $i
-            diags[nd++] = sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", l, l, s, escape(msg))
+        NF >= 4 {
+            l = $1 + 0; cs = $2 + 0; ce = $3 + 0; s = $4 + 0
+            msg = $5; for (i = 6; i <= NF; i++) msg = msg "|" $i
+            diags[nd++] = sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", l, cs, l, ce, s, escape(msg))
         }
         END {
             printf "["
