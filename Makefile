@@ -1,4 +1,6 @@
-.PHONY: all test lint submodules
+.PHONY: all test lint submodules install install-manual uninstall-manual
+
+PREFIX ?= /usr/local
 
 all: submodules
 	nix --extra-experimental-features 'nix-command flakes' develop --command make test lint
@@ -11,3 +13,9 @@ lint:
 
 test:
 	bats --formatter $(CURDIR)/tests/lsts/lsts-format-pretty tests/*_tests.bats
+
+install-manual:
+	install -m 755 anakins-dtls $(PREFIX)/bin/anakins-dtls
+
+uninstall-manual:
+	rm -f $(PREFIX)/bin/anakins-dtls
