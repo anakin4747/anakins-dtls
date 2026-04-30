@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-for _dep in jq rg gawk sed grep; do
+for _dep in jq rg sed grep; do
     command -v "$_dep" > /dev/null || { printf 'anakins-dtls: %s is required but not found in PATH\n' "$_dep" >&2; exit 1; }
 done
 unset _dep
@@ -1728,6 +1728,404 @@ publish_diagnostics() {
     ) &
 }
 
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
+
+# publish_diagnostics <uri> <text>
+# Send a textDocument/publishDiagnostics notification. Runs in background
+# so the main loop remains responsive to incoming requests.
+publish_diagnostics() {
+    local uri="$1" text="$2"
+    (
+        local diagnostics
+        diagnostics="$(collect_diagnostics "$text")"
+        send "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/publishDiagnostics\",\"params\":{\"uri\":${uri},\"diagnostics\":${diagnostics}}}"
+    ) &
+}
+
+# ---------------------------------------------------------------------------
+# Bash syntax diagnostic functions (replace gawk passes)
+# ---------------------------------------------------------------------------
+collect_syntax_diagnostics() {
+    local text="$1" known_compats="${2:-}"
+    local -a raw_diags=()
+
+    local depth=0 angle=0 lineno=0 last_open_line=0
+    local -A seen_labels=()
+    local -A prop_seen=()
+    local -A addr_cells=()
+    local -A size_cells=()
+    local -A node_unit_addr=()
+    local -A node_has_linux_phandle=() linux_phandle_lineno=() node_has_phandle=()
+    local pending_unit_addr=""
+
+    _dj_esc() {
+        local s="${1//\\/\\\\}"
+        s="${s//\"/\\\"}"
+        printf '%s' "$s"
+    }
+    _dj_make() {
+        local l=$1 sev=$2
+        local msg; msg="$(_dj_esc "$3")"
+        printf '{"range":{"start":{"line":%d,"character":0},"end":{"line":%d,"character":100}},"severity":%d,"message":"%s"}' \
+            "$l" "$l" "$sev" "$msg"
+    }
+    _dj_make_line() {
+        local l=$1 sev=$2 src_line="$4"
+        local msg; msg="$(_dj_esc "$3")"
+        local rest="$src_line" cs=0
+        while [[ -n "$rest" && ("${rest:0:1}" == ' ' || "${rest:0:1}" == $'\t') ]]; do
+            rest="${rest:1}"
+            (( cs++ )) || true
+        done
+        local ce=${#src_line}
+        [[ $ce -le $cs ]] && ce=$(( cs + ${#rest} ))
+        printf '{"range":{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}},"severity":%d,"message":"%s"}' \
+            "$l" "$cs" "$l" "$ce" "$sev" "$msg"
+    }
+    _dj_make_at() {
+        local l=$1 sev=$2 cs=$4 ce=$5
+        local msg; msg="$(_dj_esc "$3")"
+        printf '{"range":{"start":{"line":%d,"character":%d},"end":{"line":%d,"character":%d}},"severity":%d,"message":"%s"}' \
+            "$l" "$cs" "$l" "$ce" "$sev" "$msg"
+    }
+    # _first_quoted_range <line> → outputs "cs ce" or nothing
+    _first_quoted_range() {
+        local s="$1"
+        local before="${s%%\"*}"
+        [[ "$before" == "$s" ]] && return
+        local cs=${#before}
+        local rest="${s#*\"}"
+        local inside="${rest%%\"*}"
+        printf '%d %d' "$cs" $(( cs + ${#inside} + 2 ))
+    }
+    # Find column of first occurrence of substr in str
+    _col_of() {
+        local str="$1" sub="$2"
+        local pfx="${str%%${sub}*}"
+        printf '%d' "${#pfx}"
+    }
+
+    while IFS= read -r raw_line; do
+        local line="$raw_line"
+
+        # Strip // comments (crude, matches gawk)
+        line="${line//\/\//}"
+        # Strip /* ... */ inline block comments
+        while [[ "$line" == */\** && "$line" == *\*/* ]]; do
+            local _lhs="${line%%/\**}"
+            local _rhs="${line#*\*/}"
+            line="${_lhs}${_rhs}"
+        done
+
+        # Track < > for multi-line value detection
+        local _i _ch
+        for (( _i=0; _i<${#line}; _i++ )); do
+            _ch="${line:$_i:1}"
+            if   [[ "$_ch" == '<' ]]; then (( angle++ )) || true
+            elif [[ "$_ch" == '>' ]]; then (( angle > 0 )) && (( angle-- )) || true
+            fi
+        done
+
+        # Continuation: trailing comma or open angle brackets
+        local _tt="$line"
+        while [[ -n "$_tt" && ("${_tt: -1}" == ' ' || "${_tt: -1}" == $'\t') ]]; do
+            _tt="${_tt%?}"
+        done
+        local continuation=0
+        [[ -n "$_tt" && "${_tt: -1}" == ',' ]] && continuation=1
+        [[ $angle -gt 0 ]] && continuation=1
+
+        # Missing semicolon on a property assignment line
+        if [[ $continuation -eq 0 \
+           && "$line" =~ ^[[:space:]]+([A-Za-z_#][A-Za-z0-9_,#-]*)[[:space:]]*= ]]; then
+            local _pname="${BASH_REMATCH[1]}"
+            # Check for missing semicolon AFTER saving the match
+            if [[ ! "$line" =~ \;[[:space:]]*$ ]]; then
+                local _pfx _cs _ce
+                _pfx="${line%%${_pname}*}"
+                _cs=${#_pfx}
+                _ce=$(( _cs + ${#_pname} ))
+                raw_diags+=( "$(_dj_make_at "$lineno" 1 "Missing semicolon" "$_cs" "$_ce")" )
+            fi
+        fi
+
+        # Bare } without semicolon
+        if [[ "$line" =~ ^[[:space:]]*\}[[:space:]]*$ ]]; then
+            raw_diags+=( "$(_dj_make_line "$lineno" 1 "Missing semicolon: expected }; not }" "$raw_line")" )
+        fi
+
+        # Detect node unit-address BEFORE processing braces
+        pending_unit_addr=""
+        if [[ "$line" =~ [A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+)[[:space:]]*\{ ]]; then
+            pending_unit_addr="${BASH_REMATCH[1]}"
+        elif [[ "$line" =~ [A-Za-z_][A-Za-z0-9_,-]*:[[:space:]]*[A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+) ]]; then
+            pending_unit_addr="${BASH_REMATCH[1]}"
+        fi
+
+        # Process braces in document order
+        local _bline="$line"
+        while [[ "$_bline" =~ [\{\}] ]]; do
+            local _bopen="${_bline%%\{*}"
+            local _bclose="${_bline%%\}*}"
+            local _bop=${#_bopen} _bcl=${#_bclose}
+            if [[ $_bop -lt $_bcl ]]; then
+                (( depth++ )) || true
+                last_open_line="$lineno"
+                addr_cells[$depth]="${addr_cells[$((depth-1))]:-}"
+                size_cells[$depth]="${size_cells[$((depth-1))]:-}"
+                local _k
+                for _k in "${!prop_seen[@]}"; do
+                    [[ "$_k" == "${depth}:"* ]] && unset "prop_seen[$_k]"
+                done
+                node_has_linux_phandle[$depth]=0
+                node_has_phandle[$depth]=0
+                node_unit_addr[$depth]="${pending_unit_addr:-}"
+                pending_unit_addr=""
+                _bline="${_bline:$((_bop+1))}"
+            else
+                if [[ $depth -gt 0 ]]; then
+                    if [[ "${node_has_linux_phandle[$depth]:-0}" == 1 \
+                       && "${node_has_phandle[$depth]:-0}" != 1 ]]; then
+                        raw_diags+=( "$(_dj_make "${linux_phandle_lineno[$depth]:-0}" 4 \
+                            "linux,phandle is deprecated — use phandle instead")" )
+                    fi
+                    local _k
+                    for _k in "${!prop_seen[@]}"; do
+                        [[ "$_k" == "${depth}:"* ]] && unset "prop_seen[$_k]"
+                    done
+                    unset "node_unit_addr[$depth]" || true
+                    unset "addr_cells[$depth]" || true
+                    unset "size_cells[$depth]" || true
+                    (( depth-- )) || true
+                else
+                    raw_diags+=( "$(_dj_make_line "$lineno" 1 "Unbalanced brace: unexpected }" "$raw_line")" )
+                fi
+                _bline="${_bline:$((_bcl+1))}"
+            fi
+        done
+
+        # Duplicate node label
+        if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*: ]]; then
+            local _lbl="${BASH_REMATCH[1]}"
+            if [[ -n "${seen_labels[$_lbl]+x}" ]]; then
+                raw_diags+=( "$(_dj_make_line "$lineno" 2 "Duplicate node label '$_lbl'" "$raw_line")" )
+            else
+                seen_labels[$_lbl]="$lineno"
+            fi
+        fi
+
+        # Property-level diagnostics (inside a node)
+        if [[ $depth -gt 0 \
+           && "$line" =~ ^[[:space:]]+([A-Za-z_#][A-Za-z0-9_,#.-]*)([[:space:]]*=|;) ]]; then
+            local _prop="${BASH_REMATCH[1]}"
+            local _prop_key="${depth}:${_prop}"
+
+            # Duplicate property
+            if [[ -n "${prop_seen[$_prop_key]+x}" ]]; then
+                local _dpfx _dcs _dce
+                _dpfx="${line%%${_prop}*}"
+                _dcs=${#_dpfx}
+                _dce=$(( _dcs + ${#_prop} ))
+                raw_diags+=( "$(_dj_make_at "$lineno" 2 "Duplicate property '$_prop' in node" "$_dcs" "$_dce")" )
+            else
+                prop_seen[$_prop_key]=1
+            fi
+
+            [[ "$_prop" == "phandle" ]] && node_has_phandle[$depth]=1
+            if [[ "$_prop" == "linux,phandle" ]]; then
+                node_has_linux_phandle[$depth]=1
+                linux_phandle_lineno[$depth]="$lineno"
+            fi
+
+            # #address-cells / #size-cells
+            if [[ "$_prop" == "#address-cells" && "$line" =~ \<([0-9]+)\> ]]; then
+                addr_cells[$depth]="${BASH_REMATCH[1]}"
+            fi
+            if [[ "$_prop" == "#size-cells" && "$line" =~ \<([0-9]+)\> ]]; then
+                size_cells[$depth]="${BASH_REMATCH[1]}"
+            fi
+
+            # status value check
+            if [[ "$_prop" == "status" \
+               && "$line" =~ status[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+                local _sv="${BASH_REMATCH[1]}"
+                if [[ "$_sv" != "okay" && "$_sv" != "disabled" && "$_sv" != "reserved" \
+                   && "$_sv" != "fail" && "$_sv" != fail-* ]]; then
+                    local _qcs _qce
+                    read -r _qcs _qce <<< "$(_first_quoted_range "$line")"
+                    raw_diags+=( "$(_dj_make_at "$lineno" 1 \
+                        "Invalid status value '$_sv' -- must be okay, disabled, reserved, fail, or fail-sss" \
+                        "${_qcs:-0}" "${_qce:-100}")" )
+                fi
+            fi
+
+            # reg cell count mismatch and unit-addr check
+            if [[ "$_prop" == "reg" \
+               && "$line" =~ reg[[:space:]]*=[[:space:]]*\<([^\>]+)\> ]]; then
+                local _reg_content="${BASH_REMATCH[1]}"
+                local -a _reg_cells=()
+                read -ra _reg_cells <<< "$_reg_content"
+                local _ncells=${#_reg_cells[@]}
+                local _pdepth _ac _sc
+                _pdepth=$(( depth - 1 ))
+                _ac="${addr_cells[$_pdepth]:-}"
+                _sc="${size_cells[$_pdepth]:-}"
+                if [[ -n "$_ac" && -n "$_sc" ]]; then
+                    local _stride=$(( _ac + _sc ))
+                    if [[ $_stride -gt 0 && $(( _ncells % _stride )) -ne 0 ]]; then
+                        raw_diags+=( "$(_dj_make_line "$lineno" 2 \
+                            "reg cell count ($_ncells) is not a multiple of #address-cells + #size-cells ($_ac+$_sc=$_stride)" \
+                            "$raw_line")" )
+                    fi
+                fi
+            fi
+
+            # Node unit-address vs reg values
+            if [[ "$_prop" == "reg" && -n "${node_unit_addr[$depth]:-}" ]]; then
+                local _unit="${node_unit_addr[$depth]}"
+                local _norm_unit
+                _norm_unit="$(printf '%x' "0x$_unit" 2>/dev/null)" || _norm_unit=""
+                if [[ -n "$_norm_unit" \
+                   && "$line" =~ reg[[:space:]]*=[[:space:]]*\<([^\>]+)\> ]]; then
+                    local _reg_part="${BASH_REMATCH[1]}"
+                    local -a _ucells=()
+                    read -ra _ucells <<< "$_reg_part"
+                    local _matched=0 _ucell _norm_cell
+                    for _ucell in "${_ucells[@]}"; do
+                        _ucell="${_ucell//[^0-9a-fA-FxX]/}"
+                        [[ -z "$_ucell" ]] && continue
+                        _norm_cell="$(printf '%x' "$_ucell" 2>/dev/null)" || continue
+                        if [[ "$_norm_unit" == "$_norm_cell" ]]; then
+                            _matched=1
+                            break
+                        fi
+                    done
+                    if [[ $_matched -eq 0 && ${#_ucells[@]} -gt 0 ]]; then
+                        raw_diags+=( "$(_dj_make_line "$lineno" 2 \
+                            "Node unit-address (0x$_unit) does not match any reg cell value" \
+                            "$raw_line")" )
+                    fi
+                fi
+            fi
+
+            # compatible format check
+            if [[ "$_prop" == "compatible" \
+               && "$line" =~ compatible[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+                local _cv="${BASH_REMATCH[1]}"
+                if [[ "$_cv" != "simple-bus" && "$_cv" != "simple-mfd" \
+                   && "$_cv" != "fixed-clock" && "$_cv" != "regulator-fixed" \
+                   && "$known_compats" != *"${_cv}|"* ]]; then
+                    if [[ "$_cv" != *","* || "$_cv" =~ ^[A-Z] || "$_cv" == *" "* ]]; then
+                        local _cqcs _cqce
+                        read -r _cqcs _cqce <<< "$(_first_quoted_range "$line")"
+                        raw_diags+=( "$(_dj_make_at "$lineno" 2 \
+                            "compatible string '$_cv' should follow vendor,model format" \
+                            "${_cqcs:-0}" "${_cqce:-100}")" )
+                    fi
+                fi
+            fi
+        fi
+
+        (( lineno++ )) || true
+    done <<< "$text"
+
+    if [[ $depth -gt 0 ]]; then
+        raw_diags+=( "$(_dj_make "$last_open_line" 1 "Unbalanced brace: unclosed {")" )
+    fi
+
+    local _out="[" _first=1 _d
+    for _d in "${raw_diags[@]}"; do
+        [[ $_first -eq 1 ]] || _out+=","
+        _out+="$_d"
+        _first=0
+    done
+    _out+="]"
+    printf '%s' "$_out"
+}
+
+# _parse_binding_nodes <text>
+# Bash replacement for the gawk node-parser in check_binding_diagnostics().
+# Emits tab-separated: lineno\tcompat\tcol_start\tcol_end\tprop1\tprop2...
+_parse_binding_nodes() {
+    local text="$1"
+    local depth=0 lineno=0
+    local compat="" compat_line=0 compat_depth=0 compat_col_start=0 compat_col_end=0
+    local -a props=()
+
+    while IFS= read -r raw_line; do
+        local line="$raw_line"
+        line="${line//\/\//}"
+
+        # Track braces
+        local _bl="$line"
+        while [[ "$_bl" =~ [\{\}] ]]; do
+            local _bo="${_bl%%\{*}" _bc="${_bl%%\}*}"
+            local _bop=${#_bo} _bcp=${#_bc}
+            if [[ $_bop -lt $_bcp ]]; then
+                (( depth++ )) || true
+                _bl="${_bl:$((_bop+1))}"
+            else
+                [[ $depth -gt 0 ]] && (( depth-- )) || true
+                _bl="${_bl:$((_bcp+1))}"
+            fi
+        done
+
+        # Detect compatible
+        if [[ "$line" =~ compatible[[:space:]]*=[[:space:]]*\"([^\"]*)\" ]]; then
+            local _cv="${BASH_REMATCH[1]}"
+            compat="$_cv"
+            compat_line=$lineno
+            compat_depth=$depth
+            # Find the quoted range
+            local _before="${line%%\"*}"
+            if [[ "$_before" != "$line" ]]; then
+                compat_col_start=${#_before}
+                local _rest="${line#*\"}"
+                local _inside="${_rest%%\"*}"
+                compat_col_end=$(( compat_col_start + ${#_inside} + 2 ))
+            else
+                compat_col_start=0
+                compat_col_end=100
+            fi
+            props=()
+        fi
+
+        # Collect properties
+        if [[ -n "$compat" \
+           && "$line" =~ ^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$) ]]; then
+            props+=( "${BASH_REMATCH[1]}" )
+        fi
+
+        # Emit record when depth drops below compat_depth
+        if [[ -n "$compat" && $depth -lt $compat_depth ]]; then
+            printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
+            local _p
+            for _p in "${props[@]}"; do
+                printf '\t%s' "$_p"
+            done
+            printf '\n'
+            compat=""
+        fi
+
+        (( lineno++ )) || true
+    done <<< "$text"
+
+    # Emit if compat is still open at EOF
+    if [[ -n "$compat" ]]; then
+        printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
+        local _p
+        for _p in "${props[@]}"; do
+            printf '\t%s' "$_p"
+        done
+        printf '\n'
+    fi
+}
+
+# ---------------------------------------------------------------------------
+
 # collect_diagnostics <text>
 # Emit a JSON array of diagnostics for the document text.
 collect_diagnostics() {
@@ -1745,198 +2143,9 @@ collect_diagnostics() {
             done)"
     fi
 
-    # Single gawk pass for syntax diagnostics
+    # Bash replacement for the gawk syntax pass
     local syntax_diags
-    syntax_diags="$(printf '%s' "$text" | gawk -v known_compats="$known_compats" '
-        function make(lineno, sev, msg) {
-            gsub(/"/, "\\\"", msg)
-            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
-        }
-        function make_line(lineno, sev, msg, src_line,    cs, ce, trimmed) {
-            gsub(/"/, "\\\"", msg)
-            # Highlight from first non-whitespace to end of content
-            trimmed = src_line; sub(/^[[:space:]]+/, "", trimmed); cs = length(src_line) - length(trimmed)
-            ce = length(src_line); if (ce <= cs) ce = cs + length(trimmed)
-            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", lineno, cs, lineno, ce, sev, msg)
-        }
-        function make_at(lineno, sev, msg, col_start, col_end) {
-            gsub(/"/, "\\\"", msg)
-            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", lineno, col_start, lineno, col_end, sev, msg)
-        }
-        function col_of(line, pattern,    idx) {
-            idx = index(line, pattern)
-            return (idx > 0) ? idx - 1 : 0
-        }
-        BEGIN { angle = 0; depth = 0; nd = 0; Q = "\x27" }
-        {
-            lineno = NR - 1
-            line = $0
-            sub(/\/\/.*$/, "", line)
-            gsub(/\/\*[^*]*\*\//, "", line)
-
-            # Track multi-line values: count unmatched < > to detect continuations
-            n = split(line, chars, "")
-            for (i = 1; i <= n; i++) {
-                if (chars[i] == "<") angle++
-                else if (chars[i] == ">") angle = (angle > 0) ? angle - 1 : 0
-            }
-
-            # A line ending with , is a value continuation — not a missing semicolon
-            trimmed = line
-            gsub(/[[:space:]]+$/, "", trimmed)
-            continuation = (trimmed ~ /,$/ || angle > 0)
-
-            if (!continuation && line ~ /^[[:space:]]+[A-Za-z_#][A-Za-z0-9_,#-]*[[:space:]]*=/ && line !~ /;[[:space:]]*$/) {
-                match(line, /[A-Za-z_#][A-Za-z0-9_,#-]*/); cs = RSTART-1; ce = cs+RLENGTH
-                diags[nd++] = make_at(lineno, 1, "Missing semicolon", cs, ce)
-            }
-
-            if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
-                diags[nd++] = make_line(lineno, 1, "Missing semicolon: expected }; not }", line)
-
-            # --- depth tracking and per-node state ---
-            # Detect unit-address BEFORE brace loop so node_unit_addr is set correctly
-            if (line ~ /[A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+)[[:space:]]*\{/) {
-                if (match(line, /@([0-9a-fA-F]+)[[:space:]]*\{/, arr))
-                    pending_unit_addr = arr[1]
-                else if (match(line, /@([0-9a-fA-F]+)/, arr))
-                    pending_unit_addr = arr[1]
-            } else if (line ~ /[A-Za-z_][A-Za-z0-9_,-]*:[[:space:]]*[A-Za-z_][A-Za-z0-9_,-]*@([0-9a-fA-F]+)/) {
-                if (match(line, /@([0-9a-fA-F]+)/, arr))
-                    pending_unit_addr = arr[1]
-            } else {
-                pending_unit_addr = ""
-            }
-
-            prev_depth = depth
-            l = line
-            while (match(l, /[{}]/)) {
-                c = substr(l, RSTART, 1)
-                l = substr(l, RSTART + 1)
-                if (c == "{") {
-                    depth++
-                    last_open = lineno
-                    # Inherit parent address-cells/size-cells for child reg validation
-                    child_addr_cells[depth] = addr_cells[depth - 1]
-                    child_size_cells[depth] = size_cells[depth - 1]
-                    # Reset per-node property tracking for new depth
-                    delete prop_seen[depth]
-                    node_has_linux_phandle[depth] = 0
-                    node_has_phandle[depth] = 0
-                    # Save node unit-address for this depth
-                    node_unit_addr[depth] = pending_unit_addr
-                    pending_unit_addr = ""
-                } else if (depth > 0) {
-                    # Leaving a node: check linux,phandle without phandle
-                    if (node_has_linux_phandle[depth] && !node_has_phandle[depth])
-                        diags[nd++] = make(linux_phandle_line[depth], 4, "linux,phandle is deprecated — use phandle instead")
-                    delete prop_seen[depth]
-                    delete node_unit_addr[depth]
-                    delete child_addr_cells[depth]
-                    delete child_size_cells[depth]
-                    depth--
-                } else {
-                    diags[nd++] = make_line(lineno, 1, "Unbalanced brace: unexpected }", line)
-                }
-            }
-
-            # Duplicate node label detection
-            if (match(line, /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:/, arr)) {
-                lbl = arr[1]
-                if (lbl in label_seen)
-                    diags[nd++] = make_line(lineno, 2, "Duplicate node label " Q lbl Q, line)
-                else
-                    label_seen[lbl] = lineno
-            }
-
-            # Property-level diagnostics (only inside nodes, depth > 0)
-            if (depth > 0 && match(line, /^[[:space:]]+([A-Za-z_#][A-Za-z0-9_,#.-]*)([[:space:]]*=|;)/, arr)) {
-                prop = arr[1]
-
-                # Duplicate property in same node
-                if (prop in prop_seen[depth])
-                    { match(line, prop); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 2, "Duplicate property " Q prop Q " in node", cs, ce) }
-                else
-                    prop_seen[depth][prop] = lineno
-
-                # Track phandle presence
-                if (prop == "phandle") node_has_phandle[depth] = 1
-                if (prop == "linux,phandle") {
-                    node_has_linux_phandle[depth] = 1
-                    linux_phandle_line[depth] = lineno
-                }
-
-                # #address-cells / #size-cells: store for child reg validation
-                if (prop == "#address-cells" && match(line, /<([0-9]+)>/, rarr))
-                    addr_cells[depth] = rarr[1] + 0
-                if (prop == "#size-cells" && match(line, /<([0-9]+)>/, rarr))
-                    size_cells[depth] = rarr[1] + 0
-
-                # status value check
-                if (prop == "status" && match(line, /status[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
-                    sv = rarr[1]
-                    if (sv != "okay" && sv != "disabled" && sv != "reserved" && sv != "fail" && sv !~ /^fail-/) {
-                        { match(line, /"[^"]*"/); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 1, "Invalid status value " Q sv Q " -- must be okay, disabled, reserved, fail, or fail-sss", cs, ce) }
-                    }
-                }
-
-                # reg cell count mismatch
-                if (prop == "reg" && match(line, /reg[[:space:]]*=[[:space:]]*<([^>]+)>/, rarr)) {
-                    reg_str = rarr[1]
-                    gsub(/^[[:space:]]+|[[:space:]]+$/, "", reg_str)
-                    ncells = split(reg_str, tmp_cells, /[[:space:]]+/)
-                    ac = (depth - 1) in addr_cells ? addr_cells[depth - 1] : ""
-                    sc = (depth - 1) in size_cells ? size_cells[depth - 1] : ""
-                    if (ac != "" && sc != "") {
-                        stride = ac + sc
-                        if (stride > 0 && ncells % stride != 0)
-                            diags[nd++] = make_line(lineno, 2, "reg cell count (" ncells ") is not a multiple of #address-cells + #size-cells (" ac "+" sc "=" stride ")", line)
-                    }
-                }
-
-                # Node unit-address vs reg values (check all cells, handles multi-cell addresses)
-                if (prop == "reg" && node_unit_addr[depth] != "") {
-                    unit = node_unit_addr[depth]
-                    cmd1 = "printf %x 0x" unit; cmd1 | getline norm_unit; close(cmd1)
-                    # Extract all hex/decimal values from reg = <...>
-                    reg_part = line; sub(/.*reg[[:space:]]*=[[:space:]]*</, "", reg_part); sub(/>.*/, "", reg_part)
-                    n_cells = split(reg_part, cells, /[[:space:]]+/)
-                    matched = 0
-                    for (ci = 1; ci <= n_cells; ci++) {
-                        cell = cells[ci]; gsub(/[^0-9a-fA-FxX]/, "", cell)
-                        if (cell == "") continue
-                        cmd2 = "printf %x " cell; cmd2 | getline norm_cell; close(cmd2)
-                        if (norm_unit == norm_cell) { matched = 1; break }
-                    }
-                    if (!matched && n_cells > 0) {
-                        cmd3 = "printf %x " cells[1]; cmd3 | getline first_val; close(cmd3)
-                        diags[nd++] = make_line(lineno, 2, "Node unit-address (0x" unit ") does not match any reg cell value", line)
-                    }
-                }
-
-                # compatible format check
-                if (prop == "compatible" && match(line, /compatible[[:space:]]*=[[:space:]]*"([^"]+)"/, rarr)) {
-                    cv = rarr[1]
-                    # Skip format check if compatible is known (has a binding YAML) or is a well-known exception
-                    if (cv != "simple-bus" && cv != "simple-mfd" && cv != "fixed-clock" && cv != "regulator-fixed" && index(known_compats, cv "|") == 0) {
-                        if (cv !~ /,/ || cv ~ /^[A-Z]/ || cv ~ /[[:space:]]/) {
-                            { match(line, /"[^"]*"/); cs=RSTART-1; ce=cs+RLENGTH; diags[nd++] = make_at(lineno, 2, "compatible string " Q cv Q " should follow vendor,model format", cs, ce) }
-                        }
-                    }
-                }
-            }
-        }
-        END {
-            if (depth > 0)
-                diags[nd++] = make(last_open, 1, "Unbalanced brace: unclosed {")
-            printf "["
-            for (i = 0; i < nd; i++) {
-                if (i > 0) printf ","
-                printf "%s", diags[i]
-            }
-            printf "]"
-        }
-    ')"
+    syntax_diags="$(collect_syntax_diagnostics "$text" "$known_compats")"
 
     # Only run binding diagnostics on small files (≤500 lines) to stay responsive
     local line_count
@@ -1991,50 +2200,9 @@ _get_binding_props() {
 check_binding_diagnostics() {
     local text="$1"
 
-    # Parse nodes: each output line is "lineno\tcompat\tprop1\tprop2..."
+    # Parse nodes using bash (replaced gawk node-parser)
     local nodes
-    nodes=$(printf '%s' "$text" | gawk '
-        {
-            lineno = NR - 1
-            line = $0
-            sub(/\/\/.*$/, "", line)
-
-            l = line
-            while (match(l, /[{}]/)) {
-                c = substr(l, RSTART, 1)
-                l = substr(l, RSTART + 1)
-                if (c == "{") depth++
-                else if (depth > 0) depth--
-            }
-
-            if (match(line, /compatible[[:space:]]*=[[:space:]]*"([^"]*)"/, arr)) {
-                compat = arr[1]
-                compat_line = lineno
-                compat_depth = depth
-                # Store column of the compatible value (the quoted string)
-                match(line, /"[^"]*"/); compat_col_start = RSTART - 1; compat_col_end = RSTART + RLENGTH - 1
-                delete props
-                np = 0
-            }
-
-            if (compat != "" && match(line, /^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$)/, arr))
-                props[np++] = arr[1]
-
-            if (compat != "" && depth < compat_depth) {
-                printf "%d\t%s\t%d\t%d", compat_line, compat, compat_col_start, compat_col_end
-                for (i = 0; i < np; i++) printf "\t%s", props[i]
-                printf "\n"
-                compat = ""
-            }
-        }
-        END {
-            if (compat != "") {
-                printf "%d\t%s\t%d\t%d", compat_line, compat, compat_col_start, compat_col_end
-                for (i = 0; i < np; i++) printf "\t%s", props[i]
-                printf "\n"
-            }
-        }
-    ' 2>/dev/null)
+    nodes="$(_parse_binding_nodes "$text")"
 
     [[ -z "$nodes" ]] && { printf '[]'; return; }
 
@@ -2056,7 +2224,7 @@ check_binding_diagnostics() {
         binding_req_cache["$bf"]=$(awk '/^required:/{found=1; next} found && /^  - /{sub(/^  - /,""); gsub(/[^A-Za-z0-9_#,.:-]/,""); print; next} found && /^[^ ]/{exit}' "$bf" 2>/dev/null)
     done
 
-    # Collect raw diagnostic strings "line|sev|message", then emit JSON via awk
+    # Collect raw diagnostic strings "line|cs|ce|sev|message"
     local raw_diags=()
     while IFS=$'\t' read -r compat_line compat compat_col_start compat_col_end rest; do
         [[ -z "$compat" ]] && continue
@@ -2095,23 +2263,19 @@ check_binding_diagnostics() {
         return
     fi
 
-    # Build JSON array from raw_diags using a single awk pass
-    printf '%s\n' "${raw_diags[@]}" | gawk -F'|' '
-        function escape(s) { gsub(/"/, "\\\"", s); return s }
-        NF >= 4 {
-            l = $1 + 0; cs = $2 + 0; ce = $3 + 0; s = $4 + 0
-            msg = $5; for (i = 6; i <= NF; i++) msg = msg "|" $i
-            diags[nd++] = sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", l, cs, l, ce, s, escape(msg))
-        }
-        END {
-            printf "["
-            for (i = 0; i < nd; i++) {
-                if (i > 0) printf ","
-                printf "%s", diags[i]
-            }
-            printf "]"
-        }
-    '
+    # Build JSON array from raw_diags (pure bash, using jq for safe escaping)
+    local _jout='[' _jfirst=1 _jentry _jl _jcs _jce _jsev _jmsg
+    for _jentry in "${raw_diags[@]}"; do
+        IFS='|' read -r _jl _jcs _jce _jsev _jmsg <<< "$_jentry"
+        [[ $_jfirst -eq 1 ]] || _jout+=','
+        _jout+="$(jq -cn \
+            --argjson l "$_jl" --argjson cs "$_jcs" --argjson ce "$_jce" \
+            --argjson sev "$_jsev" --arg msg "$_jmsg" \
+            '{"range":{"start":{"line":$l,"character":$cs},"end":{"line":$l,"character":$ce}},"severity":$sev,"message":$msg}')"
+        _jfirst=0
+    done
+    _jout+=']'
+    printf '%s' "$_jout"
 }
 
 # Request parsing
