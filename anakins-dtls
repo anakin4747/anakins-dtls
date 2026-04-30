@@ -2149,14 +2149,18 @@ handle_references() {
                     done
                 )
                 while IFS= read -r match; do
-                    local ref_file ref_line _raw_line
+                    local ref_file ref_line ref_col _raw_line _raw_col
                     ref_file="$(printf '%s' "$match" | cut -d: -f1)"
                     _raw_line="$(printf '%s' "$match" | cut -d: -f2)"
+                    _raw_col="$(printf '%s' "$match" | cut -d: -f3)"
                     [[ "$_raw_line" =~ ^[0-9]+$ ]] || continue
+                    [[ "$_raw_col" =~ ^[0-9]+$ ]] || _raw_col=1
                     ref_line=$(( _raw_line - 1 ))
+                    ref_col=$(( _raw_col - 1 ))
                     [[ $ref_line -lt 0 ]] && ref_line=0
-                    results+=("$(jq -n --arg f "file://${ref_file}" --argjson l "$ref_line" '{uri:$f,range:{start:{line:$l,character:0},end:{line:$l,character:100}}}')") 
-                done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -n -F "$pattern" 2>/dev/null)
+                    [[ $ref_col -lt 0 ]] && ref_col=0
+                    results+=("$(jq -n --arg f "file://${ref_file}" --argjson l "$ref_line" --argjson c "$ref_col" '{uri:$f,range:{start:{line:$l,character:$c},end:{line:$l,character:$c}}}')") 
+                done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -n --column -F "$pattern" 2>/dev/null)
             fi
         elif printf '%s' "$line_text" | grep -q 'compatible.*='; then
             pattern="\"${word}\""
@@ -2167,12 +2171,18 @@ handle_references() {
         fi
 
         while IFS= read -r match; do
-            local ref_file ref_line
+            local ref_file ref_line ref_col _raw_line _raw_col
             ref_file="$(printf '%s' "$match" | cut -d: -f1)"
-            ref_line=$(( $(printf '%s' "$match" | cut -d: -f2) - 1 ))
+            _raw_line="$(printf '%s' "$match" | cut -d: -f2)"
+            _raw_col="$(printf '%s' "$match" | cut -d: -f3)"
+            [[ "$_raw_line" =~ ^[0-9]+$ ]] || continue
+            [[ "$_raw_col" =~ ^[0-9]+$ ]] || _raw_col=1
+            ref_line=$(( _raw_line - 1 ))
+            ref_col=$(( _raw_col - 1 ))
             [[ $ref_line -lt 0 ]] && ref_line=0
-            results+=("{\"uri\":\"file://${ref_file}\",\"range\":{\"start\":{\"line\":${ref_line},\"character\":0},\"end\":{\"line\":${ref_line},\"character\":100}}}")
-        done < <([[ -n "${search_glob:-}" && -n "${pattern:-}" ]] && rg -n "$pattern" $search_glob "$LINUX_DIR" 2>/dev/null || true)
+            [[ $ref_col -lt 0 ]] && ref_col=0
+            results+=("{\"uri\":\"file://${ref_file}\",\"range\":{\"start\":{\"line\":${ref_line},\"character\":${ref_col}},\"end\":{\"line\":${ref_line},\"character\":${ref_col}}}}") 
+        done < <([[ -n "${search_glob:-}" && -n "${pattern:-}" ]] && rg -n --column "$pattern" $search_glob "$LINUX_DIR" 2>/dev/null || true)
     fi
 
     local json_array first r
