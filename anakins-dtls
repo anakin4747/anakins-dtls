@@ -1218,6 +1218,105 @@ _def_phandle_cross_file() {
     printf '%s:%s:%s' "$cross_file" "$cross_line" "${cross_col:-0}"
 }
 
+# def_by_phandle <id> <text> <line> <char> <uri>
+# Returns 0 and sends result if cursor is on a phandle reference.
+def_by_phandle() {
+    local def_id="$1" def_text="$2" def_line="$3" def_char="$4" def_uri="$5"
+    local phandle_label
+    phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")" || phandle_label=""
+    [[ -z "$phandle_label" ]] && return 1
+    local loc
+    loc="$(_def_phandle_in_file "$def_text" "$phandle_label" "$def_uri")"
+    [[ -z "$loc" ]] && loc="$(_def_phandle_cross_file "$phandle_label" "${def_uri#file://}")"
+    [[ -z "$loc" ]] && return 1
+    local d_file d_line d_col
+    d_file="${loc%%:*}"; loc="${loc#*:}"
+    d_line="${loc%%:*}"; d_col="${loc##*:}"
+    send_definition "$def_id" "$d_file" "$d_line" "${d_col:-0}"
+}
+
+# def_by_compatible_value <id> <text> <line> <char>
+# Returns 0 and sends result if cursor is on a compatible string value.
+def_by_compatible_value() {
+    local def_id="$1" def_text="$2" def_line="$3" def_char="$4"
+    [[ -z "$BINDINGS_DIR" ]] && return 1
+    local compat_val
+    compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
+    [[ -z "$compat_val" ]] && return 1
+    local binding_file file_line
+    binding_file="$(rg -l "$compat_val" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat_val" | head -1)" || true
+    [[ -z "$binding_file" ]] && return 1
+    file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+    file_line=$(( file_line - 1 ))
+    [[ $file_line -lt 0 ]] && file_line=0
+    send_definition "$def_id" "$binding_file" "$file_line"
+}
+
+# def_by_macro <id> <word> <text>
+# Returns 0 and sends result if word is a CPP macro.
+def_by_macro() {
+    local def_id="$1" def_word="$2" def_text="$3"
+    [[ "$def_word" =~ ^[A-Z][A-Z0-9_]*$ ]] || return 1
+    local macro_loc mfile mline
+    macro_loc="$(find_macro_location "$def_word" "$def_text")"
+    [[ -z "$macro_loc" ]] && return 1
+    mfile="${macro_loc%:*}"
+    mline=$(( ${macro_loc##*:} - 1 ))
+    [[ $mline -lt 0 ]] && mline=0
+    send_definition "$def_id" "$mfile" "$mline"
+}
+
+# def_by_spec <id> <word>
+# Returns 0 and sends result if word has a spec RST section.
+def_by_spec() {
+    local def_id="$1" def_word="$2"
+    [[ -z "$SPEC_DIR" ]] && return 1
+    local spec_result spec_file spec_line
+    spec_result="$(rg -n "^${def_word}$|^\`\`/${def_word}\`\`|^.. _sect-standard-properties-${def_word}:" "$SPEC_DIR" 2>/dev/null | head -1)" || true
+    [[ -z "$spec_result" ]] && return 1
+    spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
+    spec_line=$(( $(printf '%s' "$spec_result" | cut -d: -f2) - 1 ))
+    [[ $spec_line -lt 0 ]] && spec_line=0
+    send_definition "$def_id" "$spec_file" "$spec_line"
+}
+
+# def_by_binding_prop <id> <word> <text> <line>
+# Returns 0 and sends result if word is a property in the node's binding.
+def_by_binding_prop() {
+    local def_id="$1" def_word="$2" def_text="$3" def_line="$4"
+    [[ -z "$BINDINGS_DIR" ]] && return 1
+    local node_compat
+    node_compat="$(node_compatible_at "$def_text" "$def_line")"
+    [[ -z "$node_compat" ]] && return 1
+    local binding_file location prop_file prop_line
+    while IFS= read -r binding_file; do
+        location="$(_find_prop_in_binding "$def_word" "$binding_file")"
+        [[ -z "$location" ]] && continue
+        prop_file="${location%:*}"
+        prop_line=$(( ${location##*:} - 1 ))
+        [[ $prop_line -lt 0 ]] && prop_line=0
+        send_definition "$def_id" "$prop_file" "$prop_line"
+        return 0
+    done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$node_compat")
+    return 1
+}
+
+# def_by_global_prop <id> <word>
+# Returns 0 and sends result if word is a property in any binding YAML.
+def_by_global_prop() {
+    local def_id="$1" def_word="$2"
+    [[ -z "$BINDINGS_DIR" ]] && return 1
+    local global_file global_line
+    while IFS= read -r global_file; do
+        global_line="$(grep -n "^  ${def_word}:" "$global_file" | head -1 | cut -d: -f1)"
+        [[ -z "$global_line" ]] && continue
+        global_line=$(( global_line - 1 ))
+        send_definition "$def_id" "$global_file" "$global_line"
+        return 0
+    done < <(rg -l "^  ${def_word}:" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$def_word" | head -5)
+    return 1
+}
+
 handle_definition() {
     local body="$1"
     local def_uri def_line def_char def_id def_text
@@ -1226,101 +1325,18 @@ handle_definition() {
     def_char=$(printf '%s' "$body" | jq -r '.params.position.character')
     def_id=$(printf '%s' "$body" | jq -r '.id')
     def_text="${DOC_TEXT[$def_uri]:-}"
-
     [[ -z "$def_text" ]] && { send_null "$def_id"; return; }
 
-    # 0. Check if cursor is on a phandle reference (&label)
-    local phandle_label
-    phandle_label="$(phandle_ref_at "$def_text" "$def_line" "$def_char")" || phandle_label=""
-    if [[ -n "$phandle_label" ]]; then
-        local loc
-        loc="$(_def_phandle_in_file "$def_text" "$phandle_label" "$def_uri")"
-        if [[ -z "$loc" ]]; then
-            loc="$(_def_phandle_cross_file "$phandle_label" "${def_uri#file://}")"
-        fi
-        if [[ -n "$loc" ]]; then
-            local d_file d_line d_col
-            d_file="${loc%%:*}"; loc="${loc#*:}"
-            d_line="${loc%%:*}"; d_col="${loc##*:}"
-            send_definition "$def_id" "$d_file" "$d_line" "${d_col:-0}"
-            return
-        fi
-    fi
-
-    # 1. Check if cursor is on a compatible value string
-    local compat_val
-    compat_val="$(compatible_value_at "$def_text" "$def_line" "$def_char")"
-    if [[ -n "$compat_val" ]] && [[ -n "$BINDINGS_DIR" ]]; then
-        local binding_file file_line
-        binding_file="$(rg -l "$compat_val" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$compat_val" | head -1)" || true
-        if [[ -n "$binding_file" ]]; then
-            file_line="$(grep -n "$compat_val" "$binding_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
-            file_line=$(( file_line - 1 ))
-            [[ $file_line -lt 0 ]] && file_line=0
-            send_definition "$def_id" "$binding_file" "$file_line"
-            return
-        fi
-    fi
-
-    # 2. Check if cursor is on a CPP macro (all-caps identifier)
     local def_word
     def_word="$(word_at "$def_text" "$def_line" "$def_char")"
-    if [[ -n "$def_word" ]] && [[ "$def_word" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
-        local macro_loc mfile mline
-        macro_loc="$(find_macro_location "$def_word" "$def_text")"
-        if [[ -n "$macro_loc" ]]; then
-            mfile="${macro_loc%:*}"
-            mline=$(( ${macro_loc##*:} - 1 ))
-            [[ $mline -lt 0 ]] && mline=0
-            send_definition "$def_id" "$mfile" "$mline"
-            return
-        fi
-    fi
 
+    def_by_phandle        "$def_id" "$def_text" "$def_line" "$def_char" "$def_uri" && return
+    def_by_compatible_value "$def_id" "$def_text" "$def_line" "$def_char"         && return
+    def_by_macro           "$def_id" "$def_word" "$def_text"                        && return
     [[ -z "$def_word" ]] && { send_null "$def_id"; return; }
-
-    # 3. Check spec for standard DTS properties
-    if [[ -n "$SPEC_DIR" ]]; then
-        local spec_result spec_file spec_line
-        spec_result="$(rg -n "^${def_word}$|^\`\`/${def_word}\`\`|^.. _sect-standard-properties-${def_word}:" "$SPEC_DIR" 2>/dev/null | head -1)" || true
-        if [[ -n "$spec_result" ]]; then
-            spec_file="$(printf '%s' "$spec_result" | cut -d: -f1)"
-            spec_line=$(( $(printf '%s' "$spec_result" | cut -d: -f2) - 1 ))
-            [[ $spec_line -lt 0 ]] && spec_line=0
-            send_definition "$def_id" "$spec_file" "$spec_line"
-            return
-        fi
-    fi
-
-    # 4. Fall back to binding YAML for node with compatible (with $ref following)
-    local node_compat
-    node_compat="$(node_compatible_at "$def_text" "$def_line")"
-    if [[ -n "$node_compat" ]] && [[ -n "$BINDINGS_DIR" ]]; then
-        local binding_file location
-        while IFS= read -r binding_file; do
-            location="$(_find_prop_in_binding "$def_word" "$binding_file")"
-            [[ -z "$location" ]] && continue
-            local prop_file prop_line
-            prop_file="${location%:*}"
-            prop_line=$(( ${location##*:} - 1 ))
-            [[ $prop_line -lt 0 ]] && prop_line=0
-            send_definition "$def_id" "$prop_file" "$prop_line"
-            return
-        done < <(rg -l "$node_compat" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$node_compat")
-    fi
-
-    # 5. Global property search across all binding YAMLs
-    if [[ -n "$BINDINGS_DIR" ]]; then
-        local global_file global_line
-        while IFS= read -r global_file; do
-            global_line="$(grep -n "^  ${def_word}:" "$global_file" | head -1 | cut -d: -f1)"
-            [[ -z "$global_line" ]] && continue
-            global_line=$(( global_line - 1 ))
-            send_definition "$def_id" "$global_file" "$global_line"
-            return
-        done < <(rg -l "^  ${def_word}:" --glob '*.yaml' "$BINDINGS_DIR" 2>/dev/null | sort_binding_files_for_compat "$def_word" | head -5)
-    fi
-
+    def_by_spec            "$def_id" "$def_word"                                    && return
+    def_by_binding_prop    "$def_id" "$def_word" "$def_text" "$def_line"            && return
+    def_by_global_prop     "$def_id" "$def_word"                                    && return
     send_null "$def_id"
 }
 
