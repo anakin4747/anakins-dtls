@@ -1684,6 +1684,13 @@ collect_diagnostics() {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":0},\"end\":{\"line\":%d,\"character\":100}},\"severity\":%d,\"message\":\"%s\"}", lineno, lineno, sev, msg)
         }
+        function make_line(lineno, sev, msg, src_line,    cs, ce, trimmed) {
+            gsub(/"/, "\\\"", msg)
+            # Highlight from first non-whitespace to end of content
+            trimmed = src_line; sub(/^[[:space:]]+/, "", trimmed); cs = length(src_line) - length(trimmed)
+            ce = length(src_line); if (ce <= cs) ce = cs + length(trimmed)
+            return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", lineno, cs, lineno, ce, sev, msg)
+        }
         function make_at(lineno, sev, msg, col_start, col_end) {
             gsub(/"/, "\\\"", msg)
             return sprintf("{\"range\":{\"start\":{\"line\":%d,\"character\":%d},\"end\":{\"line\":%d,\"character\":%d}},\"severity\":%d,\"message\":\"%s\"}", lineno, col_start, lineno, col_end, sev, msg)
@@ -1717,7 +1724,7 @@ collect_diagnostics() {
             }
 
             if (line ~ /^[[:space:]]*\}[[:space:]]*$/)
-                diags[nd++] = make(lineno, 1, "Missing semicolon: expected }; not }")
+                diags[nd++] = make_line(lineno, 1, "Missing semicolon: expected }; not }", line)
 
             # --- depth tracking and per-node state ---
             # Detect unit-address BEFORE brace loop so node_unit_addr is set correctly
@@ -1761,7 +1768,7 @@ collect_diagnostics() {
                     delete child_size_cells[depth]
                     depth--
                 } else {
-                    diags[nd++] = make(lineno, 1, "Unbalanced brace: unexpected }")
+                    diags[nd++] = make_line(lineno, 1, "Unbalanced brace: unexpected }", line)
                 }
             }
 
@@ -1769,7 +1776,7 @@ collect_diagnostics() {
             if (match(line, /^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:/, arr)) {
                 lbl = arr[1]
                 if (lbl in label_seen)
-                    diags[nd++] = make(lineno, 2, "Duplicate node label " Q lbl Q)
+                    diags[nd++] = make_line(lineno, 2, "Duplicate node label " Q lbl Q, line)
                 else
                     label_seen[lbl] = lineno
             }
@@ -1815,7 +1822,7 @@ collect_diagnostics() {
                     if (ac != "" && sc != "") {
                         stride = ac + sc
                         if (stride > 0 && ncells % stride != 0)
-                            diags[nd++] = make(lineno, 2, "reg cell count (" ncells ") is not a multiple of #address-cells + #size-cells (" ac "+" sc "=" stride ")")
+                            diags[nd++] = make_line(lineno, 2, "reg cell count (" ncells ") is not a multiple of #address-cells + #size-cells (" ac "+" sc "=" stride ")", line)
                     }
                 }
 
@@ -1835,7 +1842,7 @@ collect_diagnostics() {
                     }
                     if (!matched && n_cells > 0) {
                         cmd3 = "printf %x " cells[1]; cmd3 | getline first_val; close(cmd3)
-                        diags[nd++] = make(lineno, 2, "Node unit-address (0x" unit ") does not match any reg cell value")
+                        diags[nd++] = make_line(lineno, 2, "Node unit-address (0x" unit ") does not match any reg cell value", line)
                     }
                 }
 
