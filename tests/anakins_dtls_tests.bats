@@ -875,3 +875,80 @@ teardown() {
         .result.items | map(.label) | (contains(["clocks"]) and contains(["clock-names"]))
     '
 }
+
+# ---------------------------------------------------------------------------
+# documentSymbol
+# ---------------------------------------------------------------------------
+
+@test "initialize advertises documentSymbolProvider" {
+    lsts_initialize
+    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.documentSymbolProvider == true'
+}
+
+@test "document symbols returns node symbols" {
+    lsts_document_symbols \
+        "fixtures/symbols_basic.dts" \
+        "fixtures/symbols_basic.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        [.. | objects | select(.name?)] | map(.name) | contains(["uart7"])
+    '
+}
+
+@test "document symbols includes labels" {
+    lsts_document_symbols \
+        "fixtures/symbols_labels.dts" \
+        "fixtures/symbols_labels.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        [.. | objects | select(.name?)] | map(.name) | contains(["clk_osc", "uart"])
+    '
+}
+
+# ---------------------------------------------------------------------------
+# rename
+# ---------------------------------------------------------------------------
+
+@test "initialize advertises renameProvider" {
+    lsts_initialize
+    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.renameProvider == true'
+}
+
+@test "rename label renames definition and references" {
+    lsts_rename \
+        "fixtures/rename_label.dts:4:2" \
+        "irq_ctrl" \
+        "fixtures/rename_label.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .result.changes | to_entries | .[0].value | length >= 2
+    '
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: additional checks
+# ---------------------------------------------------------------------------
+
+@test "diagnostics reports missing /dts-v1/ declaration" {
+    lsts_diagnostics "fixtures/diag_missing_dtsv1.dts" \
+        "fixtures/diag_missing_dtsv1.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("Missing /dts-v1/"; "i")))
+    '
+}
+
+@test "diagnostics reports clock-names count mismatch" {
+    lsts_diagnostics "fixtures/diag_clock_mismatch.dts" \
+        "fixtures/diag_clock_mismatch.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("clock-names"; "i")))
+    '
+}
+
+@test "diagnostics reports gpio-names count mismatch" {
+    lsts_diagnostics "fixtures/diag_gpio_mismatch.dts" \
+        "fixtures/diag_gpio_mismatch.rpc.json"
+    echo "$LSTS_RESPONSE" | jq -e '
+        .params.diagnostics |
+        any(.severity == 2 and (.message | test("gpio-names"; "i")))
+    '
+}

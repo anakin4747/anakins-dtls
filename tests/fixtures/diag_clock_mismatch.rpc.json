@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_clock_mismatch.dts","diagnostics":[{"range":{"start":{"line":6,"character":0},"end":{"line":6,"character":100}},"severity":2,"message":"clock-names has 3 entries but clocks has 2 phandle pairs"}]}}

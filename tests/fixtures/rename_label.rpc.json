@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"changes":{"file://$LSTS_ROOT/fixtures/rename_label.dts":[{"range":{"start":{"line":3,"character":1},"end":{"line":3,"character":4}},"newText":"irq_ctrl"},{"range":{"start":{"line":9,"character":22},"end":{"line":9,"character":26}},"newText":"&irq_ctrl"}]}}}

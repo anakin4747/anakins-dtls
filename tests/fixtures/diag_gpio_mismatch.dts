@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/ {
+	gpio_dev: device@20000 {
+		reg = <0x20000 0x100>;
+		gpios = <&gpio0 1 0>;
+		gpio-names = "reset", "power";
+	};
+};

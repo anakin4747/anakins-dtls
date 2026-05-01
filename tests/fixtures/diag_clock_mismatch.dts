@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/ {
+	clk_ctrl: clock@10000 {
+		reg = <0x10000 0x100>;
+		clocks = <&clk_a 1 &clk_b 2>;
+		clock-names = "bus", "ref", "extra";
+	};
+};

@@ -2032,6 +2032,70 @@ collect_syntax_diagnostics() {
         (( lineno++ )) || true
     done <<< "$text"
 
+
+    # 3c. /dts-v1/; missing
+    local _has_nodes _has_dtsv1
+    _has_nodes=$(printf '%s' "$text" | grep -cE '[A-Za-z_][A-Za-z0-9_,-]*[[:space:]]*@?[0-9a-fA-F]*[[:space:]]*\{' 2>/dev/null) || _has_nodes=0
+    _has_dtsv1=$(printf '%s' "$text" | head -10 | grep -c '/dts-v1/;' 2>/dev/null) || _has_dtsv1=0
+    if [[ ${_has_nodes:-0} -gt 0 && ${_has_dtsv1:-0} -eq 0 ]]; then
+        raw_diags+=( "$(_dj_make 0 2 'Missing /dts-v1/; declaration')" )
+    fi
+
+    # 3a/3b. clock-names/clocks and gpio-names/gpios count mismatch
+    local _diag_line_count
+    _diag_line_count=$(printf '%s' "$text" | wc -l)
+    if [[ ${_diag_line_count:-0} -le 500 ]]; then
+    local _cnt_in=0 _clocks_v="" _cnames_v="" _gpios_v="" _gnames_v=""
+    local _clocks_ln=0 _cnames_ln=0 _gpios_ln=0 _gnames_ln=0 _pline=0
+    while IFS= read -r _pl; do
+        local _ps="${_pl%%//*}"
+        local _open_c _close_c
+        _open_c=$(printf '%s' "$_ps" | tr -cd '{' | wc -c)
+        _close_c=$(printf '%s' "$_ps" | tr -cd '}' | wc -c)
+        (( _cnt_in += _open_c )) || true
+        if [[ $_cnt_in -gt 0 ]]; then
+            if [[ "$_ps" =~ ^[[:space:]]*clocks[[:space:]]*=[[:space:]]*\<([^\>]*)\> ]]; then
+                _clocks_v="${BASH_REMATCH[1]}"; _clocks_ln=$_pline
+            fi
+            if [[ "$_ps" =~ ^[[:space:]]*clock-names[[:space:]]*= ]]; then
+                _cnames_v="$_ps"; _cnames_ln=$_pline
+            fi
+            if [[ "$_ps" =~ ^[[:space:]]*gpios[[:space:]]*=[[:space:]]*\<([^\>]*)\> ]]; then
+                _gpios_v="${BASH_REMATCH[1]}"; _gpios_ln=$_pline
+            fi
+            if [[ "$_ps" =~ ^[[:space:]]*gpio-names[[:space:]]*= ]]; then
+                _gnames_v="$_ps"; _gnames_ln=$_pline
+            fi
+        fi
+        if [[ $_close_c -gt 0 ]]; then
+            (( _cnt_in -= _close_c )) || true
+            [[ $_cnt_in -lt 0 ]] && _cnt_in=0
+            if [[ $_cnt_in -eq 0 ]]; then
+                if [[ -n "$_clocks_v" && -n "$_cnames_v" ]]; then
+                    local _nclk _ncln
+                    _nclk=$(printf '%s' "$_clocks_v" | grep -o '&' | wc -l) || _nclk=0
+                    _ncln=$(printf '%s' "$_cnames_v" | grep -o '"' | wc -l) || _ncln=0
+                    _ncln=$(( _ncln / 2 ))
+                    if [[ $_nclk -ne $_ncln && $_nclk -gt 0 && $_ncln -gt 0 ]]; then
+                        raw_diags+=( "$(_dj_make "$_cnames_ln" 2 "clock-names has ${_ncln} entries but clocks has ${_nclk} phandle pairs")" )
+                    fi
+                fi
+                if [[ -n "$_gpios_v" && -n "$_gnames_v" ]]; then
+                    local _ngpio _ngnam
+                    _ngpio=$(printf '%s' "$_gpios_v" | grep -o '&' | wc -l) || _ngpio=0
+                    _ngnam=$(printf '%s' "$_gnames_v" | grep -o '"' | wc -l) || _ngnam=0
+                    _ngnam=$(( _ngnam / 2 ))
+                    if [[ $_ngpio -ne $_ngnam && $_ngpio -gt 0 && $_ngnam -gt 0 ]]; then
+                        raw_diags+=( "$(_dj_make "$_gnames_ln" 2 "gpio-names has ${_ngnam} entries but gpios has ${_ngpio} phandle pairs")" )
+                    fi
+                fi
+                _clocks_v=""; _cnames_v=""; _gpios_v=""; _gnames_v=""
+            fi
+        fi
+        (( _pline++ )) || true
+    done <<< "$text"
+    fi  # end 500-line guard
+
     if [[ $depth -gt 0 ]]; then
         raw_diags+=( "$(_dj_make "$last_open_line" 1 "Unbalanced brace: unclosed {")" )
     fi
@@ -2520,6 +2584,249 @@ _add_binding_items() {
     done < <(_get_binding_props "$binding_file")
 }
 
+
+# ---------------------------------------------------------------------------
+# textDocument/documentSymbol
+# ---------------------------------------------------------------------------
+
+handle_document_symbols() {
+    local body="$1"
+    local uri id text
+    uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    id=$(printf '%s' "$body" | jq -r '.id')
+    text="${DOC_TEXT[$uri]:-}"
+    if [[ -z "$text" ]]; then
+        send "$(jq -n --argjson id "$id" '{"jsonrpc":"2.0","id":$id,"result":[]}')"
+        return
+    fi
+    local result
+    result="$(_build_document_symbols "$text")"
+    send "$(jq -n --argjson id "$id" --argjson result "$result" '{"jsonrpc":"2.0","id":$id,"result":$result}')"
+}
+
+# _build_document_symbols <text>
+# Parse DTS document and return JSON array of DocumentSymbol objects.
+_build_document_symbols() {
+    local text="$1"
+    # Use awk + jq to parse nodes/labels line-by-line
+    # We build a tab-separated stream: lineno start_char end_char kind name detail open|close
+    # Then post-process with jq to build the nested structure
+    local flat_stream
+    flat_stream="$(printf '%s' "$text" | awk '
+    {
+        lineno = NR - 1
+        line = $0
+        # strip // comments
+        if (match(line, /\/\//)) line = substr(line, 1, RSTART-1)
+
+        # count braces
+        opens = 0; closes = 0
+        for (i=1; i<=length(line); i++) {
+            c = substr(line,i,1)
+            if (c=="{") opens++
+            else if (c=="}") closes++
+        }
+
+        # detect node line: optional label: name@addr { or label: name { or name@addr { or name {
+        # regex: leading whitespace, optional label:, node-name[@addr], {
+        if (match(line, /^([[:space:]]*)([A-Za-z_][A-Za-z0-9_,-]*:[ \t]*)?([A-Za-z_\/][A-Za-z0-9_,@\/.-]*)[ \t]*\{/)) {
+            full = substr(line, RSTART, RLENGTH)
+            # extract indent
+            indent = ""
+            for (k=1; k<=length(full); k++) {
+                c = substr(full,k,1)
+                if (c==" " || c=="\t") indent=indent c
+                else break
+            }
+            col = length(indent)
+            rest = substr(full, col+1)
+            # Check for label:
+            label = ""
+            node_part = rest
+            if (match(rest, /^([A-Za-z_][A-Za-z0-9_,-]*):[ \t]*/)) {
+                matched = substr(rest, RSTART, RLENGTH)
+                label = matched
+                # strip colon and whitespace from label
+                sub(/:[ \t]*$/, "", label)
+                gsub(/[ \t]*$/, "", label)
+                node_part = substr(rest, RSTART+RLENGTH)
+            }
+            # node_part is "name@addr {" or "name {"
+            # extract node name and optional @addr
+            node_name = ""
+            unit_addr = ""
+            if (match(node_part, /^([A-Za-z_\/][A-Za-z0-9_,@\/.-]*)/)) {
+                full_name = substr(node_part, RSTART, RLENGTH)
+                if (match(full_name, /@/)) {
+                    node_name = substr(full_name, 1, RSTART-1)
+                    unit_addr = substr(full_name, RSTART+1)
+                } else {
+                    node_name = full_name
+                }
+            }
+            if (node_name != "" && node_name != "if" && node_name != "else" && node_name != "for") {
+                if (unit_addr != "") {
+                    detail = node_name "@" unit_addr
+                } else {
+                    detail = node_name
+                }
+                if (label != "") {
+                    sym_name = label
+                    kind = 8
+                } else {
+                    sym_name = node_name
+                    kind = 5
+                }
+                sel_end = col + length(sym_name)
+                print "OPEN\t" lineno "\t" col "\t" sel_end "\t" kind "\t" sym_name "\t" detail
+            }
+        }
+
+        # emit CLOSE for each net closing brace
+        net = closes - opens
+        for (i=1; i<=net; i++) {
+            print "CLOSE\t" lineno
+        }
+    }
+    ')"
+
+    # Now build nested JSON using jq
+    printf '%s' "$flat_stream" | jq -Rn '
+    def make_sym(entry):
+        {
+            name: entry.name,
+            detail: entry.detail,
+            kind: entry.kind,
+            range: {start: {line: entry.start_line, character: 0}, end: {line: entry.end_line, character: 0}},
+            selectionRange: {start: {line: entry.start_line, character: entry.start_char}, end: {line: entry.start_line, character: entry.end_char}},
+            children: entry.children
+        };
+    [inputs] |
+    reduce .[] as $tok (
+        {stack: [], roots: []};
+        if ($tok | startswith("OPEN\t")) then
+            ($tok | split("\t")) as $parts |
+            .stack += [{
+                start_line: ($parts[1] | tonumber),
+                start_char: ($parts[2] | tonumber),
+                end_char: ($parts[3] | tonumber),
+                kind: ($parts[4] | tonumber),
+                name: $parts[5],
+                detail: $parts[6],
+                end_line: 0,
+                children: []
+            }]
+        elif ($tok | startswith("CLOSE\t")) then
+            ($tok | split("\t")) as $parts |
+            if (.stack | length) > 0 then
+                (.stack[-1] | . + {end_line: ($parts[1] | tonumber)}) as $entry |
+                make_sym($entry) as $sym |
+                .stack = .stack[:-1] |
+                if (.stack | length) > 0 then
+                    .stack[-1].children += [$sym]
+                else
+                    .roots += [$sym]
+                end
+            else . end
+        else . end
+    ) | .roots
+    '
+}
+
+# ---------------------------------------------------------------------------
+# textDocument/rename
+# ---------------------------------------------------------------------------
+
+handle_rename() {
+    local body="$1"
+    local uri lnum character id new_name text
+    uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    lnum=$(printf '%s' "$body" | jq -r '.params.position.line')
+    character=$(printf '%s' "$body" | jq -r '.params.position.character')
+    id=$(printf '%s' "$body" | jq -r '.id')
+    new_name=$(printf '%s' "$body" | jq -r '.params.newName')
+    text="${DOC_TEXT[$uri]:-}"
+
+    if [[ -z "$text" ]]; then
+        send "$(jq -n --argjson id "$id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
+        return
+    fi
+
+    local label=""
+    label="$(phandle_ref_at "$text" "$lnum" "$character")" || label=""
+    if [[ -z "$label" ]]; then
+        local line_text
+        line_text="$(printf '%s' "$text" | sed -n "$((lnum + 1))p")"
+        if [[ "$line_text" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*: ]]; then
+            label="${BASH_REMATCH[1]}"
+        fi
+    fi
+
+    if [[ -z "$label" ]]; then
+        send "$(jq -n --argjson id "$id" '{"jsonrpc":"2.0","id":$id,"result":null}')"
+        return
+    fi
+
+    local file_path="${uri#file://}"
+    local -a all_files=()
+    mapfile -t all_files < <(
+        find_includers_of "$file_path" "$(dirname "$file_path")" 2>/dev/null
+        printf '%s\n' "$file_path"
+    )
+    mapfile -t all_files < <(printf '%s\n' "${all_files[@]}" | sort -u)
+
+    local changes_json="{}"
+    local f
+    for f in "${all_files[@]}"; do
+        [[ -z "$f" || ! -f "$f" ]] && continue
+        local file_edits
+        file_edits="$(_collect_rename_edits "$f" "$label" "$new_name")"
+        [[ "$file_edits" == "[]" ]] && continue
+        local file_uri="file://$f"
+        changes_json="$(printf '%s' "$changes_json" | jq --arg uri "$file_uri" --argjson edits "$file_edits" '. + {($uri): $edits}')"
+    done
+
+    send "$(jq -n --argjson id "$id" --argjson changes "$changes_json" '{"jsonrpc":"2.0","id":$id,"result":{"changes":$changes}}')"
+}
+
+_collect_rename_edits() {
+    local file="$1" old_label="$2" new_label="$3"
+    local -a edits_arr=()
+    local lineno=0
+    while IFS= read -r raw_line; do
+        # Match label definition: word: ...
+        if [[ "$raw_line" =~ ^([[:space:]]*)${old_label}[[:space:]]*: ]]; then
+            local col="${#BASH_REMATCH[1]}"
+            edits_arr+=("$(jq -n \
+                --argjson l "$lineno" --argjson cs "$col" --argjson ce "$((col + ${#old_label}))" \
+                --arg t "$new_label" \
+                '{"range":{"start":{"line":$l,"character":$cs},"end":{"line":$l,"character":$ce}},"newText":$t}')")
+        fi
+        # Match &label references on this line
+        local rest="$raw_line" offset=0
+        while [[ "$rest" =~ \&${old_label}([^A-Za-z0-9_]|$) ]]; do
+            local before_amp="${rest%%\&${old_label}*}"
+            local col=$((offset + ${#before_amp}))
+            edits_arr+=("$(jq -n \
+                --argjson l "$lineno" --argjson cs "$col" --argjson ce "$((col + 1 + ${#old_label}))" \
+                --arg t "&${new_label}" \
+                '{"range":{"start":{"line":$l,"character":$cs},"end":{"line":$l,"character":$ce}},"newText":$t}')")
+            offset=$((col + 1 + ${#old_label}))
+            rest="${raw_line:$offset}"
+        done
+        (( lineno++ )) || true
+    done < "$file"
+    local out="[" first=1 e
+    for e in "${edits_arr[@]:-}"; do
+        [[ -z "$e" ]] && continue
+        [[ $first -eq 1 ]] || out+=","
+        out+="$e"
+        first=0
+    done
+    out+="]"
+    printf '%s' "$out"
+}
+
 declare -A DOC_TEXT
 
 # Resolve Linux kernel source directory from the workspace root path.
@@ -2582,7 +2889,7 @@ while recv; do
             root_path="${root_uri#file://}"
             _resolve_linux_dir "$root_path"
             _resolve_spec_and_includes "$root_path"
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
             ;;
         initialized)
             ;;
@@ -2607,6 +2914,12 @@ while recv; do
             ;;
         textDocument/completion)
             handle_completion "$BODY"
+            ;;
+        textDocument/documentSymbol)
+            handle_document_symbols "$BODY"
+            ;;
+        textDocument/rename)
+            handle_rename "$BODY"
             ;;
         exit)
             exit 0
