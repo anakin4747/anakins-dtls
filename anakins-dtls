@@ -1746,7 +1746,7 @@ publish_diagnostics() {
 }
 
 # ---------------------------------------------------------------------------
-# Bash syntax diagnostic functions (replace gawk passes)
+# Syntax diagnostic functions
 # ---------------------------------------------------------------------------
 collect_syntax_diagnostics() {
     local text="$1" known_compats="${2:-}"
@@ -1811,7 +1811,7 @@ collect_syntax_diagnostics() {
     while IFS= read -r raw_line; do
         local line="$raw_line"
 
-        # Strip // comments (crude, matches gawk)
+        # Strip // comments
         line="${line//\/\//}"
         # Strip /* ... */ inline block comments
         while [[ "$line" == */\** && "$line" == *\*/* ]]; do
@@ -2047,7 +2047,7 @@ collect_syntax_diagnostics() {
 }
 
 # _parse_binding_nodes <text>
-# Bash replacement for the gawk node-parser in check_binding_diagnostics().
+# Parse DTS node structure for binding diagnostics.
 # Emits tab-separated: lineno\tcompat\tcol_start\tcol_end\tprop1\tprop2...
 _parse_binding_nodes() {
     local text="$1"
@@ -2143,7 +2143,6 @@ collect_diagnostics() {
             done)"
     fi
 
-    # Bash replacement for the gawk syntax pass
     local syntax_diags
     syntax_diags="$(collect_syntax_diagnostics "$text" "$known_compats")"
 
@@ -2200,7 +2199,7 @@ _get_binding_props() {
 check_binding_diagnostics() {
     local text="$1"
 
-    # Parse nodes using bash (replaced gawk node-parser)
+    # Parse nodes
     local nodes
     nodes="$(_parse_binding_nodes "$text")"
 
