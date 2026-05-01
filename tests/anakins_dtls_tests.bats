@@ -14,23 +14,24 @@ teardown() {
     lsts_stop
 }
 
+teardown_file() {
+    lsts_check_no_snapshots
+}
+
 @test "initializes successfully" {
     lsts_initialize
 }
 
 @test "initialize advertises hoverProvider" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.hoverProvider == true'
+    lsts_initialize_capability "hoverProvider == true"
 }
 
 @test "initialize advertises openClose textDocumentSync" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.textDocumentSync.openClose == true'
+    lsts_initialize_capability "textDocumentSync.openClose == true"
 }
 
 @test "initialize advertises full textDocumentSync change" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.textDocumentSync.change == 1'
+    lsts_initialize_capability "textDocumentSync.change == 1"
 }
 
 # ---------------------------------------------------------------------------
@@ -477,8 +478,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "initialize advertises definitionProvider" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.definitionProvider == true'
+    lsts_initialize_capability "definitionProvider == true"
 }
 
 # ---------------------------------------------------------------------------
@@ -704,20 +704,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "diagnostics on valid document reports no errors" {
-    lsts_initialize
-    lsts_open "fixtures/diag_valid.dts"
-
-    local uri="file://$LSTS_ROOT/fixtures/diag_valid.dts"
-    local _deadline=$(( SECONDS + ${LSTS_TIMEOUT:-10} ))
-    while (( SECONDS < _deadline )); do
-        lsts_recv || return 1
-        _lsts_reply_to_request && continue
-        printf '%s' "$LSTS_RESPONSE" | jq -e \
-            --arg m "textDocument/publishDiagnostics" --arg uri "$uri" \
-            '.method == $m and .params.uri == $uri' >/dev/null 2>&1 && break
-    done
-
-    printf '%s' "$LSTS_RESPONSE" | jq -e '.params.diagnostics | length == 0'
+    lsts_diagnostics_none "fixtures/diag_valid.dts"
 }
 
 # ---------------------------------------------------------------------------
@@ -881,8 +868,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "initialize advertises documentSymbolProvider" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.documentSymbolProvider == true'
+    lsts_initialize_capability "documentSymbolProvider == true"
 }
 
 @test "document symbols returns node symbols" {
@@ -908,8 +894,7 @@ teardown() {
 # ---------------------------------------------------------------------------
 
 @test "initialize advertises renameProvider" {
-    lsts_initialize
-    echo "$LSTS_RESPONSE" | jq -e '.result.capabilities.renameProvider == true'
+    lsts_initialize_capability "renameProvider == true"
 }
 
 @test "rename label renames definition and references" {
