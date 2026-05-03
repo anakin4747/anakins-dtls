@@ -2035,14 +2035,14 @@ collect_syntax_diagnostics() {
         _close_c=$(printf '%s' "$_ps" | tr -cd '}' | wc -c)
         (( _cnt_in += _open_c )) || true
         if [[ $_cnt_in -gt 0 ]]; then
-            if [[ "$_ps" =~ ^[[:space:]]*clocks[[:space:]]*=[[:space:]]*\<([^\>]*)\> ]]; then
-                _clocks_v="${BASH_REMATCH[1]}"; _clocks_ln=$_pline
+            if [[ "$_ps" =~ ^[[:space:]]*clocks[[:space:]]*= ]]; then
+                _clocks_v="$_ps"; _clocks_ln=$_pline
             fi
             if [[ "$_ps" =~ ^[[:space:]]*clock-names[[:space:]]*= ]]; then
                 _cnames_v="$_ps"; _cnames_ln=$_pline
             fi
-            if [[ "$_ps" =~ ^[[:space:]]*gpios[[:space:]]*=[[:space:]]*\<([^\>]*)\> ]]; then
-                _gpios_v="${BASH_REMATCH[1]}"; _gpios_ln=$_pline
+            if [[ "$_ps" =~ ^[[:space:]]*gpios[[:space:]]*= ]]; then
+                _gpios_v="$_ps"; _gpios_ln=$_pline
             fi
             if [[ "$_ps" =~ ^[[:space:]]*gpio-names[[:space:]]*= ]]; then
                 _gnames_v="$_ps"; _gnames_ln=$_pline
