@@ -13,14 +13,14 @@
 
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
-          runtimeInputs = with pkgs; [ bash jq ripgrep ];
+          runtimeInputs = with pkgs; [ bash jq ripgrep gnused gnugrep gawk ];
           checkPhase = "";
           text = builtins.readFile ./anakins-dtls;
         };
 
         tryout = pkgs.writeShellApplication {
           name = "tryout";
-          runtimeInputs = [ pkgs.neovim anakins-dtls ];
+          runtimeInputs = with pkgs; [ neovim gnused gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             kernel_root="$(pwd)"
