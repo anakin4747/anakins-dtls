@@ -2058,7 +2058,7 @@ collect_syntax_diagnostics() {
                     _ncln=$(printf '%s' "$_cnames_v" | grep -o '"' | wc -l) || _ncln=0
                     _ncln=$(( _ncln / 2 ))
                     if [[ $_nclk -ne $_ncln && $_nclk -gt 0 && $_ncln -gt 0 ]]; then
-                        raw_diags+=( "$(_dj_make "$_cnames_ln" 2 "clock-names has ${_ncln} entries but clocks has ${_nclk} phandle pairs")" )
+                        raw_diags+=( "$(_dj_make_line "$_cnames_ln" 2 "clock-names has ${_ncln} entries but clocks has ${_nclk} phandle pairs" "$_cnames_v")" )
                     fi
                 fi
                 if [[ -n "$_gpios_v" && -n "$_gnames_v" ]]; then
@@ -2067,7 +2067,7 @@ collect_syntax_diagnostics() {
                     _ngnam=$(printf '%s' "$_gnames_v" | grep -o '"' | wc -l) || _ngnam=0
                     _ngnam=$(( _ngnam / 2 ))
                     if [[ $_ngpio -ne $_ngnam && $_ngpio -gt 0 && $_ngnam -gt 0 ]]; then
-                        raw_diags+=( "$(_dj_make "$_gnames_ln" 2 "gpio-names has ${_ngnam} entries but gpios has ${_ngpio} phandle pairs")" )
+                        raw_diags+=( "$(_dj_make_line "$_gnames_ln" 2 "gpio-names has ${_ngnam} entries but gpios has ${_ngpio} phandle pairs" "$_gnames_v")" )
                     fi
                 fi
                 _clocks_v=""; _cnames_v=""; _gpios_v=""; _gnames_v=""
