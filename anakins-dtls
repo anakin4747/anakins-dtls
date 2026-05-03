@@ -12,11 +12,9 @@ unset _dep
 # Send a JSON-RPC message with a Content-Length header on stdout.
 send() {
     local body="$1"
-    local len _lock="/tmp/anakins-dtls-send-$$.lock"
+    local len
     len="$(printf '%s' "$body" | wc -c)"
-    while ! mkdir "$_lock" 2>/dev/null; do sleep 0.01; done
     printf "Content-Length: %d\r\n\r\n%s" "$len" "$body"
-    rmdir "$_lock" 2>/dev/null || true
 }
 
 # Read one JSON-RPC message from stdin into BODY.
