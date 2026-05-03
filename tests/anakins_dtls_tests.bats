@@ -948,28 +948,22 @@ teardown_file() {
 # Robustness: server must not crash on bad input
 # ---------------------------------------------------------------------------
 
-@test "server survives malformed JSON request" {
-    lsts_initialize
-    # Send a valid JSON notification but with unrecognized method — server must ignore it
+@test "server survives unknown notification" {
     lsts_notify "textDocument/unknownMethod" '{"textDocument":{"uri":"file:///bad.dts"}}'
-    # Server must still respond to a valid hover after the unknown notification
     lsts_hover \
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
-        "fixtures/hover_compatible_id3.rpc.json"
+        "fixtures/hover_compatible.rpc.json"
 }
 
-@test "server survives hover on unknown file" {
-    lsts_initialize
-    # hover on a file that was never opened — server must respond, not crash
-    lsts_hover "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
-        "fixtures/hover_compatible_id3.rpc.json"
+@test "server survives hover on unopened file" {
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
+        "fixtures/hover_compatible.rpc.json"
 }
 
-@test "server survives didOpen with empty text" {
-    lsts_initialize
+@test "server survives didOpen before hover" {
     lsts_open "fixtures/diag_valid.dts"
-    # Server must still respond normally after a valid open
     lsts_hover \
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
-        "fixtures/hover_compatible_id3.rpc.json"
+        "fixtures/hover_compatible.rpc.json"
 }
