@@ -2098,7 +2098,7 @@ _parse_binding_nodes() {
     local text="$1"
     local depth=0 lineno=0
     local compat="" compat_line=0 compat_depth=0 compat_col_start=0 compat_col_end=0
-    local -a props=()
+    local -a all_props=()
 
     while IFS= read -r raw_line; do
         local line="$raw_line"
@@ -2135,24 +2135,31 @@ _parse_binding_nodes() {
                 compat_col_start=0
                 compat_col_end=100
             fi
-            props=()
         fi
 
-        # Collect properties
-        if [[ -n "$compat" \
+        # Collect properties at current depth (regardless of compatible order)
+        if [[ $depth -gt 0 \
            && "$line" =~ ^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$) ]]; then
-            props+=( "${BASH_REMATCH[1]}" )
+            local _collected_prop="${BASH_REMATCH[1]}"
+            [[ -n "$_collected_prop" ]] && all_props+=("${depth}:${_collected_prop}")
         fi
 
         # Emit record when depth drops below compat_depth
         if [[ -n "$compat" && $depth -lt $compat_depth ]]; then
             printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
-            local _p
-            for _p in "${props[@]}"; do
-                printf '\t%s' "$_p"
+            local _p _pd
+            for _pd in "${all_props[@]:-}"; do
+                _p="${_pd#*:}"
+                [[ "${_pd%%:*}" == "$compat_depth" ]] && printf '\t%s' "$_p"
             done
             printf '\n'
             compat=""
+            # clear props at this depth
+            local -a _remaining=()
+            for _pd in "${all_props[@]:-}"; do
+                [[ "${_pd%%:*}" != "$compat_depth" ]] && _remaining+=("$_pd")
+            done
+            all_props=("${_remaining[@]:-}")
         fi
 
         (( lineno++ )) || true
@@ -2161,9 +2168,10 @@ _parse_binding_nodes() {
     # Emit if compat is still open at EOF
     if [[ -n "$compat" ]]; then
         printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
-        local _p
-        for _p in "${props[@]}"; do
-            printf '\t%s' "$_p"
+        local _p _pd
+        for _pd in "${all_props[@]:-}"; do
+            _p="${_pd#*:}"
+            [[ "${_pd%%:*}" == "$compat_depth" ]] && printf '\t%s' "$_p"
         done
         printf '\n'
     fi
