@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016
-set -o pipefail
 
 for _dep in jq rg sed grep; do
     command -v "$_dep" > /dev/null || { printf 'anakins-dtls: %s is required but not found in PATH\n' "$_dep" >&2; exit 1; }
