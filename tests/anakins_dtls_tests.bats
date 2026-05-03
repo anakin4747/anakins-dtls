@@ -887,3 +887,12 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
         "fixtures/hover_compatible.rpc.json"
 }
+
+@test "server responds when launched with set -e -u -o pipefail (writeShellApplication wrapper)" {
+    local server_src="$BATS_TEST_DIRNAME/../anakins-dtls"
+    lsts_set_cmd "bash -c 'set -e -u -o pipefail; exec \"$server_src\"'"
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
+        "fixtures/hover_compatible.rpc.json"
+    lsts_set_cmd "anakins-dtls"
+}
