@@ -1794,8 +1794,8 @@ collect_syntax_diagnostics() {
     while IFS= read -r raw_line; do
         local line="$raw_line"
 
-        # Strip // comments
-        line="${line//\/\//}"
+        # Strip // comments (only outside quoted strings)
+        line="${line%% //*}"
         # Strip /* ... */ inline block comments
         while [[ "$line" == */\** && "$line" == *\*/* ]]; do
             local _lhs="${line%%/\**}"
@@ -2104,7 +2104,7 @@ _parse_binding_nodes() {
 
     while IFS= read -r raw_line; do
         local line="$raw_line"
-        line="${line//\/\//}"
+        line="${line%% //*}"
 
         # Track braces
         local _bl="$line"
