@@ -15,7 +15,7 @@
 
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
-          runtimeInputs = with pkgs; [ bash jq ripgrep gnused gnugrep gawk ];
+          runtimeInputs = with pkgs; [ bash coreutils jq ripgrep gnused gnugrep gawk ];
           checkPhase = "";
           text = builtins.readFile ./anakins-dtls;
         };
