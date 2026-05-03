@@ -2904,6 +2904,9 @@ while recv; do
         textDocument/rename)
             handle_rename "$BODY"
             ;;
+        shutdown)
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":null}"
+            ;;
         exit)
             exit 0
             ;;
