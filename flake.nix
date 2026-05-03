@@ -4,12 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, neovim-nightly }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        nvim = neovim-nightly.packages.${system}.default;
 
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
@@ -20,7 +22,7 @@
 
         tryout = pkgs.writeShellApplication {
           name = "tryout";
-          runtimeInputs = with pkgs; [ neovim gnused gnugrep anakins-dtls ];
+          runtimeInputs = with pkgs; [ nvim gnused gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             kernel_root="$(pwd)"
