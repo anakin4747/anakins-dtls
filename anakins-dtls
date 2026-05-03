@@ -2096,7 +2096,7 @@ collect_syntax_diagnostics() {
 # Emits tab-separated: lineno\tcompat\tcol_start\tcol_end\tprop1\tprop2...
 _parse_binding_nodes() {
     local text="$1"
-    local depth=0 lineno=0
+    local depth=0 prev_depth=0 lineno=0
     local compat="" compat_line=0 compat_depth=0 compat_col_start=0 compat_col_end=0
     local -a all_props=()
 
@@ -2104,6 +2104,7 @@ _parse_binding_nodes() {
         local line="$raw_line"
         line="${line%% //*}"
 
+        prev_depth=$depth
         # Track braces
         local _bl="$line"
         while [[ "$_bl" =~ [\{\}] ]]; do
@@ -2154,12 +2155,22 @@ _parse_binding_nodes() {
             done
             printf '\n'
             compat=""
-            # clear props at this depth
+            # clear props at this depth and deeper
             local -a _remaining=()
             for _pd in "${all_props[@]:-}"; do
-                [[ "${_pd%%:*}" != "$compat_depth" ]] && _remaining+=("$_pd")
+                [[ "${_pd%%:*}" -lt $compat_depth ]] && _remaining+=("$_pd")
             done
             all_props=("${_remaining[@]:-}")
+        fi
+
+        # When depth decreases without a compat emit, still discard props at closed depth
+        if [[ $depth -lt $prev_depth && -z "$compat" ]]; then
+            local -a _keep=()
+            local _pd
+            for _pd in "${all_props[@]:-}"; do
+                [[ "${_pd%%:*}" -le $depth ]] && _keep+=("$_pd")
+            done
+            all_props=("${_keep[@]:-}")
         fi
 
         (( lineno++ )) || true
