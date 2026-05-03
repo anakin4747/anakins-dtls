@@ -33,7 +33,9 @@
             fi
 
             nvim_config=$(mktemp -d)
-            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' > "$nvim_config/init.lua"
+            printf 'vim.cmd("filetype on")\n' > "$nvim_config/init.lua"
+            printf 'vim.filetype.add({ extension = { dts = "dts", dtsi = "dts" } })\n' >> "$nvim_config/init.lua"
+            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' >> "$nvim_config/init.lua"
             printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
             printf '    callback = function()\n' >> "$nvim_config/init.lua"
             printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
