@@ -2138,9 +2138,9 @@ _parse_binding_nodes() {
             fi
         fi
 
-        # Collect properties at current depth (regardless of compatible order)
+        # Collect properties and child node names at current depth
         if [[ $depth -gt 0 \
-           && "$line" =~ ^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$) ]]; then
+           && "$line" =~ ^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$|[[:space:]]*\{) ]]; then
             local _collected_prop="${BASH_REMATCH[1]}"
             [[ -n "$_collected_prop" ]] && all_props+=("${depth}:${_collected_prop}")
         fi
