@@ -2,15 +2,30 @@
 
 A Device Tree Language Server written in bash.
 
-> **Note:** This project was built entirely by an [OpenClaw](https://openclaw.ai) AI agent, driven through Telegram **from a phone**. The only time the human touched the code was to test it working in Neovim.
+> **Note:** This project was built entirely by an [OpenClaw](https://openclaw.ai) AI agent, driven through Telegram **from a phone**.
 
 ## Features
 
 - **Hover documentation** for all standard Device Tree properties, sourced verbatim from the [Device Tree Specification](https://devicetree-specification.readthedocs.io/)
 - **Dynamic binding docs** pulled from the Linux kernel's `Documentation/devicetree/bindings/` — works inside the Linux source tree itself
 - **CPP macro hover** — resolves `#define` values from `dt-bindings/` headers included in the file
-- **Go-to-definition** — jumps to the binding YAML, spec RST, or header file for any property or macro
-- **Diagnostics** — flags missing semicolons, unbalanced braces, undocumented properties, and missing required properties per the binding
+- **Go-to-definition** — jumps to the binding YAML, spec RST, macro header, or label definition for any property, value, or phandle reference
+- **Find references** — finds all usages of a label, compatible string, or property across the include graph
+- **Completion** — suggests standard DT properties and binding-specific properties based on the current node's `compatible`
+- **Document symbols** — outlines all nodes and labels in the file for the editor sidebar
+- **Rename** — renames a label and all `&label` references across included files
+- **Diagnostics**:
+  - Missing semicolons and unbalanced braces
+  - Duplicate properties and duplicate node labels
+  - Invalid `status` values
+  - `reg` cell count mismatch against `#address-cells` + `#size-cells`
+  - Node unit-address mismatch against `reg`
+  - Deprecated `linux,phandle`
+  - Undocumented properties and missing required properties per the binding YAML
+  - `compatible` format warnings (suppressed for known bindings)
+  - `clock-names` / `clocks` and `gpio-names` / `gpios` count mismatches
+  - Missing `/dts-v1/;` declaration
+- **Cross-file phandle resolution** — follows `#include` and `/include/` chains with cycle detection
 - **Ancestor-aware** — finds compatible strings by walking up nested node scopes
 - **`$ref` following** — resolves inherited properties through YAML `$ref` chains
 
