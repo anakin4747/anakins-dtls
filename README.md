@@ -29,6 +29,16 @@ A Device Tree Language Server written in bash.
 - **Ancestor-aware** — finds compatible strings by walking up nested node scopes
 - **`$ref` following** — resolves inherited properties through YAML `$ref` chains
 
+## Try it out
+
+From inside a Linux kernel source tree:
+
+```bash
+nix run github:anakin4747r2d2/anakins-dtls#tryout
+```
+
+Opens a DTS file from the kernel in Neovim with `anakins-dtls` configured and ready.
+
 ## Installation
 
 ```bash
