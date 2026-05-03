@@ -73,6 +73,20 @@ make test
 
 Tests use [lsts](https://github.com/anakin4747/lsts) — a bats library for end-to-end LSP testing. All tests use real Linux kernel DTS files as fixtures, not fabricated examples.
 
+### Regenerating fixtures
+
+When the server output legitimately changes (e.g. after updating spec text), regenerate all hover fixtures at once:
+
+```bash
+bash tests/gen_all_fixtures.sh
+```
+
+To generate a single fixture:
+
+```bash
+bash tests/gen_fixture.sh <dts-file-relative-to-tests/> <line:col> <output-relative-to-tests/>
+```
+
 ## Submodules
 
 - `tests/lsts` — LSP test harness
