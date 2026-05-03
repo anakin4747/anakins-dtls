@@ -48,8 +48,6 @@
             printf '    end,\n' >> "$nvim_config/init.lua"
             printf '})\n' >> "$nvim_config/init.lua"
 
-            log_path="''${XDG_STATE_HOME:-$HOME/.local/state}/nvim/lsp.log"
-            echo "LSP log: $log_path"
             exec nvim -u "$nvim_config/init.lua" "$dts_file"
           '';
         };
