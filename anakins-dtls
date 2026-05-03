@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016
+# writeShellApplication adds set -e -u -o pipefail; override here so the
+# server never exits on a non-zero command.
+set +e +u +o pipefail
 
 for _dep in jq rg sed grep; do
     command -v "$_dep" > /dev/null || { printf 'anakins-dtls: %s is required but not found in PATH\n' "$_dep" >&2; exit 1; }
