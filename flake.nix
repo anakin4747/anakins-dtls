@@ -25,7 +25,7 @@
           text = ''
             kernel_root="$(pwd)"
 
-            dts_file="$(find "$kernel_root/arch" -name '*.dts' 2>/dev/null | head -1 || true)"
+            dts_file="$(find "$kernel_root/arch" -name '*.dts' -print -quit 2>/dev/null)"
             if [[ -z "$dts_file" ]]; then
               echo "tryout: no .dts files found under $kernel_root/arch" >&2
               echo "Run this from the root of a Linux kernel source tree." >&2
