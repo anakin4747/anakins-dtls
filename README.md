@@ -35,21 +35,6 @@ To update after pulling:
 ./switch.sh
 ```
 
-## Neovim setup
-
-```lua
-vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-    pattern = { "*.dts", "*.dtsi" },
-    callback = function()
-        vim.lsp.start({
-            name = "anakins-dtls",
-            cmd = { "anakins-dtls" },
-            root_dir = vim.fs.root(0, { "Makefile", "flake.nix", ".git" }),
-            filetypes = { "dts" },
-        })
-    end,
-})
-```
 
 ## How it works
 
