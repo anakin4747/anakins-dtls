@@ -943,3 +943,32 @@ teardown_file() {
     run bash -c "echo '' | bash '$server_src'; echo exit:\$?"
     [[ "$output" == *"exit:0"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# Robustness: server must not crash on bad input
+# ---------------------------------------------------------------------------
+
+@test "server survives malformed JSON request" {
+    lsts_initialize
+    lsts_notify "textDocument/didOpen" '{"textDocument":{"uri":"file:///bad","languageId":"dts","version":1,"text":NOTJSON}}'
+    # Server must still respond to a valid hover after bad input
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
+        "fixtures/hover_compatible_id3.rpc.json"
+}
+
+@test "server survives hover on unknown file" {
+    lsts_initialize
+    # hover on a file that was never opened — server must respond, not crash
+    lsts_hover "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
+        "fixtures/hover_compatible_id3.rpc.json"
+}
+
+@test "server survives didOpen with empty text" {
+    lsts_initialize
+    lsts_open "fixtures/diag_valid.dts"
+    # Server must still respond normally after a valid open
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
+        "fixtures/hover_compatible_id3.rpc.json"
+}
