@@ -896,3 +896,12 @@ teardown_file() {
         "fixtures/hover_compatible.rpc.json"
     lsts_set_cmd "anakins-dtls"
 }
+
+@test "references for label finds all phandle usages including duplicates on same line" {
+    # osc: label defined at line 35 (1-based) in csp.dts
+    # &osc appears twice on line 49: clocks = <&osc>, <&osc>;
+    lsts_references \
+        "linux/arch/xtensa/boot/dts/csp.dts:35:3" \
+        true \
+        "fixtures/references_osc_label.rpc.json"
+}

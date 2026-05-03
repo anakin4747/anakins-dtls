@@ -2403,7 +2403,7 @@ _find_label_refs() {
         local loc
         loc="$(_match_to_location_json "$match")"
         [[ -n "$loc" ]] && printf '%s\n' "$loc"
-    done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -n --column -F "&${label}" 2>/dev/null)
+    done < <(printf '%s\n' "${dts_file_list[@]:-}" | grep -v '^$' | sort -u | xargs -r rg -H -n --column --only-matching -F "&${label}" 2>/dev/null)
 }
 
 handle_references() {
@@ -2462,7 +2462,7 @@ handle_references() {
     json_array="${json_array}]"
     # Sort by URI for deterministic output
     local sorted_json
-    sorted_json="$(printf '%s' "$json_array" | jq 'sort_by(.uri) | unique_by(.uri)' 2>/dev/null)" || sorted_json="$json_array"
+    sorted_json="$(printf '%s' "$json_array" | jq 'sort_by(.uri + (.range.start.line | tostring))' 2>/dev/null)" || sorted_json="$json_array"
     send "$(jq -n --argjson id "$id" --argjson refs "$sorted_json" '{"jsonrpc":"2.0","id":$id,"result":$refs}')"
 }
 
