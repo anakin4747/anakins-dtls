@@ -33,19 +33,18 @@
             fi
 
             nvim_config=$(mktemp -d)
-            cat > "$nvim_config/init.lua" << EOF
-vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-    pattern = { "*.dts", "*.dtsi" },
-    callback = function()
-        vim.lsp.start({
-            name = "anakins-dtls",
-            cmd = { "anakins-dtls" },
-            root_dir = "$kernel_root",
-            filetypes = { "dts" },
-        })
-    end,
-})
-EOF
+            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' > "$nvim_config/init.lua"
+            printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
+            printf '    callback = function()\n' >> "$nvim_config/init.lua"
+            printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
+            printf '            name = "anakins-dtls",\n' >> "$nvim_config/init.lua"
+            printf '            cmd = { "anakins-dtls" },\n' >> "$nvim_config/init.lua"
+            printf '            root_dir = "%s",\n' "$kernel_root" >> "$nvim_config/init.lua"
+            printf '            filetypes = { "dts" },\n' >> "$nvim_config/init.lua"
+            printf '        })\n' >> "$nvim_config/init.lua"
+            printf '    end,\n' >> "$nvim_config/init.lua"
+            printf '})\n' >> "$nvim_config/init.lua"
+
             exec nvim -u "$nvim_config/init.lua" "$dts_file"
           '';
         };
