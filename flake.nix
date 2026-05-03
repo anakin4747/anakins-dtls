@@ -36,9 +36,6 @@
 
             nvim_config=$(mktemp -d)
             printf 'vim.lsp.set_log_level("debug")\n' > "$nvim_config/init.lua"
-            printf 'vim.api.nvim_create_autocmd("VimEnter", { once = true, callback = function()\n' >> "$nvim_config/init.lua"
-            printf '    vim.notify("LSP log: " .. vim.lsp.get_log_path(), vim.log.levels.INFO)\n' >> "$nvim_config/init.lua"
-            printf 'end })\n' >> "$nvim_config/init.lua"
             printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' >> "$nvim_config/init.lua"
             printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
             printf '    callback = function()\n' >> "$nvim_config/init.lua"
@@ -51,6 +48,8 @@
             printf '    end,\n' >> "$nvim_config/init.lua"
             printf '})\n' >> "$nvim_config/init.lua"
 
+            log_path="''${XDG_STATE_HOME:-$HOME/.local/state}/nvim/lsp.log"
+            echo "LSP log: $log_path"
             exec nvim -u "$nvim_config/init.lua" "$dts_file"
           '';
         };
