@@ -937,3 +937,9 @@ teardown_file() {
         any(.severity == 2 and (.message | test("gpio-names"; "i")))
     '
 }
+
+@test "server exits cleanly with code 0 when stdin closes" {
+    local server_src="$BATS_TEST_DIRNAME/../anakins-dtls"
+    run bash -c "echo '' | bash '$server_src'; echo exit:\$?"
+    [[ "$output" == *"exit:0"* ]]
+}
