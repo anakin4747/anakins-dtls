@@ -1729,23 +1729,6 @@ publish_diagnostics() {
 }
 
 # ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# Diagnostics
-# ---------------------------------------------------------------------------
-
-# publish_diagnostics <uri> <text>
-# Send a textDocument/publishDiagnostics notification. Runs in background
-# so the main loop remains responsive to incoming requests.
-publish_diagnostics() {
-    local uri="$1" text="$2"
-    (
-        local diagnostics
-        diagnostics="$(collect_diagnostics "$text")"
-        send "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/publishDiagnostics\",\"params\":{\"uri\":${uri},\"diagnostics\":${diagnostics}}}"
-    ) &
-}
-
-# ---------------------------------------------------------------------------
 # Syntax diagnostic functions
 # ---------------------------------------------------------------------------
 collect_syntax_diagnostics() {
