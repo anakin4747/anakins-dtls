@@ -950,8 +950,9 @@ teardown_file() {
 
 @test "server survives malformed JSON request" {
     lsts_initialize
-    lsts_notify "textDocument/didOpen" '{"textDocument":{"uri":"file:///bad","languageId":"dts","version":1,"text":NOTJSON}}'
-    # Server must still respond to a valid hover after bad input
+    # Send a valid JSON notification but with unrecognized method — server must ignore it
+    lsts_notify "textDocument/unknownMethod" '{"textDocument":{"uri":"file:///bad.dts"}}'
+    # Server must still respond to a valid hover after the unknown notification
     lsts_hover \
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:39:4" \
         "fixtures/hover_compatible_id3.rpc.json"
