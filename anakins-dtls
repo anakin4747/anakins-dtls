@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016
-set -o errexit
-set -o nounset
 set -o pipefail
 
 for _dep in jq rg sed grep; do
