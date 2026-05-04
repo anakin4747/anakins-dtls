@@ -43,6 +43,17 @@ Use the `lsts` bats library in `tests/lsts/` for end-to-end LSP testing.
 The `tests/devicetree-specification/` submodule is the official Device Tree
 Specification source. Use it as the reference for hover documentation content.
 
+**Every bug fix must follow this order — no exceptions:**
+
+1. Write a failing test that reproduces the bug
+2. Verify the test fails (confirms the bug is captured)
+3. Implement the fix
+4. Verify the test passes
+5. Commit the test and fix together
+
+Never fix a bug without a test that would have caught it. Never commit a fix
+before the test exists.
+
 ## The Language Server
 
 The language server binary is `anakins-dtls` at the repo root. It communicates
