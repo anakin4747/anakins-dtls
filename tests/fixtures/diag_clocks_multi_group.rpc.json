@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file:///tmp/anakins-dtls-clean/tests/fixtures/diag_clocks_multi_group.dts","diagnostics":[]}}
