@@ -25,9 +25,10 @@
           runtimeInputs = with pkgs; [ nvim coreutils gnused gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
+            set +e +u +o pipefail
             kernel_root="$(pwd)"
 
-            dts_file="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 1)"
+            dts_file="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 1 || true)"
             if [[ -z "$dts_file" ]]; then
               echo "tryout: no .dts files found under $kernel_root/arch" >&2
               echo "Run this from the root of a Linux kernel source tree." >&2
