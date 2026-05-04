@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_props_before_compat.dts","diagnostics":[{"range":{"start":{"line":10,"character":15},"end":{"line":10,"character":28}},"severity":2,"message":"Property 'clock-16000000' is not documented in the binding for 'fixed-clock'"}]}}
