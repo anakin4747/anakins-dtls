@@ -1818,6 +1818,7 @@ collect_syntax_diagnostics() {
         local continuation=0
         [[ -n "$_tt" && "${_tt: -1}" == ',' ]] && continuation=1
         [[ $angle -gt 0 ]] && continuation=1
+        [[ -n "$_tt" && "${_tt: -1}" == '=' ]] && continuation=1
 
         # Missing semicolon on a property assignment line
         if [[ $continuation -eq 0 \

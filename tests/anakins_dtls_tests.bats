@@ -905,3 +905,46 @@ teardown_file() {
         true \
         "fixtures/references_osc_label.rpc.json"
 }
+
+@test "diagnostics does not report missing semicolon for multi-line property value" {
+    lsts_diagnostics_none "fixtures/diag_multiline_value.dts"
+}
+
+# ---------------------------------------------------------------------------
+# Diagnostics: regression tests for bugs fixed without TDD
+# ---------------------------------------------------------------------------
+
+@test "diagnostics does not report missing port when port child node exists" {
+    # Regression: port child node (split across lines) must satisfy the
+    # required 'port' property check for hdmi-connector. The fix in
+    # commit 99caa00 treats child node names as present properties.
+    # Note: 'connector' appears as an undocumented-prop warning because
+    # the node name itself is collected; 'port' must NOT be reported missing.
+    lsts_diagnostics "fixtures/diag_port_child_node.dts" \
+        "fixtures/diag_port_child_node.rpc.json"
+}
+
+@test "diagnostics does not report missing #clock-cells when it appears before compatible" {
+    # Regression: properties declared before compatible in the same node
+    # were not collected for binding checks, causing false missing-property
+    # diagnostics. Commit bb935d2 fixed collection order independence.
+    lsts_diagnostics "fixtures/diag_props_before_compat.dts" \
+        "fixtures/diag_props_before_compat.rpc.json"
+}
+
+@test "diagnostics does not report clock-names mismatch for multiple angle-bracket groups" {
+    # Regression: clocks = <&a>, <&b> was counted as 1 phandle because only
+    # the first <...> group was captured. Commit 7bb... fixed the count.
+    # With 2 clocks and 2 clock-names there should be no mismatch diagnostic.
+    lsts_diagnostics_none "fixtures/diag_clocks_multi_group.dts"
+}
+
+@test "diagnostics does not report sibling node properties as undocumented" {
+    # Regression: properties from a sibling node at the same depth (e.g.
+    # aliases) bled into a subsequent node's binding check, causing false
+    # undocumented-property diagnostics. Commit 1c78df0 fixed scoping.
+    # The fixed-clock node must only show its own undocumented node-name
+    # warning, not any properties from the sibling aliases node.
+    lsts_diagnostics "fixtures/diag_cross_node_isolation.dts" \
+        "fixtures/diag_cross_node_isolation.rpc.json"
+}
