@@ -29,7 +29,7 @@
             mkdir -p vsix/extension/out
             cp out/extension.js vsix/extension/out/
             cp package.json vsix/extension/
-            cat > vsix/[Content_Types].xml << 'XMLEOF'
+            cat > 'vsix/[Content_Types].xml' << 'XMLEOF'
 <?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="json" ContentType="application/json"/><Default Extension="js" ContentType="application/javascript"/><Default Extension="vsixmanifest" ContentType="text/xml"/></Types>
 XMLEOF
             cat > vsix/extension.vsixmanifest << 'MEOF'
