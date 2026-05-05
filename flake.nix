@@ -20,19 +20,10 @@
           text = builtins.readFile ./anakins-dtls;
         };
 
-        vscode-extension = pkgs.buildNpmPackage {
+        vscode-extension = pkgs.stdenv.mkDerivation {
           pname = "anakins-dtls-vscode";
           version = "0.0.1";
           src = ./vscode-extension;
-          npmDepsHash = "sha256-RQG+vayjwNf9ORh2+qAWQrTWzx2WFmkeAxpIzz2FMt4=";
-          buildPhase = ''
-            npx esbuild src/extension.ts \
-              --bundle \
-              --outfile=out/extension.js \
-              --external:vscode \
-              --format=cjs \
-              --platform=node
-          '';
           installPhase = ''
             mkdir -p $out
             cp -r out package.json $out/
