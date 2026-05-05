@@ -70,7 +70,11 @@ MEOF
 
             codium \
               --extensions-dir "$profile_dir/extensions" \
-              --install-extension "$ext_vsix" \
+              --install-extension "$ext_vsix"
+
+            codium \
+              --extensions-dir "$profile_dir/extensions" \
+              --user-data-dir "$profile_dir/data" \
               --wait \
               "$dts_file" || true
           '';
