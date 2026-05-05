@@ -1566,6 +1566,31 @@ find_linux_doc_for_prop() {
     return 1
 }
 
+handle_implementation() {
+    local body="$1"
+    local uri line character id text
+    uri=$(printf '%s' "$body" | jq -r '.params.textDocument.uri')
+    line=$(printf '%s' "$body" | jq -r '.params.position.line')
+    character=$(printf '%s' "$body" | jq -r '.params.position.character')
+    id=$(printf '%s' "$body" | jq -r '.id')
+    text="${DOC_TEXT[$uri]:-}"
+    [[ -z "$text" || -z "${LINUX_DIR:-}" ]] && { send_null "$id"; return; }
+
+    local compat_val
+    compat_val="$(compatible_value_at "$text" "$line" "$character")"
+    [[ -z "$compat_val" ]] && { send_null "$id"; return; }
+
+    local match
+    match="$(rg -n --column -F "\"${compat_val}\"" --glob='*.c' "$LINUX_DIR/drivers/" 2>/dev/null | head -1)" || true
+    [[ -z "$match" ]] && { send_null "$id"; return; }
+
+    local loc
+    loc="$(_match_to_location_json "$match")"
+    [[ -z "$loc" ]] && { send_null "$id"; return; }
+
+    send "$(jq -n --argjson id "$id" --argjson loc "$loc" '{"jsonrpc":"2.0","id":$id,"result":$loc}')"
+}
+
 handle_hover() {
     local id="$1" text="$2" line="$3" character="$4"
     local word standard_doc compat binding_doc
@@ -2890,7 +2915,7 @@ while recv; do
             root_path="${root_uri#file://}"
             _resolve_linux_dir "$root_path"
             _resolve_spec_and_includes "$root_path"
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"implementationProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
             ;;
         initialized)
             ;;
@@ -2909,6 +2934,9 @@ while recv; do
             ;;
         textDocument/definition)
             handle_definition "$BODY"
+            ;;
+        textDocument/implementation)
+            handle_implementation "$BODY"
             ;;
         textDocument/references)
             handle_references "$BODY"
