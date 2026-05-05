@@ -67,6 +67,8 @@ MEOF
 
             ext_vsix="${vscode-extension}/anakins-dtls.vsix"
             profile_dir="$(mktemp -d)"
+            mkdir -p "$profile_dir/data/User"
+            printf '{"security.workspace.trust.enabled":false}' > "$profile_dir/data/User/settings.json"
 
             codium \
               --extensions-dir "$profile_dir/extensions" \
