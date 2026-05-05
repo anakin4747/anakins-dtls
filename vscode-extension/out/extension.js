@@ -18151,7 +18151,8 @@ module.exports = __toCommonJS(extension_exports);
 var import_node = __toESM(require_node3());
 var client;
 function activate(_context) {
-  const serverOptions = { command: "anakins-dtls" };
+  const command = process.env["ANAKINS_DTLS_BIN"] ?? "anakins-dtls";
+  const serverOptions = { command };
   const clientOptions = {
     documentSelector: [{ scheme: "file", language: "dts" }]
   };

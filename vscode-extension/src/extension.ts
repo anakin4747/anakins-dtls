@@ -8,7 +8,8 @@ import {
 let client: LanguageClient;
 
 export function activate(_context: vscode.ExtensionContext): void {
-    const serverOptions: ServerOptions = { command: 'anakins-dtls' };
+    const command = process.env['ANAKINS_DTLS_BIN'] ?? 'anakins-dtls';
+    const serverOptions: ServerOptions = { command };
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'dts' }],
     };

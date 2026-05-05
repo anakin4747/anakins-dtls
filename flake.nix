@@ -72,7 +72,7 @@ MEOF
               --extensions-dir "$profile_dir/extensions" \
               --install-extension "$ext_vsix"
 
-            codium \
+            ANAKINS_DTLS_BIN="$(command -v anakins-dtls)" codium \
               --extensions-dir "$profile_dir/extensions" \
               --user-data-dir "$profile_dir/data" \
               --wait \
