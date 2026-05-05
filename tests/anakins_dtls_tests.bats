@@ -962,3 +962,9 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1188:18" \
         "fixtures/implementation_compatible.rpc.json"
 }
+
+@test "diagnostics does not warn about compatible format for well-known generic strings" {
+    lsts_diagnostics \
+        "fixtures/diag_generic_compat.dts" \
+        "fixtures/diag_generic_compat.rpc.json"
+}

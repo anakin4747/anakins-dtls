@@ -1,0 +1,15 @@
+/dts-v1/;
+
+/ {
+	backlight: backlight {
+		compatible = "led-backlight";
+	};
+
+	leds {
+		compatible = "pwm-leds";
+	};
+
+	keys {
+		compatible = "gpio-keys";
+	};
+};

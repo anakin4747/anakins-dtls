@@ -2022,8 +2022,17 @@ collect_syntax_diagnostics() {
             if [[ "$_prop" == "compatible" \
                && "$line" =~ compatible[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
                 local _cv="${BASH_REMATCH[1]}"
-                if [[ "$_cv" != "simple-bus" && "$_cv" != "simple-mfd" \
-                   && "$_cv" != "fixed-clock" && "$_cv" != "regulator-fixed" \
+                local _generic_compat=0
+                case "$_cv" in
+                    simple-bus|simple-mfd|fixed-clock|regulator-fixed|\
+                    led-backlight|pwm-leds|gpio-keys|gpio-leds|gpio-fan|\
+                    gpio-poweroff|gpio-restart|gpio-wdt|pwm-fan|pwm-backlight|\
+                    regulator-gpio|regulator-fixed-domain|simple-panel|\
+                    simple-audio-card|simple-framebuffer|panel-simple|\
+                    syscon|syscon-reboot|syscon-poweroff|syscon-wdt)
+                        _generic_compat=1 ;;
+                esac
+                if [[ $_generic_compat -eq 0 \
                    && "$known_compats" != *"${_cv}|"* ]]; then
                     if [[ "$_cv" != *","* || "$_cv" =~ ^[A-Z] || "$_cv" == *" "* ]]; then
                         local _cqcs _cqce
