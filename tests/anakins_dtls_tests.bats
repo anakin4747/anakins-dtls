@@ -968,3 +968,10 @@ teardown_file() {
         "fixtures/diag_generic_compat.dts" \
         "fixtures/diag_generic_compat.rpc.json"
 }
+
+@test "definition on model property navigates to spec not binding YAML" {
+    # model is a standard DT property — should go to spec RST, not fsl,gianfar.yaml
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/qcom/sm8550-qrd.dts:22:2" \
+        "fixtures/definition_model_property.rpc.json"
+}
