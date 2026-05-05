@@ -7,11 +7,17 @@ import {
 
 let client: LanguageClient;
 
-export function activate(_context: vscode.ExtensionContext): void {
+export function activate(context: vscode.ExtensionContext): void {
     const command = process.env['ANAKINS_DTLS_BIN'] ?? 'anakins-dtls';
+
+    const outputChannel = vscode.window.createOutputChannel('anakins-dtls');
+    outputChannel.appendLine(`Starting anakins-dtls: ${command}`);
+    outputChannel.show();
+
     const serverOptions: ServerOptions = { command };
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'dts' }],
+        outputChannel,
     };
     client = new LanguageClient(
         'anakins-dtls',
@@ -19,7 +25,13 @@ export function activate(_context: vscode.ExtensionContext): void {
         serverOptions,
         clientOptions,
     );
-    client.start();
+
+    client.start().catch((err: unknown) => {
+        outputChannel.appendLine(`Failed to start: ${err}`);
+        vscode.window.showErrorMessage(`anakins-dtls failed to start: ${err}`);
+    });
+
+    context.subscriptions.push({ dispose: () => client?.stop() });
 }
 
 export function deactivate(): Thenable<void> | undefined {

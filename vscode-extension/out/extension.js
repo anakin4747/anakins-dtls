@@ -6697,8 +6697,8 @@ var require_protocolCodeAction = __commonJS({
   "../../../../../tmp/anakins-dtls-clean/vscode-extension/node_modules/vscode-languageclient/lib/common/protocolCodeAction.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    var vscode = require("vscode");
-    var ProtocolCodeAction = class extends vscode.CodeAction {
+    var vscode2 = require("vscode");
+    var ProtocolCodeAction = class extends vscode2.CodeAction {
       constructor(title, data) {
         super(title);
         this.data = data;
@@ -6714,7 +6714,7 @@ var require_protocolDiagnostic = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ProtocolDiagnostic = exports2.DiagnosticCode = void 0;
-    var vscode = require("vscode");
+    var vscode2 = require("vscode");
     var Is = require_is();
     var DiagnosticCode;
     (function(DiagnosticCode2) {
@@ -6724,7 +6724,7 @@ var require_protocolDiagnostic = __commonJS({
       }
       DiagnosticCode2.is = is;
     })(DiagnosticCode || (exports2.DiagnosticCode = DiagnosticCode = {}));
-    var ProtocolDiagnostic = class extends vscode.Diagnostic {
+    var ProtocolDiagnostic = class extends vscode2.Diagnostic {
       constructor(range, message, severity, data) {
         super(range, message, severity);
         this.data = data;
@@ -10845,7 +10845,7 @@ var require_notebook = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NotebookDocumentSyncFeature = void 0;
-    var vscode = require("vscode");
+    var vscode2 = require("vscode");
     var minimatch = require_minimatch();
     var proto = require_main3();
     var UUID = require_uuid();
@@ -10900,9 +10900,9 @@ var require_notebook = __commonJS({
         c2p2.asNotebookCell = asNotebookCell;
         function asNotebookCellKind(kind) {
           switch (kind) {
-            case vscode.NotebookCellKind.Markup:
+            case vscode2.NotebookCellKind.Markup:
               return proto.NotebookCellKind.Markup;
-            case vscode.NotebookCellKind.Code:
+            case vscode2.NotebookCellKind.Code:
               return proto.NotebookCellKind.Code;
           }
         }
@@ -11153,25 +11153,25 @@ var require_notebook = __commonJS({
         this.notebookDidOpen = /* @__PURE__ */ new Set();
         this.disposables = [];
         this.selector = client2.protocol2CodeConverter.asDocumentSelector($NotebookDocumentSyncOptions.asDocumentSelector(options));
-        vscode.workspace.onDidOpenNotebookDocument((notebookDocument) => {
+        vscode2.workspace.onDidOpenNotebookDocument((notebookDocument) => {
           this.notebookDidOpen.add(notebookDocument.uri.toString());
           this.didOpen(notebookDocument);
         }, void 0, this.disposables);
-        for (const notebookDocument of vscode.workspace.notebookDocuments) {
+        for (const notebookDocument of vscode2.workspace.notebookDocuments) {
           this.notebookDidOpen.add(notebookDocument.uri.toString());
           this.didOpen(notebookDocument);
         }
-        vscode.workspace.onDidChangeNotebookDocument((event) => this.didChangeNotebookDocument(event), void 0, this.disposables);
+        vscode2.workspace.onDidChangeNotebookDocument((event) => this.didChangeNotebookDocument(event), void 0, this.disposables);
         if (this.options.save === true) {
-          vscode.workspace.onDidSaveNotebookDocument((notebookDocument) => this.didSave(notebookDocument), void 0, this.disposables);
+          vscode2.workspace.onDidSaveNotebookDocument((notebookDocument) => this.didSave(notebookDocument), void 0, this.disposables);
         }
-        vscode.workspace.onDidCloseNotebookDocument((notebookDocument) => {
+        vscode2.workspace.onDidCloseNotebookDocument((notebookDocument) => {
           this.didClose(notebookDocument);
           this.notebookDidOpen.delete(notebookDocument.uri.toString());
         }, void 0, this.disposables);
       }
       getState() {
-        for (const notebook of vscode.workspace.notebookDocuments) {
+        for (const notebook of vscode2.workspace.notebookDocuments) {
           const matchingCells = this.getMatchingCells(notebook);
           if (matchingCells !== void 0) {
             return { kind: "document", id: "$internal", registrations: true, matches: true };
@@ -11183,10 +11183,10 @@ var require_notebook = __commonJS({
         return "notebook";
       }
       handles(textDocument) {
-        return vscode.languages.match(this.selector, textDocument) > 0;
+        return vscode2.languages.match(this.selector, textDocument) > 0;
       }
       didOpenNotebookCellTextDocument(notebookDocument, cell) {
-        if (vscode.languages.match(this.selector, cell.document) === 0) {
+        if (vscode2.languages.match(this.selector, cell.document) === 0) {
           return;
         }
         if (!this.notebookDidOpen.has(notebookDocument.uri.toString())) {
@@ -11217,7 +11217,7 @@ var require_notebook = __commonJS({
         }
       }
       didChangeNotebookCellTextDocument(notebookDocument, event) {
-        if (vscode.languages.match(this.selector, event.document) === 0) {
+        if (vscode2.languages.match(this.selector, event.document) === 0) {
           return;
         }
         this.doSendChange({
@@ -11490,7 +11490,7 @@ var require_notebook = __commonJS({
         this.client = client2;
         this.registrations = /* @__PURE__ */ new Map();
         this.registrationType = proto.NotebookDocumentSyncRegistrationType.type;
-        vscode.workspace.onDidOpenTextDocument((textDocument) => {
+        vscode2.workspace.onDidOpenTextDocument((textDocument) => {
           if (textDocument.uri.scheme !== _NotebookDocumentSyncFeature.CellScheme) {
             return;
           }
@@ -11504,7 +11504,7 @@ var require_notebook = __commonJS({
             }
           }
         });
-        vscode.workspace.onDidChangeTextDocument((event) => {
+        vscode2.workspace.onDidChangeTextDocument((event) => {
           if (event.contentChanges.length === 0) {
             return;
           }
@@ -11522,7 +11522,7 @@ var require_notebook = __commonJS({
             }
           }
         });
-        vscode.workspace.onDidCloseTextDocument((textDocument) => {
+        vscode2.workspace.onDidCloseTextDocument((textDocument) => {
           if (textDocument.uri.scheme !== _NotebookDocumentSyncFeature.CellScheme) {
             return;
           }
@@ -11587,7 +11587,7 @@ var require_notebook = __commonJS({
         if (textDocument.uri.scheme !== _NotebookDocumentSyncFeature.CellScheme) {
           return false;
         }
-        if (this.dedicatedChannel !== void 0 && vscode.languages.match(this.dedicatedChannel, textDocument) > 0) {
+        if (this.dedicatedChannel !== void 0 && vscode2.languages.match(this.dedicatedChannel, textDocument) > 0) {
           return true;
         }
         for (const provider of this.registrations.values()) {
@@ -11607,7 +11607,7 @@ var require_notebook = __commonJS({
       }
       findNotebookDocumentAndCell(textDocument) {
         const uri = textDocument.uri.toString();
-        for (const notebookDocument of vscode.workspace.notebookDocuments) {
+        for (const notebookDocument of vscode2.workspace.notebookDocuments) {
           for (const cell of notebookDocument.getCells()) {
             if (cell.document.uri.toString() === uri) {
               return [notebookDocument, cell];
@@ -14123,7 +14123,7 @@ var require_semanticTokens = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.SemanticTokensFeature = void 0;
-    var vscode = require("vscode");
+    var vscode2 = require("vscode");
     var vscode_languageserver_protocol_1 = require_main3();
     var features_1 = require_features();
     var Is = require_is();
@@ -14201,7 +14201,7 @@ var require_semanticTokens = __commonJS({
         const selector = options.documentSelector;
         const fullProvider = Is.boolean(options.full) ? options.full : options.full !== void 0;
         const hasEditProvider = options.full !== void 0 && typeof options.full !== "boolean" && options.full.delta === true;
-        const eventEmitter = new vscode.EventEmitter();
+        const eventEmitter = new vscode2.EventEmitter();
         const documentProvider = fullProvider ? {
           onDidChangeSemanticTokens: eventEmitter.event,
           provideDocumentSemanticTokens: (document, token) => {
@@ -14273,12 +14273,12 @@ var require_semanticTokens = __commonJS({
         const legend = client2.protocol2CodeConverter.asSemanticTokensLegend(options.legend);
         const documentSelector = client2.protocol2CodeConverter.asDocumentSelector(selector);
         if (documentProvider !== void 0) {
-          disposables.push(vscode.languages.registerDocumentSemanticTokensProvider(documentSelector, documentProvider, legend));
+          disposables.push(vscode2.languages.registerDocumentSemanticTokensProvider(documentSelector, documentProvider, legend));
         }
         if (rangeProvider !== void 0) {
-          disposables.push(vscode.languages.registerDocumentRangeSemanticTokensProvider(documentSelector, rangeProvider, legend));
+          disposables.push(vscode2.languages.registerDocumentRangeSemanticTokensProvider(documentSelector, rangeProvider, legend));
         }
-        return [new vscode.Disposable(() => disposables.forEach((item) => item.dispose())), { range: rangeProvider, full: documentProvider, onDidChangeSemanticTokensEmitter: eventEmitter }];
+        return [new vscode2.Disposable(() => disposables.forEach((item) => item.dispose())), { range: rangeProvider, full: documentProvider, onDidChangeSemanticTokensEmitter: eventEmitter }];
       }
     };
     exports2.SemanticTokensFeature = SemanticTokensFeature;
@@ -18148,13 +18148,18 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
+var vscode = __toESM(require("vscode"));
 var import_node = __toESM(require_node3());
 var client;
-function activate(_context) {
+function activate(context) {
   const command = process.env["ANAKINS_DTLS_BIN"] ?? "anakins-dtls";
+  const outputChannel = vscode.window.createOutputChannel("anakins-dtls");
+  outputChannel.appendLine(`Starting anakins-dtls: ${command}`);
+  outputChannel.show();
   const serverOptions = { command };
   const clientOptions = {
-    documentSelector: [{ scheme: "file", language: "dts" }]
+    documentSelector: [{ scheme: "file", language: "dts" }],
+    outputChannel
   };
   client = new import_node.LanguageClient(
     "anakins-dtls",
@@ -18162,7 +18167,11 @@ function activate(_context) {
     serverOptions,
     clientOptions
   );
-  client.start();
+  client.start().catch((err) => {
+    outputChannel.appendLine(`Failed to start: ${err}`);
+    vscode.window.showErrorMessage(`anakins-dtls failed to start: ${err}`);
+  });
+  context.subscriptions.push({ dispose: () => client?.stop() });
 }
 function deactivate() {
   return client?.stop();
