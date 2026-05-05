@@ -41,7 +41,7 @@
 
         tryout-vscode = pkgs.writeShellApplication {
           name = "tryout-vscode";
-          runtimeInputs = with pkgs; [ vscodium ];
+          runtimeInputs = with pkgs; [ vscodium anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
