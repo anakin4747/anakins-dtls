@@ -975,3 +975,10 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/qcom/sm8550-qrd.dts:22:2" \
         "fixtures/definition_model_property.rpc.json"
 }
+
+@test "hover over status value shows status value documentation" {
+    # Line 871 col 14: status = "disabled"; — cursor on "disabled"
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:871:14" \
+        "fixtures/hover_status_value.rpc.json"
+}

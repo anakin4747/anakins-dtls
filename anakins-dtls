@@ -1657,6 +1657,26 @@ handle_hover() {
             ;;
     esac
 
+    # Check if cursor is on a status value string
+    local line_text
+    line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
+    if [[ "$line_text" =~ ^[[:space:]]*status[[:space:]]*= ]]; then
+        local status_val status_val_doc
+        status_val="$(_quoted_string_at_char "$line_text" "$character")"
+        status_val_doc=""
+        case "$status_val" in
+            okay)     status_val_doc='**`"okay"`** — Indicates the device is operational.' ;;
+            disabled) status_val_doc='**`"disabled"`** — The device is not presently operational, but may become operational in the future (e.g. not plugged in, or switched off).' ;;
+            reserved) status_val_doc='**`"reserved"`** — The device is operational but should not be used. Typically controlled by another software component such as platform firmware.' ;;
+            fail)     status_val_doc='**`"fail"`** — The device is not operational. A serious error was detected and it is unlikely to become operational without repair.' ;;
+            fail-sss) status_val_doc='**`"fail-sss"`** — The device is not operational. The _sss_ portion of the value is device-specific and indicates the error condition detected.' ;;
+        esac
+        if [[ -n "$status_val_doc" ]]; then
+            send_hover "$id" "$status_val_doc"
+            return
+        fi
+    fi
+
     # Check if cursor is on a compatible value string (e.g. "regulator-fixed")
     if [[ -n "$BINDINGS_DIR" ]]; then
         local compat_val compat_hover
