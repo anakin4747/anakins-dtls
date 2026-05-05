@@ -20,6 +20,51 @@
           text = builtins.readFile ./anakins-dtls;
         };
 
+        vscode-extension = pkgs.buildNpmPackage {
+          pname = "anakins-dtls-vscode";
+          version = "0.0.1";
+          src = ./vscode-extension;
+          npmDepsHash = pkgs.lib.fakeHash;
+          buildPhase = ''
+            npx esbuild src/extension.ts \
+              --bundle \
+              --outfile=out/extension.js \
+              --external:vscode \
+              --format=cjs \
+              --platform=node
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r out package.json $out/
+          '';
+        };
+
+        tryout-vscode = pkgs.writeShellApplication {
+          name = "tryout-vscode";
+          runtimeInputs = with pkgs; [ vscodium ];
+          checkPhase = "";
+          text = ''
+            set +e +u +o pipefail
+            kernel_root="$(pwd)"
+
+            dts_file="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 1 || true)"
+            if [[ -z "$dts_file" ]]; then
+              echo "tryout-vscode: no .dts files found under $kernel_root/arch" >&2
+              echo "Run this from the root of a Linux kernel source tree." >&2
+              exit 1
+            fi
+
+            ext_dir="${vscode-extension}"
+            profile_dir="$(mktemp -d)"
+
+            codium \
+              --extensions-dir "$profile_dir/extensions" \
+              --install-extension "$ext_dir" \
+              --wait \
+              "$dts_file" || true
+          '';
+        };
+
         tryout = pkgs.writeShellApplication {
           name = "tryout";
           runtimeInputs = with pkgs; [ nvim coreutils gnused gnugrep anakins-dtls ];
@@ -56,10 +101,17 @@
       {
         packages.default = anakins-dtls;
         packages.tryout = tryout;
+        packages.vscode-extension = vscode-extension;
+        packages.tryout-vscode = tryout-vscode;
 
         apps.tryout = {
           type = "app";
           program = "${tryout}/bin/tryout";
+        };
+
+        apps.tryout-vscode = {
+          type = "app";
+          program = "${tryout-vscode}/bin/tryout-vscode";
         };
 
         devShells.default = pkgs.mkShell {
