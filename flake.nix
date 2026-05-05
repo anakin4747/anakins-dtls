@@ -58,8 +58,8 @@ MEOF
             set +e +u +o pipefail
             kernel_root="$(pwd)"
 
-            dts_file="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 1 || true)"
-            if [[ -z "$dts_file" ]]; then
+            dts_files="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 10 || true)"
+            if [[ -z "$dts_files" ]]; then
               echo "tryout-vscode: no .dts files found under $kernel_root/arch" >&2
               echo "Run this from the root of a Linux kernel source tree." >&2
               exit 1
@@ -79,7 +79,7 @@ MEOF
               --user-data-dir "$profile_dir/data" \
               --disable-workspace-trust \
               --wait \
-              "$dts_file" || true
+              $dts_files || true
           '';
         };
 
@@ -91,8 +91,8 @@ MEOF
             set +e +u +o pipefail
             kernel_root="$(pwd)"
 
-            dts_file="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 1 || true)"
-            if [[ -z "$dts_file" ]]; then
+            dts_files="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 10 || true)"
+            if [[ -z "$dts_files" ]]; then
               echo "tryout: no .dts files found under $kernel_root/arch" >&2
               echo "Run this from the root of a Linux kernel source tree." >&2
               exit 1
@@ -112,7 +112,7 @@ MEOF
             printf '    end,\n' >> "$nvim_config/init.lua"
             printf '})\n' >> "$nvim_config/init.lua"
 
-            exec nvim -u "$nvim_config/init.lua" "$dts_file"
+            exec nvim -u "$nvim_config/init.lua" $dts_files
           '';
         };
       in
