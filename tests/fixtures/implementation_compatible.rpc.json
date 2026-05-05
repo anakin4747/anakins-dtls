@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"uri":"file://$LSTS_ROOT/linux/drivers/tty/serial/qcom_geni_serial.c","range":{"start":{"line":2050,"character":16},"end":{"line":2050,"character":16}}}}

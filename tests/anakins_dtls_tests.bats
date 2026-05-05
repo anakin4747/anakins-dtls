@@ -948,3 +948,17 @@ teardown_file() {
     lsts_diagnostics "fixtures/diag_cross_node_isolation.dts" \
         "fixtures/diag_cross_node_isolation.rpc.json"
 }
+
+# ---------------------------------------------------------------------------
+# textDocument/implementation
+# ---------------------------------------------------------------------------
+
+@test "initialize advertises implementationProvider" {
+    lsts_initialize_capability "implementationProvider == true"
+}
+
+@test "implementation on compatible jumps to driver source" {
+    lsts_implementation \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:1188:18" \
+        "fixtures/implementation_compatible.rpc.json"
+}
