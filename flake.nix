@@ -75,6 +75,7 @@ MEOF
             ANAKINS_DTLS_BIN="$(command -v anakins-dtls)" codium \
               --extensions-dir "$profile_dir/extensions" \
               --user-data-dir "$profile_dir/data" \
+              --disable-workspace-trust \
               --wait \
               "$dts_file" || true
           '';
