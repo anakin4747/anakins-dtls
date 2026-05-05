@@ -39,6 +39,18 @@ nix run github:anakin4747r2d2/anakins-dtls#tryout
 
 Opens a DTS file from the kernel in Neovim with `anakins-dtls` configured and ready.
 
+## Try it in VSCode
+
+From inside a Linux kernel source tree:
+
+```bash
+nix run github:anakin4747r2d2/anakins-dtls#tryout-vscode
+```
+
+Opens a random DTS file from the kernel in VSCodium with `anakins-dtls` configured as a language server.
+
+> **Note:** `anakins-dtls` must be on your PATH (e.g. via `nix profile add github:anakin4747r2d2/anakins-dtls`). The extension does not bundle the server binary.
+
 ## Installation
 
 ```bash
