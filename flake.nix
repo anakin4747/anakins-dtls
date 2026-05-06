@@ -4,10 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    neovim-nightly.url = "github:nix-community/neovim-nightly-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, neovim-nightly }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -61,7 +60,7 @@ MEOF
 
         tryout-vscode = pkgs.writeShellApplication {
           name = "tryout-vscode";
-          runtimeInputs = [ neovim-nightly.packages.${system}.default pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
+          runtimeInputs = [ pkgs.neovim pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
@@ -94,7 +93,7 @@ MEOF
 
         tryout = pkgs.writeShellApplication {
           name = "tryout";
-          runtimeInputs = [ neovim-nightly.packages.${system}.default pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
+          runtimeInputs = [ pkgs.neovim pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
@@ -121,7 +120,7 @@ MEOF
             printf '    end,\n' >> "$nvim_config/init.lua"
             printf '})\n' >> "$nvim_config/init.lua"
 
-            exec ${neovim-nightly.packages.${system}.default}/bin/nvim -u "$nvim_config/init.lua" $dts_files
+            exec ${pkgs.neovim}/bin/nvim -u "$nvim_config/init.lua" $dts_files
           '';
         };
       in
