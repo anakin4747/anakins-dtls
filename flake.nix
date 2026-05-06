@@ -87,6 +87,7 @@ MEOF
               --user-data-dir "$profile_dir/data" \
               --disable-workspace-trust \
               --wait \
+              "$kernel_root" \
               $dts_files || true
           '';
         };
