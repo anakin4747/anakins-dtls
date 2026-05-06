@@ -3,6 +3,7 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
+    Trace,
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
@@ -18,6 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'dts' }],
         outputChannel,
+        traceOutputChannel: outputChannel,
     };
     client = new LanguageClient(
         'anakins-dtls',
@@ -25,6 +27,8 @@ export function activate(context: vscode.ExtensionContext): void {
         serverOptions,
         clientOptions,
     );
+
+    client.setTrace(Trace.Verbose);
 
     client.start().catch((err: unknown) => {
         outputChannel.appendLine(`Failed to start: ${err}`);
