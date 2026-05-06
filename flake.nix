@@ -18,12 +18,21 @@
           text = builtins.readFile ./anakins-dtls;
         };
 
-        vscode-extension = pkgs.stdenv.mkDerivation {
+        vscode-extension = pkgs.buildNpmPackage {
           pname = "anakins-dtls-vscode";
           version = "0.0.1";
           src = ./vscode-extension;
+          npmDepsHash = "sha256-9FgxK8O2ZTDCtk/f3iKgg9g0Z9k1yhguDTgqKNh4MYU=";
+          dontNpmBuild = true;
           nativeBuildInputs = [ pkgs.zip ];
-          buildPhase = "true";
+          buildPhase = ''
+            node_modules/.bin/esbuild src/extension.ts \
+              --bundle \
+              --outfile=out/extension.js \
+              --external:vscode \
+              --format=cjs \
+              --platform=node
+          '';
           installPhase = ''
             mkdir -p vsix/extension/out
             cp out/extension.js vsix/extension/out/
