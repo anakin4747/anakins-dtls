@@ -24,7 +24,8 @@
           pname = "anakins-dtls-vscode";
           version = "0.0.1";
           src = ./vscode-extension;
-          npmDepsHash = pkgs.lib.fakeHash;
+          npmDepsHash = "sha256-9FgxK8O2ZTDCtk/f3iKgg9g0Z9k1yhguDTgqKNh4MYU=";
+          dontNpmBuild = true;
           nativeBuildInputs = [ pkgs.zip ];
           buildPhase = ''
             npx esbuild src/extension.ts \
