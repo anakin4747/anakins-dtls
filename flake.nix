@@ -20,11 +20,20 @@
           text = builtins.readFile ./anakins-dtls;
         };
 
-        vscode-extension = pkgs.stdenv.mkDerivation {
+        vscode-extension = pkgs.buildNpmPackage {
           pname = "anakins-dtls-vscode";
           version = "0.0.1";
           src = ./vscode-extension;
+          npmDepsHash = "sha256-F3iKggHubg9ZDg9k1yhguDTgqKNh+MYUYGsYeGdPqxs=";
           nativeBuildInputs = [ pkgs.zip ];
+          buildPhase = ''
+            npx esbuild src/extension.ts \
+              --bundle \
+              --outfile=out/extension.js \
+              --external:vscode \
+              --format=cjs \
+              --platform=node
+          '';
           installPhase = ''
             mkdir -p vsix/extension/out
             cp out/extension.js vsix/extension/out/
@@ -52,7 +61,7 @@ MEOF
 
         tryout-vscode = pkgs.writeShellApplication {
           name = "tryout-vscode";
-          runtimeInputs = with pkgs; [ vscodium anakins-dtls ];
+          runtimeInputs = with pkgs; [ nvim coreutils gnused gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
@@ -119,8 +128,8 @@ MEOF
       {
         packages.default = anakins-dtls;
         packages.tryout = tryout;
-        packages.vscode-extension = vscode-extension;
         packages.tryout-vscode = tryout-vscode;
+        packages.vscode-extension = vscode-extension;
 
         apps.tryout = {
           type = "app";
