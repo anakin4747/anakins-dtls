@@ -11,7 +11,6 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        nvim = neovim-nightly.packages.${system}.default;
 
         anakins-dtls = pkgs.writeShellApplication {
           name = "anakins-dtls";
@@ -62,7 +61,7 @@ MEOF
 
         tryout-vscode = pkgs.writeShellApplication {
           name = "tryout-vscode";
-          runtimeInputs = with pkgs; [ nvim coreutils gnused gnugrep anakins-dtls ];
+          runtimeInputs = [ neovim-nightly.packages.${system}.default pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
@@ -95,7 +94,7 @@ MEOF
 
         tryout = pkgs.writeShellApplication {
           name = "tryout";
-          runtimeInputs = with pkgs; [ nvim coreutils gnused gnugrep anakins-dtls ];
+          runtimeInputs = [ neovim-nightly.packages.${system}.default pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
@@ -122,7 +121,7 @@ MEOF
             printf '    end,\n' >> "$nvim_config/init.lua"
             printf '})\n' >> "$nvim_config/init.lua"
 
-            exec nvim -u "$nvim_config/init.lua" $dts_files
+            exec ${neovim-nightly.packages.${system}.default}/bin/nvim -u "$nvim_config/init.lua" $dts_files
           '';
         };
       in
