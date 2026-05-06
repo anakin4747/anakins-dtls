@@ -18160,7 +18160,21 @@ function activate(context) {
   const clientOptions = {
     documentSelector: [{ scheme: "file", language: "dts" }],
     outputChannel,
-    traceOutputChannel: outputChannel
+    traceOutputChannel: outputChannel,
+    initializationFailedHandler: (err) => {
+      outputChannel.appendLine(`Initialization failed: ${err}`);
+      return false;
+    },
+    errorHandler: {
+      error: (err, msg) => {
+        outputChannel.appendLine(`Error: ${err} msg: ${JSON.stringify(msg)}`);
+        return { action: 1 };
+      },
+      closed: () => {
+        outputChannel.appendLine("Connection closed");
+        return { action: 2 };
+      }
+    }
   };
   client = new import_node.LanguageClient(
     "anakins-dtls",
@@ -18169,6 +18183,23 @@ function activate(context) {
     clientOptions
   );
   client.setTrace(import_node.Trace.Verbose);
+  client.onDidChangeState((e) => {
+    outputChannel.appendLine(`State: ${e.oldState} -> ${e.newState}`);
+  });
+  client.middleware = {
+    provideImplementation: async (doc, pos, token, next) => {
+      outputChannel.appendLine(`implementation: line=${pos.line} char=${pos.character} uri=${doc.uri}`);
+      const result = await next(doc, pos, token);
+      outputChannel.appendLine(`implementation result: ${JSON.stringify(result)}`);
+      return result;
+    },
+    provideDefinition: async (doc, pos, token, next) => {
+      outputChannel.appendLine(`definition: line=${pos.line} char=${pos.character} uri=${doc.uri}`);
+      const result = await next(doc, pos, token);
+      outputChannel.appendLine(`definition result: ${JSON.stringify(result)}`);
+      return result;
+    }
+  };
   client.start().catch((err) => {
     outputChannel.appendLine(`Failed to start: ${err}`);
     vscode.window.showErrorMessage(`anakins-dtls failed to start: ${err}`);

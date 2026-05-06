@@ -20,7 +20,22 @@ export function activate(context: vscode.ExtensionContext): void {
         documentSelector: [{ scheme: 'file', language: 'dts' }],
         outputChannel,
         traceOutputChannel: outputChannel,
+        initializationFailedHandler: (err) => {
+            outputChannel.appendLine(`Initialization failed: ${err}`);
+            return false;
+        },
+        errorHandler: {
+            error: (err, msg) => {
+                outputChannel.appendLine(`Error: ${err} msg: ${JSON.stringify(msg)}`);
+                return { action: 1 };
+            },
+            closed: () => {
+                outputChannel.appendLine('Connection closed');
+                return { action: 2 };
+            },
+        },
     };
+
     client = new LanguageClient(
         'anakins-dtls',
         'Device Tree Language Server',
@@ -29,6 +44,26 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     client.setTrace(Trace.Verbose);
+
+    client.onDidChangeState((e) => {
+        outputChannel.appendLine(`State: ${e.oldState} -> ${e.newState}`);
+    });
+
+    // Log all outgoing requests
+    client.middleware = {
+        provideImplementation: async (doc, pos, token, next) => {
+            outputChannel.appendLine(`implementation: line=${pos.line} char=${pos.character} uri=${doc.uri}`);
+            const result = await next(doc, pos, token);
+            outputChannel.appendLine(`implementation result: ${JSON.stringify(result)}`);
+            return result;
+        },
+        provideDefinition: async (doc, pos, token, next) => {
+            outputChannel.appendLine(`definition: line=${pos.line} char=${pos.character} uri=${doc.uri}`);
+            const result = await next(doc, pos, token);
+            outputChannel.appendLine(`definition result: ${JSON.stringify(result)}`);
+            return result;
+        },
+    };
 
     client.start().catch((err: unknown) => {
         outputChannel.appendLine(`Failed to start: ${err}`);
