@@ -982,3 +982,22 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:871:14" \
         "fixtures/hover_status_value.rpc.json"
 }
+
+@test "definition on function-like macro navigates to header definition" {
+    # RZG2L_PORT_PINMUX is a function-like macro (#define RZG2L_PORT_PINMUX(...))
+    lsts_definition \
+        "linux/arch/arm64/boot/dts/renesas/rzg3s-smarc.dtsi:196:12" \
+        "fixtures/definition_function_macro.rpc.json"
+}
+
+@test "hover on second line of multi-line compatible returns binding description" {
+    # imx94.dtsi line 320 (0-indexed 319): "fsl,imx7ulp-lpuart" is a continuation of
+    # compatible = "fsl,imx94-lpuart", "fsl,imx8ulp-lpuart", on line 319
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/freescale/imx94.dtsi:320:12" \
+        "fixtures/hover_compatible_multiline_continuation.rpc.json"
+}
+
+@test "diagnostics does not report false clock-names mismatch for multi-line clocks" {
+    lsts_diagnostics_none "fixtures/diag_multiline_clocks.dts"
+}

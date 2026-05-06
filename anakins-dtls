@@ -46,7 +46,7 @@ word_at() {
     rest="${after%%[$'\t =;<>\"@{']*}"
     token="${word}${rest}"
     # Strip any leading/trailing punctuation that snuck in
-    token="${token%%[=;<>\"@{]*}"
+    token="${token%%[=;<>\"@{(]*}"
     printf '%s' "$token"
 }
 
@@ -969,7 +969,7 @@ _search_macro_in_header() {
     local macro="$1" header_file="$2"
     [[ -f "$header_file" ]] || return 0
     local lineno
-    lineno="$(grep -n "^#define ${macro}[[:space:]]" "$header_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
+    lineno="$(grep -n "^#define ${macro}[[:space:](]" "$header_file" 2>/dev/null | head -1 | cut -d: -f1)" || true
     [[ -z "$lineno" ]] && return 0
     printf '%s:%s' "$header_file" "$lineno"
 }
@@ -1053,12 +1053,33 @@ compatible_value_at() {
     local text="$1" line="$2" character="$3"
     local line_text
     line_text="$(printf '%s' "$text" | sed -n "$((line + 1))p")"
-    printf '%s' "$line_text" | grep -q 'compatible[[:space:]]*=' || return 0
-    # Try strict match first (cursor inside quotes), then loose (cursor on quote)
-    local result
-    result="$(_quoted_string_at_char "$line_text" "$character" 1)"
-    [[ -n "$result" ]] && { printf '%s' "$result"; return 0; }
-    _quoted_string_at_char "$line_text" "$character" 0
+    # Check if current line has compatible = (normal case)
+    if printf '%s' "$line_text" | grep -q 'compatible[[:space:]]*='; then
+        local result
+        result="$(_quoted_string_at_char "$line_text" "$character" 1)"
+        [[ -n "$result" ]] && { printf '%s' "$result"; return 0; }
+        _quoted_string_at_char "$line_text" "$character" 0
+        return 0
+    fi
+    # Check if we're on a continuation line of a multi-line compatible
+    # Scan up to 3 previous lines for "compatible ="
+    local prev_line_num=$(( line - 1 ))
+    local prev_line
+    while [[ $prev_line_num -ge 0 && $(( line - prev_line_num )) -le 3 ]]; do
+        prev_line="$(printf '%s' "$text" | sed -n "$((prev_line_num + 1))p")"
+        if printf '%s' "$prev_line" | grep -q 'compatible[[:space:]]*='; then
+            # We're in a compatible continuation
+            local result
+            result="$(_quoted_string_at_char "$line_text" "$character" 1)"
+            [[ -n "$result" ]] && { printf '%s' "$result"; return 0; }
+            _quoted_string_at_char "$line_text" "$character" 0
+            return 0
+        fi
+        # If previous line ends with ; it's a different property, stop
+        [[ "$prev_line" =~ \;[[:space:]]*$ ]] && break
+        (( prev_line_num-- )) || true
+    done
+    return 0
 }
 
 # Send a definition Location response.
@@ -2083,6 +2104,7 @@ collect_syntax_diagnostics() {
     if [[ ${_diag_line_count:-0} -le 500 ]]; then
     local _cnt_in=0 _clocks_v="" _cnames_v="" _gpios_v="" _gnames_v=""
     local _clocks_ln=0 _cnames_ln=0 _gpios_ln=0 _gnames_ln=0 _pline=0
+    local _clocks_open=0 _gpios_open=0
     while IFS= read -r _pl; do
         local _ps="${_pl%%//*}"
         local _open_c _close_c
@@ -2092,12 +2114,20 @@ collect_syntax_diagnostics() {
         if [[ $_cnt_in -gt 0 ]]; then
             if [[ "$_ps" =~ ^[[:space:]]*clocks[[:space:]]*= ]]; then
                 _clocks_v="$_ps"; _clocks_ln=$_pline
+                [[ "$_ps" =~ \;[[:space:]]*$ ]] && _clocks_open=0 || _clocks_open=1
+            elif [[ "$_clocks_open" -eq 1 ]]; then
+                _clocks_v+=" $_ps"
+                [[ "$_ps" =~ \;[[:space:]]*$ ]] && _clocks_open=0
             fi
             if [[ "$_ps" =~ ^[[:space:]]*clock-names[[:space:]]*= ]]; then
                 _cnames_v="$_ps"; _cnames_ln=$_pline
             fi
             if [[ "$_ps" =~ ^[[:space:]]*gpios[[:space:]]*= ]]; then
                 _gpios_v="$_ps"; _gpios_ln=$_pline
+                [[ "$_ps" =~ \;[[:space:]]*$ ]] && _gpios_open=0 || _gpios_open=1
+            elif [[ "$_gpios_open" -eq 1 ]]; then
+                _gpios_v+=" $_ps"
+                [[ "$_ps" =~ \;[[:space:]]*$ ]] && _gpios_open=0
             fi
             if [[ "$_ps" =~ ^[[:space:]]*gpio-names[[:space:]]*= ]]; then
                 _gnames_v="$_ps"; _gnames_ln=$_pline
@@ -2126,6 +2156,7 @@ collect_syntax_diagnostics() {
                     fi
                 fi
                 _clocks_v=""; _cnames_v=""; _gpios_v=""; _gnames_v=""
+                _clocks_open=0; _gpios_open=0
             fi
         fi
         (( _pline++ )) || true
