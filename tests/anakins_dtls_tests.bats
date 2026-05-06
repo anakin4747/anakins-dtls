@@ -1001,3 +1001,10 @@ teardown_file() {
 @test "diagnostics does not report false clock-names mismatch for multi-line clocks" {
     lsts_diagnostics_none "fixtures/diag_multiline_clocks.dts"
 }
+
+@test "hover over regulator-fixed compatible value on opening quote returns binding docs" {
+    # col 15 = opening " of "regulator-fixed" (0-based)
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/freescale/imx8mp-venice-gw74xx.dts:138:16" \
+        "fixtures/hover_regulator_fixed_compat.rpc.json"
+}
