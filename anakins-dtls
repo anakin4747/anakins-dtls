@@ -1698,6 +1698,22 @@ handle_hover() {
         fi
     fi
 
+    # Check if cursor is on a device_type value string
+    if [[ "$line_text" =~ ^[[:space:]]*device_type[[:space:]]*= ]]; then
+        local dt_val dt_val_doc
+        dt_val="$(_quoted_string_at_char "$line_text" "$character" 1)"
+        [[ -z "$dt_val" ]] && dt_val="$(_quoted_string_at_char "$line_text" "$character" 0)"
+        dt_val_doc=""
+        case "$dt_val" in
+            memory) dt_val_doc='**`"memory"`** — Value for `device_type` on memory nodes. The memory node describes the physical memory layout of the system.' ;;
+            cpu)    dt_val_doc='**`"cpu"`** — Value for `device_type` on cpu nodes. Each CPU in the system is represented by a child node of the cpus node with `device_type = "cpu"`.' ;;
+        esac
+        if [[ -n "$dt_val_doc" ]]; then
+            send_hover "$id" "$dt_val_doc"
+            return
+        fi
+    fi
+
     # Check if cursor is on a compatible value string (e.g. "regulator-fixed")
     if [[ -n "$BINDINGS_DIR" ]]; then
         local compat_val compat_hover

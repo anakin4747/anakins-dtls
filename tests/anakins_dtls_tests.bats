@@ -1008,3 +1008,10 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/freescale/imx8mp-venice-gw74xx.dts:138:16" \
         "fixtures/hover_regulator_fixed_compat.rpc.json"
 }
+
+@test "hover over device_type value shows value documentation not memory node docs" {
+    # Line 70 col 18: device_type = "cpu"; — cursor on "cpu"
+    lsts_hover \
+        "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:70:18" \
+        "fixtures/hover_device_type_value.rpc.json"
+}
