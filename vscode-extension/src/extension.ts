@@ -3,7 +3,6 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
-    Trace,
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
@@ -13,27 +12,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const outputChannel = vscode.window.createOutputChannel('anakins-dtls');
     outputChannel.appendLine(`Starting anakins-dtls: ${command}`);
-    outputChannel.show();
 
     const serverOptions: ServerOptions = { command };
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'dts' }],
         outputChannel,
-        traceOutputChannel: outputChannel,
-        middleware: {
-            provideImplementation: async (doc, pos, token, next) => {
-                outputChannel.appendLine(`implementation: line=${pos.line} char=${pos.character}`);
-                const result = await next(doc, pos, token);
-                outputChannel.appendLine(`implementation result: ${JSON.stringify(result)}`);
-                return result;
-            },
-            provideDefinition: async (doc, pos, token, next) => {
-                outputChannel.appendLine(`definition: line=${pos.line} char=${pos.character}`);
-                const result = await next(doc, pos, token);
-                outputChannel.appendLine(`definition result: ${JSON.stringify(result)}`);
-                return result;
-            },
-        },
     };
 
     client = new LanguageClient(
@@ -42,8 +25,6 @@ export function activate(context: vscode.ExtensionContext): void {
         serverOptions,
         clientOptions,
     );
-
-    client.setTrace(Trace.Verbose);
 
     client.start().catch((err: unknown) => {
         outputChannel.appendLine(`Failed to start: ${err}`);
