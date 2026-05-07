@@ -31,6 +31,8 @@ A Device Tree Language Server written in bash.
 
 ## Try it out
 
+Requires [Nix](https://nixos.org/download) with `nix-command` and `flakes` enabled.
+
 From inside a Linux kernel source tree:
 
 ```bash
@@ -40,6 +42,8 @@ nix run github:anakin4747r2d2/anakins-dtls#tryout
 Opens a DTS file from the kernel in Neovim with `anakins-dtls` configured and ready.
 
 ## Try it in VSCode
+
+Requires [Nix](https://nixos.org/download) with `nix-command` and `flakes` enabled.
 
 From inside a Linux kernel source tree:
 
