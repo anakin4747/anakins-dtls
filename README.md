@@ -55,6 +55,8 @@ Opens 10 random DTS/DTSI files from the kernel in VSCodium with `anakins-dtls` c
 
 ## Installation
 
+Requires [Nix](https://nixos.org/download) with `nix-command` and `flakes` enabled.
+
 ```bash
 nix profile add github:anakin4747/anakins-dtls
 ```
@@ -71,7 +73,7 @@ nix profile add .
 To update after pulling:
 
 ```bash
-./switch.sh
+nix profile upgrade anakins-dtls
 ```
 
 
