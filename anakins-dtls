@@ -1602,7 +1602,10 @@ handle_implementation() {
     [[ -z "$compat_val" ]] && { send_null "$id"; return; }
 
     local match
-    match="$(rg -n --column -F "\"${compat_val}\"" --glob='*.c' "$LINUX_DIR/drivers/" 2>/dev/null | head -1)" || true
+    match="$(rg -n --column -F ".compatible = \"${compat_val}\"" --glob='*.c' "$LINUX_DIR/drivers/" 2>/dev/null | head -1)" || true
+    if [[ -z "$match" ]]; then
+        match="$(rg -n --column -F "\"${compat_val}\"" --glob='*.c' "$LINUX_DIR/drivers/" 2>/dev/null | head -1)" || true
+    fi
     [[ -z "$match" ]] && { send_null "$id"; return; }
 
     local loc
