@@ -1015,3 +1015,20 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/qcom/sm8550.dtsi:70:18" \
         "fixtures/hover_device_type_value.rpc.json"
 }
+
+@test "diagnostics does not report sibling root-level node properties as undocumented" {
+    # Regression: properties from sibling nodes at root depth (aliases, chosen)
+    # bled into a subsequent node's binding check, causing false
+    # undocumented-property diagnostics for gpio-keys-polled.
+    lsts_diagnostics_none "fixtures/diag_cross_node_root.dts"
+}
+
+@test "implementation on gpio-keys-polled compatible finds correct driver" {
+    # Regression: rg searched for any occurrence of the compat string, finding
+    # barco-p50-gpio.c (which uses it as a platform device name) instead of
+    # the actual gpio_keys_polled driver that declares .compatible = "gpio-keys-polled".
+    # Line 16 col 17 in tqmls10xxa-mbls10xxa.dtsi: cursor on "gpio-keys-polled" value.
+    lsts_implementation \
+        "linux/arch/arm64/boot/dts/freescale/tqmls10xxa-mbls10xxa.dtsi:16:17" \
+        "fixtures/implementation_gpio_keys_polled.rpc.json"
+}

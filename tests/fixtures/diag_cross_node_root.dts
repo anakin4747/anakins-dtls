@@ -1,0 +1,16 @@
+/dts-v1/;
+
+/ {
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	pca_buttons: gpio-keys-polled {
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>;
+	};
+};
