@@ -49,8 +49,6 @@ nix run github:anakin4747r2d2/anakins-dtls#tryout-vscode
 
 Opens a random DTS file from the kernel in VSCodium with `anakins-dtls` configured as a language server.
 
-> **Note:** `anakins-dtls` must be on your PATH (e.g. via `nix profile add github:anakin4747r2d2/anakins-dtls`). The extension does not bundle the server binary.
-
 ## Installation
 
 ```bash
