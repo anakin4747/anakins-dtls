@@ -1032,3 +1032,37 @@ teardown_file() {
         "linux/arch/arm64/boot/dts/freescale/tqmls10xxa-mbls10xxa.dtsi:16:17" \
         "fixtures/implementation_gpio_keys_polled.rpc.json"
 }
+
+# ---------------------------------------------------------------------------
+# U-Boot DTS integration tests
+# Source: tests/u-boot/arch/arm/dts/zynq-zybo-z7.dts
+# ---------------------------------------------------------------------------
+
+@test "hover works for U-Boot DTS compatible value (gpio-leds)" {
+    lsts_hover \
+        "u-boot/arch/arm/dts/zynq-zybo-z7.dts:32:16" \
+        "fixtures/hover_uboot_gpio_leds.rpc.json"
+}
+
+@test "definition works for U-Boot DTS compatible property name" {
+    lsts_definition \
+        "u-boot/arch/arm/dts/zynq-zybo-z7.dts:32:3" \
+        "fixtures/definition_uboot_compatible_property.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# Zephyr DTS integration tests
+# Source: tests/zephyr/boards/ronoth/lodev/ronoth_lodev.dts
+# ---------------------------------------------------------------------------
+
+@test "hover works for Zephyr DTS compatible value (gpio-leds)" {
+    lsts_hover \
+        "zephyr/boards/ronoth/lodev/ronoth_lodev.dts:32:16" \
+        "fixtures/hover_zephyr_gpio_leds.rpc.json"
+}
+
+@test "definition works for Zephyr DTS compatible property name" {
+    lsts_definition \
+        "zephyr/boards/ronoth/lodev/ronoth_lodev.dts:32:3" \
+        "fixtures/definition_zephyr_compatible_property.rpc.json"
+}
