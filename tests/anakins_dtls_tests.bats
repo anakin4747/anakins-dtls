@@ -388,6 +388,7 @@ teardown_file() {
 #   bootargs: arch/xtensa/boot/dts/csp.dts
 #   linux,initrd-start / linux,initrd-end: arch/arm64/boot/dts/altera/socfpga_stratix10_swvp.dts
 #   kaslr-seed: fixtures/hover_kaslr.dts (not present in Linux kernel DTS source)
+#   binding-only interrupt-names: linux/arch/arm64/boot/dts/broadcom/bcm2712.dtsi (brcm,bcm7271-uart)
 # ---------------------------------------------------------------------------
 
 @test "hover over stdout-path returns documentation" {
@@ -422,32 +423,34 @@ teardown_file() {
 
 @test "hover over binding-only property returns binding description" {
     lsts_hover \
-        "fixtures/hover_binding_interrupt_names.dts:9:3" \
+        "linux/arch/arm64/boot/dts/broadcom/bcm2712.dtsi:287:4" \
         "fixtures/hover_binding_interrupt_names.rpc.json"
 }
 
 # ---------------------------------------------------------------------------
 # Hover: pinctrl subnode properties (ancestor compatible walk + global fallback)
-# Fixture: fixtures/hover_pinctrl_bias_pull_up.dts
-#   bias-pull-up is in Documentation/devicetree/bindings/pinctrl/pincfg-node.yaml
-#   The subnode has no compatible; ancestor walk finds sophgo,cv1800b-pinctrl
+# Real Linux source:
+#   bias-pull-up: linux/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts
+#                 (ancestor: brcm,bcm2712c0-pinctrl via bcm2712.dtsi)
+#   groups/function: linux/arch/arm64/boot/dts/broadcom/northstar2/ns2-svk.dts
+#                    (ancestor: brcm,ns2-pinmux via ns2.dtsi)
 # ---------------------------------------------------------------------------
 
 @test "hover over bias-pull-up returns binding doc" {
     lsts_hover \
-        "fixtures/hover_pinctrl_bias_pull_up.dts:12:5" \
+        "linux/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts:76:3" \
         "fixtures/hover_pinctrl_bias_pull_up.rpc.json"
 }
 
 @test "hover over groups returns binding doc" {
     lsts_hover \
-        "fixtures/hover_pinctrl_groups.dts:11:5" \
+        "linux/arch/arm64/boot/dts/broadcom/northstar2/ns2-svk.dts:181:3" \
         "fixtures/hover_pinctrl_groups.rpc.json"
 }
 
 @test "hover over function returns binding doc" {
     lsts_hover \
-        "fixtures/hover_pinctrl_groups.dts:10:5" \
+        "linux/arch/arm64/boot/dts/broadcom/northstar2/ns2-svk.dts:180:3" \
         "fixtures/hover_pinctrl_function.rpc.json"
 }
 
@@ -794,13 +797,13 @@ teardown_file() {
 
 @test "completion in a node offers standard DT properties" {
     lsts_completion \
-        "fixtures/completion_uart.dts:7:3" \
+        "linux/arch/arm64/boot/dts/qcom/ipq5424.dtsi:520:5" \
         "fixtures/completion_uart.rpc.json"
 }
 
 @test "completion in a node with compatible offers binding properties" {
     lsts_completion \
-        "fixtures/completion_uart.dts:7:3" \
+        "linux/arch/arm64/boot/dts/qcom/ipq5424.dtsi:520:5" \
         "fixtures/completion_uart.rpc.json"
 }
 
