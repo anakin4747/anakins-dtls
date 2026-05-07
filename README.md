@@ -39,7 +39,7 @@ From inside a Linux kernel source tree:
 nix run github:anakin4747r2d2/anakins-dtls#tryout
 ```
 
-Opens a DTS file from the kernel in Neovim with `anakins-dtls` configured and ready.
+Opens 10 random DTS/DTSI files from the kernel in Neovim with `anakins-dtls` configured and ready.
 
 ## Try it in VSCode
 
@@ -51,7 +51,7 @@ From inside a Linux kernel source tree:
 nix run github:anakin4747r2d2/anakins-dtls#tryout-vscode
 ```
 
-Opens a random DTS file from the kernel in VSCodium with `anakins-dtls` configured as a language server.
+Opens 10 random DTS/DTSI files from the kernel in VSCodium with `anakins-dtls` configured as a language server.
 
 ## Installation
 
