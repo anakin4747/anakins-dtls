@@ -1572,7 +1572,7 @@ find_doc_in_txt_bindings() {
     awk -v prop="$prop" '
         $0 ~ "^[[:space:]]*-[[:space:]]"prop"[[:space:]]*:|^"prop"[[:space:]]+(is|are|property|specifies|contains|should|optional|required|phandle)" { found=NR }
         found && NR > found && /^[[:space:]]*-[[:space:]][a-zA-Z#]/ { exit }
-        found && NR >= found && NR <= found+10 { print }
+        found && NR >= found { print }
     ' "$txt_file"
 }
 
