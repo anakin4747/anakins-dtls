@@ -1069,3 +1069,39 @@ teardown_file() {
         "zephyr/boards/ronoth/lodev/ronoth_lodev.dts:32:3" \
         "fixtures/definition_zephyr_compatible_property.rpc.json"
 }
+
+# ---------------------------------------------------------------------------
+# go-to-definition: hardkernel,odroid-xu → samsung-boards.yaml (not samsung,odroid.yaml)
+# Source: tests/linux/arch/arm/boot/dts/samsung/exynos5410-odroidxu.dts line 20
+#   compatible = "hardkernel,odroid-xu", "samsung,exynos5410", "samsung,exynos5";
+# ---------------------------------------------------------------------------
+
+@test "definition on hardkernel,odroid-xu navigates to samsung-boards.yaml" {
+    lsts_definition \
+        "linux/arch/arm/boot/dts/samsung/exynos5410-odroidxu.dts:20:16" \
+        "fixtures/definition_hardkernel_odroid_xu.rpc.json"
+}
+
+@test "hover on hardkernel,odroid-xu shows samsung-boards.yaml binding" {
+    lsts_hover \
+        "linux/arch/arm/boot/dts/samsung/exynos5410-odroidxu.dts:20:16" \
+        "fixtures/hover_hardkernel_odroid_xu.rpc.json"
+}
+
+# ---------------------------------------------------------------------------
+# go-to-definition: snps,arc → null (no exact binding YAML exists)
+# Source: tests/linux/arch/arc/boot/dts/skeleton_hs.dtsi line 7
+#   compatible = "snps,arc";
+# ---------------------------------------------------------------------------
+
+@test "definition on snps,arc returns null (no exact binding)" {
+    lsts_definition \
+        "linux/arch/arc/boot/dts/skeleton_hs.dtsi:7:16" \
+        "fixtures/definition_null.rpc.json"
+}
+
+@test "hover on snps,arc returns null (no exact binding)" {
+    lsts_hover \
+        "linux/arch/arc/boot/dts/skeleton_hs.dtsi:7:16" \
+        "fixtures/hover_null.rpc.json"
+}
