@@ -1378,7 +1378,7 @@ sort_binding_files_for_compat() {
     local bline score base
     while IFS= read -r bline; do
         score=9
-        local IFS_bak="$IFS"; IFS=$',/.\-'
+        local IFS_bak="$IFS"; IFS=$',/.-'
         read -ra parts <<< "$compat"
         IFS="$IFS_bak"
         local p
@@ -1788,11 +1788,11 @@ handle_hover() {
 _send_hover_result() {
     local id="$1" word="$2" standard_doc="$3" binding_doc="$4" compat="$5" text="$6"
     local NL=$'\n'
-    local parts="" sep=""
+    local parts_str="" sep=""
 
     # 1. Standard DT spec doc
     if [[ -n "$standard_doc" ]]; then
-        parts+="${sep}**Source:** [Device Tree Specification](https://devicetree-specification.readthedocs.io/)${NL}${NL}${standard_doc}"
+        parts_str+="${sep}**Source:** [Device Tree Specification](https://devicetree-specification.readthedocs.io/)${NL}${NL}${standard_doc}"
         sep=$'\n\n---\n\n'
     fi
 
@@ -1800,25 +1800,25 @@ _send_hover_result() {
     if [[ -n "$binding_doc" ]]; then
         local binding_source="**Source:** Linux kernel bindings"
         [[ -n "$compat" ]] && binding_source="**Source:** Linux kernel bindings (\`${compat}\`)"
-        parts+="${sep}${binding_source}${NL}${NL}${binding_doc}"
+        parts_str+="${sep}${binding_source}${NL}${NL}${binding_doc}"
         sep=$'\n\n---\n\n'
     fi
 
     # 3. CPP macro doc
     local macro_doc
     macro_doc="$(find_macro_doc "$word" "$text")" || macro_doc=""
-    [[ -n "$macro_doc" ]] && { parts+="${sep}${macro_doc}"; sep=$'\n\n---\n\n'; }
+    [[ -n "$macro_doc" ]] && { parts_str+="${sep}${macro_doc}"; sep=$'\n\n---\n\n'; }
 
     # 4. Linux kernel Documentation .txt
     local linux_doc
     linux_doc="$(find_linux_doc_for_prop "$word" "$LINUX_DIR")" || linux_doc=""
     if [[ -n "$linux_doc" ]]; then
-        parts+="${sep}**Source:** Linux kernel Documentation${NL}${NL}\`\`\`${NL}${linux_doc}${NL}\`\`\`"
+        parts_str+="${sep}**Source:** Linux kernel Documentation${NL}${NL}\`\`\`${NL}${linux_doc}${NL}\`\`\`"
         sep=$'\n\n---\n\n'
     fi
 
-    if [[ -n "$parts" ]]; then
-        send_hover "$id" "$parts"
+    if [[ -n "$parts_str" ]]; then
+        send_hover "$id" "$parts_str"
     else
         send_null "$id"
     fi
