@@ -10,6 +10,7 @@ submodules:
 
 lint:
 	shellcheck --external-sources --shell=bash --severity=warning anakins-dtls tests/*_tests.bats
+	awk -f scripts/find-multiline-non-bash.awk anakins-dtls
 
 test:
 	bats --formatter $(CURDIR)/tests/lsts/lsts-format-pretty tests/*_tests.bats
