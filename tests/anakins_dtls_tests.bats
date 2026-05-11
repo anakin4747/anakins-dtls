@@ -1100,8 +1100,16 @@ teardown_file() {
         "fixtures/definition_null.rpc.json"
 }
 
-@test "hover on snps,arc returns null (no exact binding)" {
+@test "hover on snps,arc with no binding shows compatible spec docs" {
     lsts_hover \
         "linux/arch/arc/boot/dts/skeleton_hs.dtsi:7:16" \
-        "fixtures/hover_null.rpc.json"
+        "fixtures/hover_compat_no_binding_snps_arc.rpc.json"
+}
+
+@test "hover on second compatible value with no binding falls back to compatible spec docs" {
+    # "xlnx,zynq-7000" has no binding YAML — should show compatible property docs not null
+    # Line 4, col 43 is inside "xlnx,zynq-7000" (the second value)
+    lsts_hover \
+        "fixtures/hover_compat_no_binding.dts:4:43" \
+        "fixtures/hover_compat_no_binding.rpc.json"
 }

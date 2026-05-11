@@ -1756,6 +1756,11 @@ handle_hover() {
             send_hover "$id" "$compat_hover"
             return
         fi
+        # Cursor is on a compatible value but no binding found — show compatible property docs
+        if [[ -n "$compat_val" && -n "$COMPATIBLE_DOC" ]]; then
+            send_hover "$id" "$COMPATIBLE_DOC"
+            return
+        fi
     fi
 
     # Check if cursor is on a phandle reference (&label)
