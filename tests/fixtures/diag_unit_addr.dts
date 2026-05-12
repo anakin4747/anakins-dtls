@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	serial@1234 {
+		compatible = "foo,bar";
+		reg = <0x5678 0x7000>;
+	};
+};

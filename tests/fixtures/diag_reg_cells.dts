@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+	serial@a88000 {
+		compatible = "foo,bar";
+		reg = <0xa88000 0x7000>;
+	};
+};

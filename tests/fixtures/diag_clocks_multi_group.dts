@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	clk_a: clock-a {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24000000>;
+	};
+
+	clk_b: clock-b {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <48000000>;
+	};
+
+	serial@a88000 {
+		compatible = "qcom,geni-uart";
+		reg = <0xa88000 0x7000>;
+		interrupts = <0 355 4>;
+		clocks = <&clk_a>, <&clk_b>;
+		clock-names = "se", "ref";
+	};
+};

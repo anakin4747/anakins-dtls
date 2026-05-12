@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":[{"uri":"file://$LSTS_ROOT/linux/arch/xtensa/boot/dts/csp.dts","range":{"start":{"line":48,"character":13},"end":{"line":48,"character":13}}},{"uri":"file://$LSTS_ROOT/linux/arch/xtensa/boot/dts/csp.dts","range":{"start":{"line":48,"character":21},"end":{"line":48,"character":21}}}]}

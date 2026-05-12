@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"**`\"disabled\"`** — The device is not presently operational, but may become operational in the future (e.g. not plugged in, or switched off)."}}}

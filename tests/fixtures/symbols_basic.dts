@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	uart7: serial@880000 {
+		compatible = "qcom,geni-uart";
+		reg = <0x880000 0x200>;
+		status = "okay";
+	};
+};

@@ -1,0 +1,15 @@
+/dts-v1/;
+
+/ {
+	clk_osc: clk_osc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+	};
+
+	soc {
+		uart: serial@4600 {
+			compatible = "ns16550";
+			reg = <0x4600 0x100>;
+		};
+	};
+};

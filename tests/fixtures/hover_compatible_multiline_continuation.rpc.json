@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## fsl,imx7ulp-lpuart\n\n**Binding:** `serial/fsl-lpuart.yaml`\n\nFreescale low power universal asynchronous receiver/transmitter (lpuart)"}}}

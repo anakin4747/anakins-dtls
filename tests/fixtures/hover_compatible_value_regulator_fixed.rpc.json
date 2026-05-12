@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## regulator-fixed\n\n**Binding:** `regulator/fixed-regulator.yaml`\n\nAny property defined as part of the core regulator binding, defined in\nregulator.yaml, can also be used. However a fixed voltage regulator is\nexpected to have the regulator-min-microvolt and regulator-max-microvolt\nto be the same."}}}

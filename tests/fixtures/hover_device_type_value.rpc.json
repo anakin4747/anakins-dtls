@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"**`\"cpu\"`** — Value for `device_type` on cpu nodes. Each CPU in the system is represented by a child node of the cpus node with `device_type = \"cpu\"`."}}}

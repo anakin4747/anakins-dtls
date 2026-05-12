@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/ {
+	sound {
+		clocks = <&ccu CLK_BUS_I2S0>,
+			 <&ccu CLK_I2S0>;
+		clock-names = "apb", "mod";
+	};
+};

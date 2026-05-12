@@ -1,0 +1,10 @@
+/dts-v1/;
+
+/ {
+    leds {
+        compatible = "gpio-leds";
+        led-0 {
+            gpios = <0>;
+        };
+    };
+};

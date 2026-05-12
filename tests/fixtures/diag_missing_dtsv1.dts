@@ -1,0 +1,6 @@
+/ {
+	serial@4600 {
+		compatible = "ns16550";
+		reg = <0x4600 0x100>;
+	};
+};

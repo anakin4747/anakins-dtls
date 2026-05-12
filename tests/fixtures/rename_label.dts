@@ -1,0 +1,13 @@
+/dts-v1/;
+
+/ {
+	pic: interrupt-controller@10000000 {
+		interrupt-controller;
+		reg = <0x10000000 0x100>;
+	};
+
+	serial@4600 {
+		interrupt-parent = <&pic>;
+		reg = <0x4600 0x100>;
+	};
+};

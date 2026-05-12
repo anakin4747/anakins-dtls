@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file://$LSTS_ROOT/fixtures/diag_port_child_node.dts","diagnostics":[{"range":{"start":{"line":5,"character":15},"end":{"line":5,"character":31}},"severity":2,"message":"Property 'connector' is not documented in the binding for 'hdmi-connector'"}]}}

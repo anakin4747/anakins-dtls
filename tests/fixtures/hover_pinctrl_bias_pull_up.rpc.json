@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"**Source:** Linux kernel bindings\n\nPresence of this property indicates that the KPDPWR_N pin should be\nconfigured for pull up.\n\n---\n\n**Source:** Linux kernel Documentation\n\n```\n- bias-pull-up:\n    Enable internal pull up resistor\n```"}}}

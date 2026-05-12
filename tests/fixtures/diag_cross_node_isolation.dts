@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	/* Node with unrelated properties (no compatible) */
+	aliases {
+		serial0 = "/uart@0";
+		spi0 = "/spi@0";
+	};
+
+	/* Node with a known compatible; should only see its own properties */
+	clock-16000000 {
+		#clock-cells = <0>;
+		clock-frequency = <16000000>;
+		compatible = "fixed-clock";
+	};
+};
