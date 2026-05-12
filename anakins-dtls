@@ -2279,10 +2279,18 @@ _parse_binding_nodes() {
         fi
 
         # Collect properties and child node names at current depth
+        # Tag node openings with 'N:' and plain properties with 'P:' so that
+        # the emit loop can distinguish self/sibling node names from child nodes.
         if [[ $depth -gt 0 \
            && "$line" =~ ^[[:space:]]+([A-Za-z#][A-Za-z0-9_#,.-]*)([[:space:]]*=|;|[[:space:]]*$|[[:space:]]*\{) ]]; then
-            local _collected_prop="${BASH_REMATCH[1]}"
-            [[ -n "$_collected_prop" ]] && all_props+=("${depth}:${_collected_prop}")
+            local _collected_prop="${BASH_REMATCH[1]}" _collected_suffix="${BASH_REMATCH[2]}"
+            if [[ -n "$_collected_prop" ]]; then
+                if [[ "$_collected_suffix" =~ \{ ]]; then
+                    all_props+=("${depth}:N:${_collected_prop}")
+                else
+                    all_props+=("${depth}:P:${_collected_prop}")
+                fi
+            fi
         fi
 
         # Emit record when depth drops below compat_depth
@@ -2290,8 +2298,14 @@ _parse_binding_nodes() {
             printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
             local _p _pd
             for _pd in "${all_props[@]:-}"; do
-                _p="${_pd#*:}"
-                [[ "${_pd%%:*}" == "$compat_depth" ]] && printf '\t%s' "$_p"
+                local _pd_depth="${_pd%%:*}" _pd_rest="${_pd#*:}" _pd_type _pd_name
+                _pd_type="${_pd_rest%%:*}" _pd_name="${_pd_rest#*:}"
+                # Include plain properties at compat_depth; include child node names at compat_depth+1
+                if [[ "$_pd_depth" == "$compat_depth" && "$_pd_type" == "P" ]]; then
+                    printf '\t%s' "$_pd_name"
+                elif [[ "$_pd_depth" == "$(( compat_depth + 1 ))" && "$_pd_type" == "N" ]]; then
+                    printf '\t%s' "$_pd_name"
+                fi
             done
             printf '\n'
             compat=""
@@ -2321,8 +2335,13 @@ _parse_binding_nodes() {
         printf '%d\t%s\t%d\t%d' "$compat_line" "$compat" "$compat_col_start" "$compat_col_end"
         local _p _pd
         for _pd in "${all_props[@]:-}"; do
-            _p="${_pd#*:}"
-            [[ "${_pd%%:*}" == "$compat_depth" ]] && printf '\t%s' "$_p"
+            local _pd_depth="${_pd%%:*}" _pd_rest="${_pd#*:}" _pd_type _pd_name
+            _pd_type="${_pd_rest%%:*}" _pd_name="${_pd_rest#*:}"
+            if [[ "$_pd_depth" == "$compat_depth" && "$_pd_type" == "P" ]]; then
+                printf '\t%s' "$_pd_name"
+            elif [[ "$_pd_depth" == "$(( compat_depth + 1 ))" && "$_pd_type" == "N" ]]; then
+                printf '\t%s' "$_pd_name"
+            fi
         done
         printf '\n'
     fi
