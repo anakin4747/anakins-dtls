@@ -1113,3 +1113,10 @@ teardown_file() {
         "fixtures/hover_compat_no_binding.dts:4:43" \
         "fixtures/hover_compat_no_binding.rpc.json"
 }
+
+@test "diagnostics does not report sibling or outer node name as undocumented property" {
+    # Regression: the outer node name 'leds' (a sibling at the same depth as gpio-leds)
+    # was being collected as a property of the gpio-leds binding and reported as undocumented.
+    # Only child nodes (depth > compat_depth) should be collected as present properties.
+    lsts_diagnostics_none "fixtures/diag_child_node_vs_sibling.dts"
+}
