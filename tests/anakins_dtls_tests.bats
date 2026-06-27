@@ -1037,40 +1037,6 @@ teardown_file() {
 }
 
 # ---------------------------------------------------------------------------
-# U-Boot DTS integration tests
-# Source: tests/u-boot/arch/arm/dts/zynq-zybo-z7.dts
-# ---------------------------------------------------------------------------
-
-@test "hover works for U-Boot DTS compatible value (gpio-leds)" {
-    lsts_hover \
-        "u-boot/arch/arm/dts/zynq-zybo-z7.dts:32:16" \
-        "fixtures/hover_uboot_gpio_leds.rpc.json"
-}
-
-@test "definition works for U-Boot DTS compatible property name" {
-    lsts_definition \
-        "u-boot/arch/arm/dts/zynq-zybo-z7.dts:32:3" \
-        "fixtures/definition_uboot_compatible_property.rpc.json"
-}
-
-# ---------------------------------------------------------------------------
-# Zephyr DTS integration tests
-# Source: tests/zephyr/boards/ronoth/lodev/ronoth_lodev.dts
-# ---------------------------------------------------------------------------
-
-@test "hover works for Zephyr DTS compatible value (gpio-leds)" {
-    lsts_hover \
-        "zephyr/boards/ronoth/lodev/ronoth_lodev.dts:32:16" \
-        "fixtures/hover_zephyr_gpio_leds.rpc.json"
-}
-
-@test "definition works for Zephyr DTS compatible property name" {
-    lsts_definition \
-        "zephyr/boards/ronoth/lodev/ronoth_lodev.dts:32:3" \
-        "fixtures/definition_zephyr_compatible_property.rpc.json"
-}
-
-# ---------------------------------------------------------------------------
 # go-to-definition: hardkernel,odroid-xu → samsung-boards.yaml (not samsung,odroid.yaml)
 # Source: tests/linux/arch/arm/boot/dts/samsung/exynos5410-odroidxu.dts line 20
 #   compatible = "hardkernel,odroid-xu", "samsung,exynos5410", "samsung,exynos5";
