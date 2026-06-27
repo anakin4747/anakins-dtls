@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-source ./tests/lsts/lsts
+source ./tests/lsts
 
 lsts_set_cmd "anakins-dtls"
 lsts_set_root "$(dirname "$BATS_TEST_FILENAME")"

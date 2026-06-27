@@ -1,0 +1,385 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Derived from bats-format-pretty, part of bats-core
+# https://github.com/bats-core/bats-core
+# Copyright (c) 2017 bats-core contributors (MIT License)
+#
+# Modifications: append file:line to each test result line.
+# Copyright (c) 2024 lsts contributors
+set -e
+
+# Locate formatter.bash relative to the bats binary so this script works
+# regardless of which nix store path bats lives in.
+# bats may be invoked as .../bin/bats or .../libexec/bats-core/bats depending
+# on context; strip either suffix to reach the package root.
+_bats_bin="$(realpath "$(command -v bats)")"
+_bats_root="${_bats_bin%/bin/bats}"
+_bats_root="${_bats_root%/libexec/bats-core/bats}"
+# shellcheck source=formatter.bash
+source "$_bats_root/lib/bats-core/formatter.bash"
+
+BASE_PATH=.
+BATS_ENABLE_TIMING=
+_current_file=
+
+while [[ "$#" -ne 0 ]]; do
+  case "$1" in
+  -T)
+    BATS_ENABLE_TIMING="-T"
+    ;;
+  --base-path)
+    shift
+    normalize_base_path BASE_PATH "$1"
+    ;;
+  esac
+  shift
+done
+
+update_count_column_width() {
+  count_column_width=$((${#count} * 2 + 2))
+  if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+    count_column_width=$((count_column_width + ${#SECONDS} + 8))
+  fi
+  update_count_column_left
+}
+
+update_screen_width() {
+  screen_width="$(tput cols 2>/dev/null || echo 80)"
+  update_count_column_left
+}
+
+update_count_column_left() {
+  count_column_left=$((screen_width - count_column_width))
+}
+
+# Return the line number of the @test with the given description in _current_file.
+test_line_number() {
+  local desc="$1"
+  awk -v desc="$desc" '$0 ~ "@test \"" desc "\"" { print NR; exit }' "$_current_file"
+}
+
+count=0
+screen_width=80
+update_count_column_width
+update_screen_width
+test_result=
+
+trap update_screen_width WINCH
+
+begin() {
+  test_result=
+  line_backoff_count=0
+  go_to_column 0
+  update_count_column_width
+  buffer_with_truncation $((count_column_left - 1)) '   %s' "$name"
+  clear_to_end_of_line
+  go_to_column $count_column_left
+  if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+    buffer "%${#count}s/${count} in %s sec" "$index" "$SECONDS"
+  else
+    buffer "%${#count}s/${count}" "$index"
+  fi
+  go_to_column 1
+}
+
+finish_test() {
+  move_up $line_backoff_count
+  go_to_column 0
+  buffer "$@"
+  if [[ -n "${TIMEOUT-}" ]]; then
+    set_color 2
+    if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+      buffer ' [%s (timeout: %s)]' "$TIMING" "$TIMEOUT"
+    else
+      buffer ' [timeout: %s]' "$TIMEOUT"
+    fi
+  else
+    if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+      set_color 2
+      buffer ' [%s]' "$TIMING"
+    fi
+  fi
+  advance
+  move_down $((line_backoff_count - 1))
+}
+
+# Append file:line to a result line in dim style.
+suffix_location() {
+  local line_no
+  line_no="$(test_line_number "$name")"
+  if [[ -n "$line_no" && -n "$_current_file" ]]; then
+    buffer '\x1B[2m %s:%s' "$_current_file" "$line_no"
+    clear_color
+  fi
+}
+
+pass() {
+  local TIMING="${1:-}"
+  move_up $line_backoff_count
+  go_to_column 0
+  set_color 2
+  buffer ' SUCCESS'
+  clear_color
+  buffer ' %s' "$name"
+  suffix_location
+  if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+    set_color 2
+    buffer ' [%s]' "$TIMING"
+  fi
+  advance
+  move_down $((line_backoff_count - 1))
+  test_result=pass
+}
+
+skip() {
+  local reason="$1" TIMING="${2:-}"
+  if [[ -n "$reason" ]]; then
+    reason=": $reason"
+  fi
+  finish_test ' - %s (skipped%s)' "$name" "$reason"
+  test_result=skip
+}
+
+fail() {
+  local TIMING="${1:-}"
+  move_up $line_backoff_count
+  go_to_column 0
+  set_color 1 bold
+  buffer ' FAILURE'
+  clear_color
+  buffer ' %s' "$name"
+  suffix_location
+  if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+    set_color 2
+    buffer ' [%s]' "$TIMING"
+  fi
+  advance
+  move_down $((line_backoff_count - 1))
+  test_result=fail
+}
+
+timeout() {
+  local TIMING="${1:-}"
+  set_color 3 bold
+  TIMEOUT="${2:-}" finish_test ' ✗ %s' "$name"
+  test_result=timeout
+}
+
+log() {
+  case ${test_result} in
+  pass)
+    clear_color
+    ;;
+  fail)
+    set_color 1
+    ;;
+  timeout)
+    set_color 3
+    ;;
+  esac
+  buffer '   %s\n' "$1"
+  clear_color
+}
+
+summary() {
+  if [ "$failures" -eq 0 ]; then
+    set_color 2 bold
+  else
+    set_color 1 bold
+  fi
+
+  buffer '\n%d test' "$count"
+  if [[ "$count" -ne 1 ]]; then
+    buffer 's'
+  fi
+
+  buffer ', %d failure' "$failures"
+  if [[ "$failures" -ne 1 ]]; then
+    buffer 's'
+  fi
+
+  if [[ "$skipped" -gt 0 ]]; then
+    buffer ', %d skipped' "$skipped"
+  fi
+
+  if ((timed_out > 0)); then
+    buffer ', %d timed out' "$timed_out"
+  fi
+
+  not_run=$((count - passed - failures - skipped - timed_out))
+  if [[ "$not_run" -gt 0 ]]; then
+    buffer ', %d not run' "$not_run"
+  fi
+
+  if [[ -n "$BATS_ENABLE_TIMING" ]]; then
+    buffer " in $SECONDS seconds"
+  fi
+
+  buffer '\n'
+  clear_color
+}
+
+buffer_with_truncation() {
+  local width="$1"
+  shift
+  local string
+
+  # shellcheck disable=SC2059
+  printf -v 'string' -- "$@"
+
+  if [[ "${#string}" -gt "$width" ]]; then
+    buffer '%s...' "${string:0:$((width - 4))}"
+  else
+    buffer '%s' "$string"
+  fi
+}
+
+move_up() {
+  if [[ $1 -gt 0 ]]; then
+    buffer '\x1B[%dA' "$1"
+  fi
+}
+
+move_down() {
+  if [[ $1 -gt 0 ]]; then
+    buffer '\x1B[%dB' "$1"
+  fi
+}
+
+go_to_column() {
+  local column="$1"
+  buffer '\x1B[%dG' $((column + 1))
+}
+
+clear_to_end_of_line() {
+  buffer '\x1B[K'
+}
+
+advance() {
+  clear_to_end_of_line
+  buffer '\n'
+  clear_color
+}
+
+set_color() {
+  local color="$1"
+  local weight=22
+
+  if [[ "${2:-}" == 'bold' ]]; then
+    weight=1
+  fi
+  buffer '\x1B[%d;%dm' "$((30 + color))" "$weight"
+}
+
+clear_color() {
+  buffer '\x1B[0m'
+}
+
+_buffer=
+
+buffer() {
+  local content
+  # shellcheck disable=SC2059
+  printf -v content -- "$@"
+  _buffer+="$content"
+}
+
+flush() {
+  printf '%s' "$_buffer"
+  _buffer=
+}
+
+finish() {
+  flush
+  printf '\n'
+}
+
+trap finish EXIT
+trap '' INT
+
+bats_tap_stream_plan() {
+  count="$1"
+  index=0
+  passed=0
+  failures=0
+  skipped=0
+  timed_out=0
+  name=
+  update_count_column_width
+}
+
+bats_tap_stream_begin() {
+  index="$1"
+  name="$2"
+  begin
+  flush
+}
+
+bats_tap_stream_ok() {
+  index="$1"
+  name="$2"
+  ((++passed))
+  pass "${BATS_FORMATTER_TEST_DURATION:-}"
+}
+
+bats_tap_stream_skipped() {
+  index="$1"
+  name="$2"
+  ((++skipped))
+  skip "$3" "${BATS_FORMATTER_TEST_DURATION:-}"
+}
+
+bats_tap_stream_not_ok() {
+  index="$1"
+  name="$2"
+
+  if [[ ${BATS_FORMATTER_TEST_TIMEOUT-x} != x ]]; then
+    timeout "${BATS_FORMATTER_TEST_DURATION:-}" "${BATS_FORMATTER_TEST_TIMEOUT}s"
+    ((++timed_out))
+  else
+    fail "${BATS_FORMATTER_TEST_DURATION:-}"
+    ((++failures))
+  fi
+}
+
+bats_tap_stream_comment() {
+  local scope=$2
+  if [[ $line_backoff_count -eq 0 && $scope == begin ]]; then
+    buffer "\n"
+    ((++line_backoff_count))
+  fi
+
+  ((++line_backoff_count))
+  ((line_backoff_count += ${#1} / screen_width))
+  log "$1"
+}
+
+bats_tap_stream_suite() {
+  line_backoff_count=0
+  index=
+  _current_file="$1"
+  local file_name="${1#"$BASE_PATH"}"
+  name="File $file_name"
+  set_color 4 bold
+  buffer "%s\n" "$file_name"
+  clear_color
+}
+
+line_backoff_count=0
+bats_tap_stream_unknown() {
+  local scope=$2
+  if [[ $line_backoff_count -eq 0 && ($scope == begin || $scope == suite) ]]; then
+    buffer "\n"
+    ((++line_backoff_count))
+  fi
+
+  ((++line_backoff_count))
+  ((line_backoff_count += ${#1} / screen_width))
+  buffer "%s\n" "$1"
+  flush
+}
+
+bats_parse_internal_extended_tap
+
+summary
