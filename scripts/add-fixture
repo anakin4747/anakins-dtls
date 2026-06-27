@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+
+: "${FIXTURES_DIR:=tests/fixtures/default}"
+: "${LINUX_SRC:=${HOME}/src/linux}"
+
+die() {
+    printf "\033[31merror: %s\033[0m\n" "$1" >&2
+    exit 1
+}
+
+log() {
+    printf "\033[32m%s\033[0m\n" "$1"
+}
+
+ME="$(basename "$0")"
+
+if [ $# -lt 1 ]; then
+    printf "usage: %s <path-to-file>...\n" "$ME" >&2
+    printf "  e.g. %s ~/src/linux/arch/arm/kernel/setup.c\n" "$ME" >&2
+    printf "       %s arch/arm/kernel/setup.c kernel/sched/core.c\n" "$ME" >&2
+    exit 1
+fi
+
+src_files=()
+rel_paths=()
+dests=()
+dest_dirs=()
+
+for arg in "$@"; do
+    src_file="$arg"
+
+    case "$src_file" in
+        "$LINUX_SRC/"*) ;;
+        /*) die "source file must be under ${LINUX_SRC}: ${src_file}" ;;
+        *)
+            src_file="${LINUX_SRC}/${src_file}"
+            ;;
+    esac
+
+    if [ ! -f "$src_file" ]; then
+        die "source file does not exist: ${src_file}"
+    fi
+
+    rel_path="${src_file#"${LINUX_SRC}"/}"
+    dest="${FIXTURES_DIR}/${rel_path}"
+    dest_dir="$(dirname "$dest")"
+
+    src_files+=("$src_file")
+    rel_paths+=("$rel_path")
+    dests+=("$dest")
+    dest_dirs+=("$dest_dir")
+done
+
+log "checking fixture directory"
+if ! git diff --quiet HEAD -- "${FIXTURES_DIR}"; then
+    die "fixtures directory has uncommitted tracked changes"
+fi
+
+if [ -n "$(git ls-files --others --exclude-standard "${FIXTURES_DIR}")" ]; then
+    die "fixtures directory has untracked files"
+fi
+log "fixture directory ok"
+
+while :; do
+    printf "reason: "
+    if ! read -r reason; then
+        die "cancelled"
+    fi
+    if [ -n "$reason" ]; then
+        break
+    fi
+done
+
+for i in "${!src_files[@]}"; do
+    log "copying ${rel_paths[$i]}"
+    if ! mkdir -p "${dest_dirs[$i]}"; then
+        die "failed to create directory: ${dest_dirs[$i]}"
+    fi
+
+    if ! cp "${src_files[$i]}" "${dests[$i]}"; then
+        die "failed to copy: ${src_files[$i]} -> ${dests[$i]}"
+    fi
+    log "copied ${rel_paths[$i]}"
+done
+
+log "committing fixture(s)"
+if ! git add "${FIXTURES_DIR}"; then
+    die "git add failed"
+fi
+
+prev_body="$(git log -1 --format=%b 2>/dev/null)" || prev_body=""
+
+if [ "$reason" = "$prev_body" ]; then
+    log "amending previous commit"
+    prev_full="$(git log -1 --format=%B)"
+    old_paths=()
+    while IFS= read -r line; do
+        case "$line" in
+            "test: add fixture "*) old_paths+=("${line#test: add fixture }") ;;
+            "  - "*) old_paths+=("${line#  - }") ;;
+        esac
+    done <<< "$prev_full"
+
+    all_paths=("${old_paths[@]}")
+    for new_rp in "${rel_paths[@]}"; do
+        seen=0
+        for old_rp in "${old_paths[@]}"; do
+            if [ "$new_rp" = "$old_rp" ]; then
+                seen=1
+                break
+            fi
+        done
+        if [ "$seen" -eq 0 ]; then
+            all_paths+=("$new_rp")
+        fi
+    done
+
+    if [ ${#all_paths[@]} -eq 1 ]; then
+        commit_msg="test: add fixture ${all_paths[0]}"
+    else
+        commit_msg="test: add fixtures"
+        for rp in "${all_paths[@]}"; do
+            commit_msg="${commit_msg}
+  - ${rp}"
+        done
+    fi
+    commit_msg="${commit_msg}
+
+${reason}"
+
+    if ! printf "%s\n" "$commit_msg" | git commit --amend -F -; then
+        die "git commit amend failed"
+    fi
+else
+    if [ ${#rel_paths[@]} -eq 1 ]; then
+        commit_msg="test: add fixture ${rel_paths[0]}"
+    else
+        commit_msg="test: add fixtures"
+        for rp in "${rel_paths[@]}"; do
+            commit_msg="${commit_msg}
+  - ${rp}"
+        done
+    fi
+    commit_msg="${commit_msg}
+
+${reason}"
+
+    if ! printf "%s\n" "$commit_msg" | git commit -F -; then
+        die "git commit failed"
+    fi
+fi
+
+if [ ${#rel_paths[@]} -eq 1 ]; then
+    printf "done: added %s\n" "${rel_paths[0]}"
+else
+    printf "done: added %d fixtures\n" "${#rel_paths[@]}"
+fi
