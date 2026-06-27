@@ -13,7 +13,7 @@ lint:
 	awk -f scripts/find-multiline-non-bash.awk anakins-dtls
 
 test:
-	bats --formatter $(CURDIR)/tests/lsts/lsts-format-pretty tests/*_tests.bats
+	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/*_tests.bats
 
 install-manual:
 	install -m 755 anakins-dtls $(PREFIX)/bin/anakins-dtls
