@@ -15,6 +15,9 @@ lint:
 test:
 	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/*_tests.bats
 
+e2e:
+	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/e2e.bats
+
 install-manual:
 	install -m 755 anakins-dtls $(PREFIX)/bin/anakins-dtls
 
