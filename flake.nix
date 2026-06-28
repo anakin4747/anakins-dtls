@@ -100,7 +100,7 @@ MEOF
             set +e +u +o pipefail
             kernel_root="$(pwd)"
 
-            dts_files="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 10 || true)"
+            dts_files="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | head -n10 || true)"
             if [[ -z "$dts_files" ]]; then
               echo "tryout: no .dts files found under $kernel_root/arch" >&2
               echo "Run this from the root of a Linux kernel source tree." >&2
