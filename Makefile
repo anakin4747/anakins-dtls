@@ -9,11 +9,11 @@ submodules:
 	git submodule update --init --recursive
 
 lint:
-	shellcheck --external-sources --shell=bash --severity=warning anakins-dtls tests/*_tests.bats
+	shellcheck --external-sources --shell=bash --severity=warning anakins-dtls tests/unit.bats
 	awk -f scripts/find-multiline-non-bash.awk anakins-dtls
 
 test:
-	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/*_tests.bats
+	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/unit.bats
 
 e2e:
 	bats --formatter $(CURDIR)/tests/lsts-format-pretty tests/e2e.bats
