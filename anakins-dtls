@@ -3055,62 +3055,64 @@ _resolve_spec_and_includes() {
     done
 }
 
-# Kill all background jobs when the server exits.
-trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
+main() {
+    # Kill all background jobs when the server exits.
+    trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
 
-# ---------------------------------------------------------------------------
+    while recv; do
+        parse_request
 
-while recv; do
-    parse_request
+        case "$method" in
+            initialize)
+                root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
+                root_path="${root_uri#file://}"
+                _resolve_linux_dir "$root_path"
+                _resolve_spec_and_includes "$root_path"
+                send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"implementationProvider\":true,\"referencesProvider\":true,\"completionProvider\":true,\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":true}}}"
+                ;;
+            initialized)
+                ;;
+            textDocument/didOpen)
+                text="$(printf '%s' "$BODY" | jq -r '.params.textDocument.text')"
+                DOC_TEXT["$uri"]="$text"
+                publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
+                ;;
+            textDocument/didChange)
+                text="$(printf '%s' "$BODY" | jq -r '.params.contentChanges[-1].text')"
+                DOC_TEXT["$uri"]="$text"
+                publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
+                ;;
+            textDocument/hover)
+                handle_hover "$id" "${DOC_TEXT["$uri"]:-}" "$line" "$character"
+                ;;
+            textDocument/definition)
+                handle_definition "$BODY"
+                ;;
+            textDocument/implementation)
+                handle_implementation "$BODY"
+                ;;
+            textDocument/references)
+                handle_references "$BODY"
+                ;;
+            textDocument/completion)
+                handle_completion "$BODY"
+                ;;
+            textDocument/documentSymbol)
+                handle_document_symbols "$BODY"
+                ;;
+            textDocument/rename)
+                handle_rename "$BODY"
+                ;;
+            shutdown)
+                send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":null}"
+                ;;
+            exit)
+                break
+                ;;
+        esac
+    done
+}
 
-    case "$method" in
-        initialize)
-            root_uri="$(printf '%s' "$BODY" | jq -r '.params.rootUri // .params.workspaceFolders[0].uri // ""')"
-            root_path="${root_uri#file://}"
-            _resolve_linux_dir "$root_path"
-            _resolve_spec_and_includes "$root_path"
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"implementationProvider\":true,\"referencesProvider\":true,\"completionProvider\":true,\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":true}}}"
-            ;;
-        initialized)
-            ;;
-        textDocument/didOpen)
-            text="$(printf '%s' "$BODY" | jq -r '.params.textDocument.text')"
-            DOC_TEXT["$uri"]="$text"
-            publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
-            ;;
-        textDocument/didChange)
-            text="$(printf '%s' "$BODY" | jq -r '.params.contentChanges[-1].text')"
-            DOC_TEXT["$uri"]="$text"
-            publish_diagnostics "$(jq -cn --arg u "$uri" '$u')" "$text"
-            ;;
-        textDocument/hover)
-            handle_hover "$id" "${DOC_TEXT["$uri"]:-}" "$line" "$character"
-            ;;
-        textDocument/definition)
-            handle_definition "$BODY"
-            ;;
-        textDocument/implementation)
-            handle_implementation "$BODY"
-            ;;
-        textDocument/references)
-            handle_references "$BODY"
-            ;;
-        textDocument/completion)
-            handle_completion "$BODY"
-            ;;
-        textDocument/documentSymbol)
-            handle_document_symbols "$BODY"
-            ;;
-        textDocument/rename)
-            handle_rename "$BODY"
-            ;;
-        shutdown)
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":null}"
-            ;;
-        exit)
-            exit 0
-            ;;
-    esac
-done
-
-exit 0
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main
+fi
