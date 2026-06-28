@@ -3069,7 +3069,7 @@ while recv; do
             root_path="${root_uri#file://}"
             _resolve_linux_dir "$root_path"
             _resolve_spec_and_includes "$root_path"
-            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"implementationProvider\":true,\"referencesProvider\":true,\"completionProvider\":{},\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":{\"interFileDependencies\":false,\"workspaceDiagnostics\":false}}}}"
+            send "{\"jsonrpc\":\"2.0\",\"id\":${id},\"result\":{\"capabilities\":{\"hoverProvider\":true,\"definitionProvider\":true,\"implementationProvider\":true,\"referencesProvider\":true,\"completionProvider\":true,\"documentSymbolProvider\":true,\"renameProvider\":true,\"textDocumentSync\":{\"openClose\":true,\"change\":1},\"diagnosticProvider\":true}}}"
             ;;
         initialized)
             ;;
