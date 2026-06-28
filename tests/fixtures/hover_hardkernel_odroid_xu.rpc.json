@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"## hardkernel,odroid-xu\n\n**Binding:** `arm/samsung/samsung-boards.yaml`\n\nSamsung Exynos and S5P SoC based boards"}}}
