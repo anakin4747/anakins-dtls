@@ -11,11 +11,12 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        anakins-dtls = pkgs.writeShellApplication {
-          name = "anakins-dtls";
-          runtimeInputs = with pkgs; [ bash coreutils jq ripgrep gnused gnugrep gawk ];
-          checkPhase = "";
-          text = builtins.readFile ./anakins-dtls;
+        anakins-dtls = pkgs.python3Packages.buildPythonApplication {
+          pname = "anakins-dtls";
+          version = "0.1.0";
+          src = ./.;
+          pyproject = true;
+          nativeBuildInputs = [ pkgs.python3Packages.setuptools ];
         };
 
         vscode-extension = pkgs.buildNpmPackage {
@@ -149,10 +150,10 @@ MEOF
             bats
             jq
             ripgrep
-            shellcheck
             python3
             python3Packages.pytest
             python3Packages.pytest-bdd
+            python3Packages.setuptools
           ];
         };
       });

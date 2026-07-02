@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anakins-dtls"
+version = "0.1.0"
+description = "A Device Tree Language Server"
+readme = "README.md"
+license = { text = "GPL-2.0-only" }
+authors = [
+    { name = "Anakin Childerhose", email = "anakin@childerhose.ca" },
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Language Server",
+]
+dependencies = []
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:usefixtures\\(\\) in.*without arguments has no effect:",
+]
+
+[tool.setuptools.packages.find]
+include = ["anakins_dtls*"]
+
+[project.scripts]
+anakins-dtls = "anakins_dtls.__main__:main"

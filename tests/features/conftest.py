@@ -1,5 +1,7 @@
+import os
 import pytest
 from pytest_bdd import given, when, then, parsers
+from tests.lsp_client import LSPClient
 
 TARGET = {
     'compatible': (4, 5),
@@ -40,13 +42,20 @@ def ctx():
 
 
 @given('the language server is running')
-def server_running():
-    pass
+def server_running(ctx, request):
+    lsp = LSPClient(cmd=['python3', '-m', 'anakins_dtls'], root=os.getcwd())
+    lsp.start()
+    request.addfinalizer(lsp.stop)
+    lsp.initialize()
+    ctx['lsp'] = lsp
 
 
 @given('a devicetree source file is open')
-def file_open():
-    pass
+def file_open(ctx):
+    lsp = ctx['lsp']
+    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover_standard_properties.dts')
+    uri = lsp.open(fixture)
+    ctx['uri'] = uri
 
 
 @given(parsers.re(r'a (?:node|bus node|cpu node) with.*'))
@@ -55,7 +64,9 @@ def node_with():
 
 
 @when(parsers.parse('hovering over "{property}"'))
-def hover_over(ctx, lsp, uri, property):
+def hover_over(ctx, property):
+    lsp = ctx['lsp']
+    uri = ctx['uri']
     pos = TARGET.get(property)
     if pos is None:
         pytest.fail(f'Unknown property: {property}')
