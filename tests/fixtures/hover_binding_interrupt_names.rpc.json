@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":2,"result":{"contents":{"kind":"markdown","value":"**Source:** Linux kernel bindings (`brcm,bcm7271-uart`)\n\nThe UART interrupt and optionally the DMA interrupt.\n\n---\n\n**Source:** Linux kernel Documentation\n\n```\n- interrupt-names: The name of the interrupt used to interrupt the host.\n\nOptional properties:\n```"}}}

@@ -1,6 +1,0 @@
-/dts-v1/;
-
-/ {
-	compatible = "xlnx,zynq-zc770-xm012", "xlnx,zynq-7000";
-	model = "Xilinx ZC770 XM012 board";
-};
