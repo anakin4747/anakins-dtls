@@ -1,0 +1,19 @@
+/dts-v1/;
+
+/ {
+    compatible = "fsl,mpc8641", "ns16550";
+    model = "fsl,MPC8349EMITX";
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    phandle = <1>;
+    status = "disabled";
+    reg = <0x3000 0x20 0xFE00 0x100>;
+    virtual-reg;
+    ranges = <0x0 0xe0000000 0x00100000>;
+    dma-ranges;
+    dma-coherent;
+    dma-noncoherent;
+    name = "cpu";
+    device_type = "cpu";
+};
