@@ -36,7 +36,7 @@ Requires [Nix](https://nixos.org/download) with `nix-command` and `flakes` enabl
 From inside a Linux kernel source tree:
 
 ```bash
-nix run github:anakin4747r2d2/anakins-dtls#tryout
+nix run github:anakin4747/anakins-dtls#tryout
 ```
 
 Opens 10 random DTS/DTSI files from the kernel in Neovim with `anakins-dtls` configured and ready.
