@@ -40,6 +40,14 @@ Fix the code accordingly in new commits.
 
 Use the `lsts` bats library in `tests/lsts/` for end-to-end LSP testing.
 
+To run the tests in the test environment run the default make target like so:
+```sh
+make
+```
+
+This will run the tests in the development environment managed by the nix
+flake.
+
 The `tests/devicetree-specification/` submodule is the official Device Tree
 Specification source. Use it as the reference for hover documentation content.
 
