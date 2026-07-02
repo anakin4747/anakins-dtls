@@ -25,14 +25,14 @@ Feature: Standard Property Hover Documentation
     Then the hover returns the contents of the "status" subsection from the devicetree specification
 
   Scenario: Hover on "#address-cells" shows child address encoding
-    Given a node with #address-cells = <1>
+    Given a node with address-cells = <1>
     When hovering over "#address-cells"
-    Then the hover returns the contents of the "#address-cells and #size-cells" subsection from the devicetree specification
+    Then the hover returns the contents of the "address-cells and size-cells" subsection from the devicetree specification
 
   Scenario: Hover on "#size-cells" shows child size encoding
-    Given a node with #size-cells = <1>
+    Given a node with size-cells = <1>
     When hovering over "#size-cells"
-    Then the hover returns the contents of the "#address-cells and #size-cells" subsection from the devicetree specification
+    Then the hover returns the contents of the "address-cells and size-cells" subsection from the devicetree specification
 
   Scenario: Hover on "reg" shows device address resources
     Given a node with reg = <0x3000 0x20 0xFE00 0x100>
