@@ -3,9 +3,7 @@ import re
 import sys
 
 
-from anakins_dtls.dtspec import build_hover_docs
-
-HOVER_DOCS = build_hover_docs()
+from anakins_dtls._hover_docs import HOVER_DOCS
 
 
 documents: dict[str, str] = {}

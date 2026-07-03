@@ -1,6 +1,9 @@
 import os
+import sys
 
-from anakins_dtls.dtspec import (
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+
+from generate_docs import (
     _convert_inline,
     _expand_subst,
     _format_section,
@@ -74,7 +77,7 @@ def test_convert_inline_combined():
 # ---------------------------------------------------------------------------
 
 def test_expand_subst_known():
-    from anakins_dtls.dtspec import SUBSTITUTIONS
+    from generate_docs import SUBSTITUTIONS
     import re
     m = re.match(r"\|([^|]+)\|", "|spec|")
     assert _expand_subst(m) == SUBSTITUTIONS["|spec|"]
@@ -269,7 +272,7 @@ def test_format_section_labels_are_bolded():
     assert "**Value type:**" in result
     assert "`model`" in result
 
-def test_format_section_skips_heading_title():
+def test_format_section_includes_heading_title():
     raw = (
         "model\n"
         "=====\n"
@@ -277,8 +280,8 @@ def test_format_section_skips_heading_title():
         "Property name: ``model``\n"
     )
     result = _format_section(raw)
+    assert result.startswith("# model")
     assert "**Property name:**" in result
-    assert result.startswith("**Property name:**")
 
 def test_format_section_joins_wrapped_paragraph():
     raw = (
@@ -354,9 +357,11 @@ def test_format_section_preserves_blank_lines_between_labels():
     )
     result = _format_section(raw)
     lines = result.strip().split("\n")
-    assert lines[0] == "**Property name:** `foo`"
+    assert lines[0] == "# foo"
     assert lines[1] == ""
-    assert lines[2] == "**Value type:** `<u32>`"
+    assert lines[2] == "**Property name:** `foo`"
+    assert lines[3] == ""
+    assert lines[4] == "**Value type:** `<u32>`"
     assert lines[3] == ""
     assert "`some text`" not in result  # no backtick conversion
 
@@ -367,7 +372,7 @@ def test_format_section_empty_returns_empty_line():
 def test_format_section_just_a_heading():
     raw = "Foo\n===\n"
     result = _format_section(raw)
-    assert result == "\n"
+    assert result == "# Foo\n"
 
 
 # ---------------------------------------------------------------------------
@@ -393,10 +398,11 @@ def test_build_hover_docs_address_and_size_cells_identical():
     docs = build_hover_docs()
     assert docs["#address-cells"] == docs["#size-cells"]
 
-def test_build_hover_docs_each_begins_with_property_name():
+def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
     for key, value in docs.items():
-        assert value.startswith("**Property name:**"), f"{key} does not start with Property name"
+        assert value.startswith("#"), f"{key} does not start with a heading"
+        assert "**Property name:**" in value, f"{key} missing Property name"
 
 
 # ---------------------------------------------------------------------------

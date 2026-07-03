@@ -17,6 +17,10 @@
           src = ./.;
           pyproject = true;
           nativeBuildInputs = [ pkgs.python3Packages.setuptools ];
+
+          preBuild = ''
+            PYTHONPATH=tools python -c "from generate_docs import write_hover_docs; write_hover_docs()"
+          '';
         };
 
         vscode-extension = pkgs.buildNpmPackage {

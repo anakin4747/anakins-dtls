@@ -353,8 +353,15 @@ def _format_section(raw: str) -> str:
             i += 1
             continue
 
-        if i == 0 or (i == 1 and not lines[0].strip() and _is_underline(lines[1])):
-            i += 1
+        if i == 0 and i + 1 < len(lines) and _is_underline(lines[i + 1]):
+            level = _heading_level(lines[i + 1]) + 1
+            out.append(f"{'#' * level} {_convert_inline(lines[i])}\n")
+            i += 2
+            continue
+        if i == 1 and not lines[0].strip() and i + 1 < len(lines) and _is_underline(lines[i + 1]):
+            level = _heading_level(lines[i + 1]) + 1
+            out.append(f"{'#' * level} {_convert_inline(lines[i])}\n")
+            i += 2
             continue
 
         para.append(line)
@@ -391,3 +398,15 @@ def build_hover_docs() -> dict[str, str]:
         else:
             docs[prop_name] = ""
     return docs
+
+
+def write_hover_docs(output_path: str | None = None) -> None:
+    import json
+    if output_path is None:
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        output_path = os.path.join(repo_root, "anakins_dtls", "_hover_docs.py")
+    docs = build_hover_docs()
+    with open(output_path, "w") as f:
+        f.write("HOVER_DOCS = ")
+        json.dump(docs, f, indent=2)
+        f.write("\n")
