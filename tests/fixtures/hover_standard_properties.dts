@@ -101,6 +101,11 @@
 
         memory-region = <&display_reserved>;
         memory-region-names = "display";
+        status = "okay";
+        status = "disabled";
+        status = "reserved";
+        status = "fail";
+        status = "fail-sss";
 
         aliases { // should not return hover since it is only a root node
         };

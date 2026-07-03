@@ -24,6 +24,18 @@ Feature: Standard Property Hover Documentation
     When hovering over a "status" property name
     Then the hover returns the contents of the "status" section from the devicetree specification
 
+  Scenario Outline: Hover on a "status" property value returns its row from the "Values for status property" table from the devicetree specification
+    When the "status" property value is hovered for <value>
+    Then the hover returns value and description for <value> from the "Values for status property" table from the devicetree specification
+
+    Examples:
+      | value        |
+      | "okay"      |
+      | "disabled"  |
+      | "reserved"  |
+      | "fail"      |
+      | "fail-sss"  |
+
   Scenario: Hover on a "#address-cells" property name returns the "\#address-cells and \#size-cells" section from the devicetree specification
     When hovering over a "#address-cells" property name
     Then the hover returns the contents of the "\#address-cells and \#size-cells" section from the devicetree specification

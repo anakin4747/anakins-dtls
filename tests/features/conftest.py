@@ -6,7 +6,17 @@ from tests.lsp_client import LSPClient
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
-from generate_docs import _format_section, format_table_row_hover, get_section
+from generate_docs import (
+    _convert_inline,
+    _consume_indented_block,
+    _format_section,
+    _parse_table_rows,
+    _rst_files,
+    _skip_table_options,
+    _strip_literal_markup,
+    format_table_row_hover,
+    get_section,
+)
 
 TARGET = {
     'Root node declaration': (3, 1),
@@ -80,11 +90,19 @@ TARGET = {
     'memory-region-names': (103, 9),
 }
 
+STATUS_VALUE_TARGET = {
+    'okay': (104, 19),
+    'disabled': (105, 19),
+    'reserved': (106, 19),
+    'fail': (107, 19),
+    'fail-sss': (108, 19),
+}
+
 NON_ROOT_TARGET = {
     'serial-number': (99, 9),
     'chassis-type': (100, 9),
-    'aliases node declaration': (105, 13),
-    'memory node declaration': (108, 13),
+    'aliases node declaration': (110, 13),
+    'memory node declaration': (113, 13),
 }
 
 INVALID_PLACEMENT_TARGET = {
@@ -130,6 +148,11 @@ def hover_over(lsp, uri, hover_target):
     return _hover_at(lsp, uri, TARGET, hover_target)
 
 
+@when(parsers.parse('the "status" property value is hovered for {value}'), target_fixture='response')
+def hover_over_status_value(lsp, uri, value):
+    return _hover_at(lsp, uri, STATUS_VALUE_TARGET, value)
+
+
 def _hover_text(response):
     result = response.get('result')
     if result is None:
@@ -151,6 +174,41 @@ def _get_spec_section(section):
     if section.startswith('/'):
         path, _, suffix = section.partition(' ')
         return get_section(f'``{path}`` {suffix}')
+    return None
+
+
+def _format_value_table_row_hover(table, value):
+    for fpath in _rst_files():
+        with open(fpath) as f:
+            lines = f.read().split('\n')
+
+        for idx, line in enumerate(lines):
+            if line.lstrip() != f'.. table:: {table}':
+                continue
+
+            block, _ = _consume_indented_block(lines, idx + 1)
+            rows = _parse_table_rows(_skip_table_options(block))
+            if not rows:
+                continue
+
+            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            try:
+                value_idx = header.index('Value')
+                description_idx = header.index('Description')
+            except ValueError:
+                return None
+
+            for cells in rows[1:]:
+                if _strip_literal_markup(cells[value_idx]) != value:
+                    continue
+
+                description = _convert_inline(cells[description_idx])
+                return (
+                    f'### {value}\n\n'
+                    f'**Value:** `{value}`\n\n'
+                    f'**Description:**\n\n'
+                    f'{description}\n'
+                )
     return None
 
 
@@ -220,6 +278,22 @@ def check_hover_table_row(response, property, table):
             f'Hover response did not match table row\n'
             f'  Table: {table}\n'
             f'  Property: {property}\n'
+            f'  Expected: {expected[:500]}...\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.parse('the hover returns value and description for {value} from the "{table}" table from the devicetree specification'))
+def check_hover_value_table_row(response, value, table):
+    text = _hover_text(response)
+    expected = _format_value_table_row_hover(table, value)
+    if expected is None:
+        pytest.fail(f'Unknown table row: {table}.{value}')
+    if text != expected:
+        pytest.fail(
+            f'Hover response did not match table row\n'
+            f'  Table: {table}\n'
+            f'  Value: {value}\n'
             f'  Expected: {expected[:500]}...\n'
             f'  Got: {text[:500]}...'
         )
