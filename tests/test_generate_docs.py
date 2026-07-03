@@ -20,6 +20,7 @@ from generate_docs import (
     _is_tabularcolumns,
     _is_underline,
     _parse_simple_table,
+    _resolve_numref,
     build_hover_docs,
     get_section,
 )
@@ -45,6 +46,47 @@ def test_convert_inline_unicode_punctuation():
 def test_convert_inline_strips_numref():
     result = _convert_inline("see :numref:`some-ref` for details")
     assert result == "see `some-ref` for details"
+
+def test_convert_inline_resolves_chapter_numref():
+    result = _convert_inline(
+        "see :numref:`Chapter %s <chapter-introduction>` for details"
+    )
+    assert result == "see Chapter 1 for details"
+
+def test_resolve_numref_with_chapter():
+    import re
+    m = re.match(r"(^|\s):numref:`([^`]+)`", " :numref:`Chapter %s <chapter-devicetree>`")
+    assert m
+    result = _resolve_numref(m)
+    assert result == " Chapter 2"
+
+def test_resolve_numref_with_unknown_label():
+    import re
+    m = re.match(r"(^|\s):numref:`([^`]+)`", " :numref:`unknown-label>`")
+    assert m
+    result = _resolve_numref(m)
+    assert result == " `unknown-label>`"
+
+def test_resolve_numref_preserves_start_of_line():
+    import re
+    m = re.match(r"(^|\s):numref:`([^`]+)`", ":numref:`some-ref`")
+    assert m
+    result = _resolve_numref(m)
+    assert result == "`some-ref`"
+
+def test_convert_inline_resolves_all_chapters():
+    for label, number in [
+        ("chapter-introduction", "1"),
+        ("chapter-devicetree", "2"),
+        ("chapter-device-node-requirements", "3"),
+        ("chapter-device-bindings", "4"),
+        ("chapter-fdt-structure", "5"),
+        ("chapter-devicetree-source-format", "6"),
+    ]:
+        result = _convert_inline(
+            f"see :numref:`Chapter %s <{label}>` for details"
+        )
+        assert result == f"see Chapter {number} for details"
 
 def test_convert_inline_unwraps_abbr():
     result = _convert_inline("the :abbr:`DTS (Devicetree)` spec")
@@ -258,6 +300,43 @@ class TestHandleNote:
         assert "> **Note:**" in md
         assert "> First paragraph." in md
         assert "> Second paragraph." in md
+        assert i == 5
+
+    def test_inline_note_converts_numref(self):
+        lines = [".. note:: see :numref:`Chapter %s <ch>` for details"]
+        md, i = _handle_note(lines, 0)
+        assert "see `Chapter %s <ch>`" in md
+        assert ":numref:" not in md
+        assert i == 1
+
+    def test_inline_note_with_continuation(self):
+        lines = [
+            ".. note:: Most devicetrees in :abbr:`DTS (Device Tree Syntax)` (see",
+            "   :numref:`Chapter %s <chapter-devicetree-source-format>`) will not"
+            " contain",
+            "   explicit phandle properties.",
+        ]
+        md, i = _handle_note(lines, 0)
+        assert "`DTS (Device Tree Syntax)`" in md
+        assert "Chapter 6" in md
+        assert ":abbr:" not in md
+        assert ":numref:" not in md
+        assert i == 3
+
+    def test_block_note_converts_inline_markup(self):
+        lines = [
+            ".. note::",
+            "",
+            "   Most devicetrees in :abbr:`DTS (Device Tree Syntax)` (see",
+            "   :numref:`Chapter %s <chapter-devicetree-source-format>`) will not"
+            " contain",
+            "   explicit phandle properties.",
+        ]
+        md, i = _handle_note(lines, 0)
+        assert "`DTS (Device Tree Syntax)`" in md
+        assert "Chapter 6" in md
+        assert ":abbr:" not in md
+        assert ":numref:" not in md
         assert i == 5
 
 

@@ -14,7 +14,30 @@ SUBSTITUTIONS = {
     "|dtspec-major|": "0",
     "|dtspec-minor|": "1",
 }
-_NUMREF_RE = re.compile(r"\s:numref:`([^`]+)`")
+_NUMREF_RE = re.compile(r"(^|\s):numref:`([^`]+)`")
+
+CHAPTER_MAP: dict[str, str] = {
+    "chapter-introduction": "1",
+    "chapter-devicetree": "2",
+    "chapter-device-node-requirements": "3",
+    "chapter-device-bindings": "4",
+    "chapter-fdt-structure": "5",
+    "chapter-devicetree-source-format": "6",
+}
+
+_CHAPTER_NUMREF_RE = re.compile(r"^Chapter %s <([^>]+)>$")
+
+
+def _resolve_numref(m: re.Match) -> str:
+    prefix = m.group(1)
+    ref = m.group(2)
+    chapter = _CHAPTER_NUMREF_RE.match(ref)
+    if chapter:
+        number = CHAPTER_MAP.get(chapter.group(1))
+        if number:
+            return prefix + "Chapter " + number
+    return prefix + "`" + ref + "`"
+
 
 _ABBR_RE = re.compile(r":abbr:`([^`]+)`")
 _INLINE_LITERAL_RE = re.compile(r"``([^`]+)``")
@@ -38,7 +61,7 @@ _UNICODE_PUNCT = str.maketrans({
 
 def _convert_inline(text: str) -> str:
     text = text.translate(_UNICODE_PUNCT)
-    text = _NUMREF_RE.sub(r" `\1`", text)
+    text = _NUMREF_RE.sub(_resolve_numref, text)
     text = _ABBR_RE.sub(r"`\1`", text)
     text = _INLINE_LITERAL_RE.sub(r"`\1`", text)
     text = _SUBSTITUTION_RE.sub(_expand_subst, text)
@@ -162,9 +185,17 @@ def _handle_code_block(lines: list[str], i: int) -> tuple[str, int]:
 def _handle_note(lines: list[str], i: int) -> tuple[str, int]:
     inline = lines[i].lstrip().removeprefix(".. note::").strip()
     if inline:
-        return f"> **Note:** {inline}\n", i + 1
+        block, next_i = _consume_indented_block(lines, i + 1)
+        if block:
+            text = inline + " " + " ".join(block)
+        else:
+            text = inline
+            next_i = i + 1
+        return f"> **Note:** {_convert_inline(text)}\n", next_i
     block, i = _consume_indented_block(lines, i + 1)
-    quoted = "\n".join("> " + line if line else ">" for line in block) + "\n"
+    quoted = "\n".join(
+        "> " + _convert_inline(line) if line else ">" for line in block
+    ) + "\n"
     return f"> **Note:**\n{quoted}", i
 
 
