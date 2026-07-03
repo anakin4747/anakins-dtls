@@ -2,26 +2,106 @@
 
 A Device Tree Language Server.
 
-## Git Best Practices
+## Feature Workflow
 
-- **Commit Often:** Make small, focused commits.
-- **Descriptive Messages:** Use clear, imperative commit messages.
-- **Test Driven Development:**
-  - Write tests before implementing features or fixes.
-  - After creating the test, stop and request approval before proceeding.
-- **.gitignore:** Exclude build artifacts and sensitive files.
-- **No Secrets:** Never commit passwords or API keys.
-- **Whitespace:** Never leave trailing whitespace
+When adding a user-visible feature, use this commit sequence unless the user
+explicitly asks for a different workflow. Keep each commit focused on its phase.
 
-Commit every logical atomic addition or change using git. Each commit should
-represent one coherent unit of work (e.g. add a helper function, fix a bug,
-update the flake). Do not batch unrelated changes into a single commit. Commit
-messages should be concise and written in the imperative mood.
+### 1. BDD Test Commit
 
-## Code Review
+Start with the user-visible behavior. Change the relevant `.feature` file first.
+Only change step definitions when required to make the scenario executable. Only
+change fixtures when required to provide input data for the scenario. Never
+change step definitions or fixtures without changing a `.feature` file in the
+same commit.
 
-After creating a commit code review your work. Ask the following questions to
-see how the code can be made cleaner:
+Do not change application code, docs-generation code, or unit tests in this
+commit. Run `make` and verify the test fails because the feature is not
+implemented.
+
+Commit message template:
+```sh
+git commit -m "test(bdd): require <feature behavior>"
+```
+
+Allowed files:
+```text
+tests/features/**/*.feature
+tests/features/conftest.py
+tests/features/step_definitions/**/*.py
+tests/fixtures/**
+```
+
+Validate the commit only changed the allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is allowed and at least one
+changed file is a `.feature` file. If the commit is not valid, amend it to
+correct it until it is valid.
+
+### 2. Optional Docs-Generation TDD Test Commit
+
+If the feature requires changing docs-generation behavior, write the smallest
+failing unit test for the docs-generation contract before implementation. Do not
+make this commit if no docs-generation change is needed.
+
+Do not change docs-generation implementation, BDD features, step definitions, or
+fixtures in this commit. Run `make` and verify the docs-generation test fails.
+
+Commit message template:
+```sh
+git commit -m "test(docs): require <feature> hover docs generation"
+```
+
+Allowed files:
+```text
+tests/test_generate_docs.py
+tests/**/test_generate_docs.py
+```
+
+Validate the commit only changed the allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is a docs-generation test file.
+If the commit is not valid, amend it to correct it until it is valid.
+
+### 3. Feature Implementation Commit
+
+Implement only the behavior required by the failing BDD commit and optional
+docs-generation TDD commit. Do not change tests, fixtures, feature files, or step
+definitions in this commit.
+
+Once the implementation of the feature is done run `make` to verify all tests
+pass.
+
+Commit message template:
+```sh
+git commit -m "feat: support <feature behavior>"
+```
+
+Allowed files:
+```text
+anakins_dtls/**
+tools/**
+```
+
+Validate the commit only changed the allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is application or tool code and no
+changed file is under `tests/`. If the commit is not valid, amend it to correct
+it until it is valid.
+
+### 4. Review Refactor Commit
+
+After the passing feature commit, code review the work. Ask the following
+questions to see how the code can be made cleaner:
 - Did your change create any dead code?
 - Did your change invalidate some comments?
 - Is your change in the style of the codebase?
@@ -34,38 +114,38 @@ see how the code can be made cleaner:
 - Is there a simpler way to implement this solution?
 - Did you add any extra functionality that doesn't have a corresponding test?
 
-Fix the code accordingly in new commits.
+Refactor only if it improves the code without changing behavior. Save any
+needed cleanup in this refactor commit.
 
-## Behaviour and Test Driven Development
+Do not change feature files, fixtures, or unit tests in this commit. Run `make`
+and verify all tests pass.
 
-User-visible behavior must be driven with BDD. Start by changing or adding the
-relevant `.feature` file so the desired behavior is expressed in terms the end
-user can observe. Only after the feature captures the behavior should step
-definitions, unit tests, and implementation code be changed.
-
-For implementation details that do not matter to the end user, such as
-modifying the docs_generation functionality always use TDD: write the smallest
-failing unit test that describes the implementation contract, verify it fails,
-then implement the change.
-
-To run the tests in the test environment run the default make target like so:
+Commit message template:
 ```sh
-make
+git commit -m "refactor: clarify <feature area>"
 ```
 
-This will run the tests in the development environment managed by the nix
-flake.
+Allowed files:
+```text
+anakins_dtls/**
+tools/**
+tests/features/conftest.py
+tests/features/step_definitions/**/*.py
+```
 
-The `devicetree-specification/` submodule is the official Device Tree
-Specification source. Use it as the reference for hover documentation content.
+Forbidden files:
+```text
+tests/**/*.feature
+tests/test_*.py
+tests/fixtures/**
+```
 
-**Every bug fix must follow this order — no exceptions:**
+Validate the commit with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
 
-1. Write a failing test that reproduces the bug
-2. Verify the test fails (confirms the bug is captured)
-3. Implement the fix
-4. Verify the test passes
-5. Commit the test and fix together
+The commit is valid only if every changed file is allowed and no changed file is
+forbidden. If the commit is not valid, amend it to correct it until it is valid.
 
-Never fix a bug without a test that would have caught it. Never commit a fix
-before the test exists.
+## Bug Workflow
