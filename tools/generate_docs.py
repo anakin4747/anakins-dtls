@@ -279,6 +279,84 @@ def get_table_entry(table: str, row: str, column: str) -> str | None:
     return None
 
 
+def _usage_legend(block: list[str]) -> dict[str, str]:
+    for line in block:
+        stripped = line.strip()
+        if not stripped.startswith("Usage legend:"):
+            continue
+
+        legend: dict[str, str] = {}
+        entries = stripped.removeprefix("Usage legend:").split(",")
+        for entry in entries:
+            if "=" not in entry:
+                continue
+            key, value = entry.split("=", 1)
+            legend[key.strip()] = value.strip()
+        return legend
+    return {}
+
+
+def get_table_row(table: str, row: str) -> dict[str, str] | None:
+    for fpath in _rst_files():
+        with open(fpath) as f:
+            lines = f.read().split("\n")
+
+        for idx, line in enumerate(lines):
+            if line.lstrip() != f".. table:: {table}":
+                continue
+
+            block, _ = _consume_indented_block(lines, idx + 1)
+            rows = _parse_table_rows(block)
+            if not rows:
+                continue
+
+            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            try:
+                row_idx = header.index("Property Name")
+            except ValueError:
+                return None
+
+            legend = _usage_legend(block)
+            for cells in rows[1:]:
+                if _strip_literal_markup(cells[row_idx]) != row:
+                    continue
+
+                result = dict(zip(header, (_convert_inline(cell) for cell in cells)))
+                if "Usage" in result:
+                    usage = _strip_literal_markup(cells[header.index("Usage")])
+                    result["Usage"] = legend.get(usage, usage)
+                if "Property Name" in result:
+                    result["Property Name"] = _strip_literal_markup(
+                        cells[header.index("Property Name")]
+                    )
+                return result
+    return None
+
+
+def format_table_row_hover(table: str, row: str) -> str | None:
+    entry = get_table_row(table, row)
+    if entry is None:
+        return None
+
+    property_name = entry.get("Property Name", row)
+    usage = entry.get("Usage")
+    value_type = entry.get("Value Type")
+    definition = entry.get("Definition")
+
+    parts = [
+        f"### {property_name}",
+        "",
+        f"**Property name:** `{property_name}`",
+    ]
+    if usage:
+        parts.extend(["", f"**Usage:** {usage}"])
+    if value_type:
+        parts.extend(["", f"**Value type:** {value_type}"])
+    if definition:
+        parts.extend(["", "**Description:**", "", definition])
+    return "\n".join(parts) + "\n"
+
+
 def _handle_code_block(lines: list[str], i: int) -> tuple[str, int]:
     lang = lines[i].split("::", 1)[1].strip()
     block, i = _consume_indented_block(lines, i + 1)
@@ -647,10 +725,9 @@ def build_hover_docs() -> dict[str, str]:
         else:
             docs[prop_name] = ""
     for prop_name in ROOT_NODE_PROPERTIES:
-        docs[prop_name] = get_table_entry(
+        docs[prop_name] = format_table_row_hover(
             "Root Node Properties",
             prop_name,
-            "Definition",
         ) or ""
     return docs
 

@@ -23,8 +23,10 @@ from generate_docs import (
     _parse_simple_table,
     _resolve_numref,
     build_hover_docs,
+    format_table_row_hover,
     get_section,
     get_table_entry,
+    get_table_row,
     SUBSTITUTIONS,
 )
 
@@ -561,22 +563,18 @@ def test_build_hover_docs_address_and_size_cells_identical():
 def test_build_hover_docs_root_node_properties_from_table():
     docs = build_hover_docs()
 
-    assert docs["serial-number"] == get_table_entry(
+    assert docs["serial-number"] == format_table_row_hover(
         "Root Node Properties",
         "serial-number",
-        "Definition",
     )
-    assert docs["chassis-type"] == get_table_entry(
+    assert docs["chassis-type"] == format_table_row_hover(
         "Root Node Properties",
         "chassis-type",
-        "Definition",
     )
 
 def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
     for key, value in docs.items():
-        if key in {"serial-number", "chassis-type"}:
-            continue
         assert value.startswith("#"), f"{key} does not start with a heading"
         if key == "__root__":
             continue
@@ -651,5 +649,27 @@ def test_get_table_entry_root_node_serial_number_definition():
     )
 
     assert entry == "Specifies a string representing the device's serial number."
+
+def test_get_table_row_resolves_usage_legend():
+    entry = get_table_row("Root Node Properties", "chassis-type")
+
+    assert entry is not None
+    assert entry["Property Name"] == "chassis-type"
+    assert entry["Usage"] == "Optional but Recommended"
+    assert entry["Value Type"] == "`<string>`"
+    assert entry["Definition"].startswith(
+        "Specifies a string that identifies the form-factor"
+    )
+
+def test_format_table_row_hover_includes_title_and_all_row_details():
+    hover = format_table_row_hover("Root Node Properties", "chassis-type")
+
+    assert hover is not None
+    assert hover.startswith("### chassis-type\n")
+    assert "**Property name:** `chassis-type`" in hover
+    assert "**Usage:** Optional but Recommended" in hover
+    assert "**Value type:** `<string>`" in hover
+    assert "**Description:**" in hover
+    assert "* `\"embedded\"`" in hover
 
 # }}}

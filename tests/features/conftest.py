@@ -6,7 +6,7 @@ from tests.lsp_client import LSPClient
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
-from generate_docs import _format_section, get_section, get_table_entry
+from generate_docs import _format_section, format_table_row_hover, get_section
 
 TARGET = {
     'Root node declaration': (3, 1),
@@ -109,18 +109,17 @@ def check_hover(response, section):
         )
 
 
-@then(parsers.parse('the hover returns the "{column}" column for "{property}" from the "{table}" table from the devicetree specification'))
-def check_hover_table_entry(response, column, property, table):
+@then(parsers.parse('the hover returns usage, value type, and definition for "{property}" from the "{table}" table from the devicetree specification'))
+def check_hover_table_row(response, property, table):
     text = _hover_text(response)
-    expected = get_table_entry(table, property, column)
+    expected = format_table_row_hover(table, property)
     if expected is None:
-        pytest.fail(f'Unknown table entry: {table}.{property}.{column}')
-    if expected not in text:
+        pytest.fail(f'Unknown table row: {table}.{property}')
+    if text != expected:
         pytest.fail(
-            f'Hover response did not contain table entry\n'
+            f'Hover response did not match table row\n'
             f'  Table: {table}\n'
             f'  Property: {property}\n'
-            f'  Column: {column}\n'
-            f'  Expected: {expected}\n'
+            f'  Expected: {expected[:500]}...\n'
             f'  Got: {text[:500]}...'
         )
