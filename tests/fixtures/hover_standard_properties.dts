@@ -23,11 +23,17 @@
     aliases {
     };
 
+    memory {
+    };
+
     child {
         serial-number = "wrong-node"; // should not return hover since it is only a root property
         chassis-type = "wrong-node"; // should not return hover since it is only a root property
 
         aliases { // should not return hover since it is only a root node
+        };
+
+        memory { // should not return hover since it is only a root node
         };
     };
 };

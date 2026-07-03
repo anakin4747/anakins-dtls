@@ -27,13 +27,13 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns the contents of the "/aliases node" section from the devicetree specification
     And hovering over an aliases node declaration outside the root node returns nothing
 
-  # # /memory node
-  #
-  # Scenario: Hover on "/memory" returns the "/memory node" section and subsections from the devicetree specification
-  #   Given a devicetree with a "/memory" node at the root
-  #   When hovering over the node path "/memory"
-  #   Then the hover returns the contents of the "/memory node" section and subsections from the devicetree specification
-  #
+  # /memory node
+
+  Scenario: Hover on a memory node declaration on the root node returns the "/memory node" section from the devicetree specification
+    When hovering over a memory node declaration on the root node
+    Then the hover returns the contents of the "/memory node" section from the devicetree specification
+    And hovering over a memory node declaration outside the root node returns nothing
+
   # Scenario: Hover on "initial-mapped-area" on a memory node returns the definition of "initial-mapped-area" from the "/memory node" section of the devicetree specification
   #   Given a memory node with initial-mapped-area
   #   When hovering over "initial-mapped-area"

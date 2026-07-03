@@ -11,6 +11,7 @@ from generate_docs import _format_section, format_table_row_hover, get_section
 TARGET = {
     'Root node declaration': (3, 1),
     'aliases node declaration': (23, 9),
+    'memory node declaration': (26, 9),
     'compatible': (4, 5),
     'model': (5, 5),
     '#address-cells': (6, 5),
@@ -31,9 +32,10 @@ TARGET = {
 }
 
 NON_ROOT_TARGET = {
-    'serial-number': (28, 9),
-    'chassis-type': (29, 9),
-    'aliases node declaration': (31, 13),
+    'serial-number': (31, 9),
+    'chassis-type': (32, 9),
+    'aliases node declaration': (34, 13),
+    'memory node declaration': (37, 13),
 }
 
 
