@@ -19,4 +19,9 @@
     linux,phandle = <1>;
     serial-number = "123456";
     chassis-type = "embedded";
+
+    child {
+        serial-number = "wrong-node";
+        chassis-type = "wrong-node";
+    };
 };

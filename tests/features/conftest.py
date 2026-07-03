@@ -29,6 +29,11 @@ TARGET = {
     'chassis-type': (21, 5),
 }
 
+NON_ROOT_TARGET = {
+    'serial-number': (24, 9),
+    'chassis-type': (25, 9),
+}
+
 @given('the language server is running', target_fixture='lsp')
 def server_running(request):
     lsp = LSPClient(cmd=['python3', '-m', 'anakins_dtls'], root=os.getcwd())
@@ -65,6 +70,26 @@ def _hover_text(response):
     if not text:
         pytest.fail('Hover contents is empty')
     return text
+
+
+@then(parsers.parse('hovering over a "{property}" property name outside the root node returns nothing'))
+def check_no_hover_outside_root_node(lsp, uri, property):
+    pos = NON_ROOT_TARGET.get(property)
+    if pos is None:
+        pytest.fail(f'Unknown non-root hover target: {property}')
+    line, col = pos
+    response = lsp.hover(uri, line - 1, col - 1)
+    result = response.get('result')
+    if result is not None:
+        contents = result.get('contents', '')
+        if isinstance(contents, dict):
+            text = contents.get('value', '')
+        else:
+            text = contents or ''
+        pytest.fail(
+            f'Expected no hover outside root node for property: {property}\n'
+            f'  Got: {text[:500]}...'
+        )
 
 
 @then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))

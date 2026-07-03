@@ -13,10 +13,12 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a "serial-number" property name on the root node returns the "Definition" column for "serial-number" from the "Root Node Properties" table from the devicetree specification
     When hovering over a "serial-number" property name on the root node
     Then the hover returns the "Definition" column for "serial-number" from the "Root Node Properties" table from the devicetree specification
+    And hovering over a "serial-number" property name outside the root node returns nothing
 
   Scenario: Hover on a "chassis-type" property name on the root node returns the "Definition" column for "chassis-type" from the "Root Node Properties" table from the devicetree specification
     When hovering over a "chassis-type" property name on the root node
     Then the hover returns the "Definition" column for "chassis-type" from the "Root Node Properties" table from the devicetree specification
+    And hovering over a "chassis-type" property name outside the root node returns nothing
 
   # # /aliases node
   #
