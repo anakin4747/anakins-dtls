@@ -566,7 +566,8 @@ def test_build_hover_docs_all_keys_present():
         "status:disabled", "status:reserved", "status:fail",
         "status:fail-sss", "interrupts", "interrupt-parent",
         "interrupts-extended", "interrupt-controller", "#interrupt-cells",
-        "interrupt-map", "interrupt-map-mask",
+        "interrupt-map", "interrupt-map-mask", "gpio-map",
+        "gpio-map-mask", "gpio-map-pass-thru", "#gpio-cells",
     }
     assert set(docs.keys()) == expected
 
@@ -593,6 +594,20 @@ def test_build_hover_docs_interrupt_properties_from_spec_sections():
 
     for prop_name in expected:
         raw = get_section(prop_name)
+        assert raw is not None
+        assert docs[prop_name] == _format_section(raw)
+
+def test_build_hover_docs_nexus_properties_from_spec_sections():
+    docs = build_hover_docs()
+    expected = {
+        "gpio-map": "<specifier>-map",
+        "gpio-map-mask": "<specifier>-map-mask",
+        "gpio-map-pass-thru": "<specifier>-map-pass-thru",
+        "#gpio-cells": "#<specifier>-cells",
+    }
+
+    for prop_name, section in expected.items():
+        raw = get_section(section)
         assert raw is not None
         assert docs[prop_name] == _format_section(raw)
 
