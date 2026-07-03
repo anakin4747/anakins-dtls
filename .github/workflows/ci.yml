@@ -1,26 +1,27 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v27
+      - uses: cachix/install-nix-action@v30
         with:
-          nix_path: nixpkgs=channel:nixpkgs-unstable
-          extra_nix_config: |
-            experimental-features = nix-command flakes
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run lint
-        run: make lint
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Run tests
+      - name: Run all checks
         run: make

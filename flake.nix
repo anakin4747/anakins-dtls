@@ -148,6 +148,7 @@ MEOF
           packages = with pkgs; [
             bash
             bats
+            cocogitto
             jq
             ripgrep
             python3

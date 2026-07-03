@@ -1,0 +1,34 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v30
+
+      - name: Build and test
+        run: make
+
+      - name: Generate release notes
+        run: awk '/^## /{c++} c==1' CHANGELOG.md > _release_notes.md
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file _release_notes.md
