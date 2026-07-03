@@ -629,7 +629,7 @@ def _format_bullet_markers(md: str) -> str:
 
 
 _LABEL_RE = re.compile(
-    r"^(Property name|Value type|Property value|Description|Example):"
+    r"^(Property name|Property|Value type|Property value|Description|Example):"
 )
 
 
@@ -642,7 +642,10 @@ def _format_paragraph(para: list[str]) -> str:
     converted = _convert_inline(text)
     if _LABEL_RE.match(converted.strip()):
         colon = converted.index(":")
-        return "**" + converted[:colon] + ":**" + converted[colon + 1:] + "\n"
+        label = converted[:colon]
+        if label == "Property":
+            label = "Property name"
+        return "**" + label + ":**" + converted[colon + 1:] + "\n"
     if converted.strip():
         return converted.strip() + "\n"
     return "\n"
@@ -764,6 +767,13 @@ SECTION_DOCS: dict[str, str] = {
     "model": "model",
     "phandle": "phandle",
     "status": "status",
+    "interrupts": "interrupts",
+    "interrupt-parent": "interrupt-parent",
+    "interrupts-extended": "interrupts-extended",
+    "interrupt-controller": "interrupt-controller",
+    "#interrupt-cells": "#interrupt-cells",
+    "interrupt-map": "interrupt-map",
+    "interrupt-map-mask": "interrupt-map-mask",
     "#address-cells": "#address-cells and #size-cells",
     "#size-cells": "#address-cells and #size-cells",
     "reg": "reg",
