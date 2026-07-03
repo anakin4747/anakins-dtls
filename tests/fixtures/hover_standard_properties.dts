@@ -19,8 +19,8 @@
     linux,phandle = <1>;
     serial-number = "123456";
     chassis-type = "embedded";
-    memory-region = <&display_reserved>;
-    memory-region-names = "invalid-root";
+    memory-region = <&display_reserved>; // should not return hover since it is only valid on device nodes
+    memory-region-names = "invalid-root"; // should not return hover since it is only valid on device nodes
 
     aliases {
     };
@@ -37,8 +37,8 @@
             alloc-ranges = <0x78000000 0x800000>;
             no-map;
             reusable;
-            memory-region = <&display_reserved>;
-            memory-region-names = "invalid-reserved-memory";
+            memory-region = <&display_reserved>; // should not return hover since it is only valid outside reserved-memory nodes
+            memory-region-names = "invalid-reserved-memory"; // should not return hover since it is only valid outside reserved-memory nodes
         };
     };
 
