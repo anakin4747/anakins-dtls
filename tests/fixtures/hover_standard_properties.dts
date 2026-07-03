@@ -24,11 +24,79 @@
     };
 
     memory {
+        initial-mapped-area = <0 0 0>;
+        hotpluggable;
+    };
+
+    reserved-memory {
+        framebuffer@78000000 {
+            size = <0x800000>;
+            alignment = <0x1000>;
+            alloc-ranges = <0x78000000 0x800000>;
+            no-map;
+            reusable;
+        };
+    };
+
+    chosen {
+        bootargs = "root=/dev/nfs";
+        bootsource = "/soc/flash@0";
+        stdout-path = "/soc/serial@0";
+        stdin-path = "/soc/serial@0";
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        cpu@0 {
+            device_type = "cpu";
+            reg = <0>;
+            clock-frequency = <825000000>;
+            timebase-frequency = <82500000>;
+            status = "disabled";
+            enable-method = "spin-table";
+            cpu-release-addr = <0 0>;
+            power-isa-version = "2.06";
+            power-isa-e-hv;
+            cache-op-block-size = <32>;
+            reservation-granule-size = <32>;
+            mmu-type = "powerpc-classic";
+            tlb-split;
+            tlb-size = <64>;
+            tlb-sets = <4>;
+            d-tlb-size = <64>;
+            d-tlb-sets = <4>;
+            i-tlb-size = <64>;
+            i-tlb-sets = <4>;
+            cache-unified;
+            cache-size = <0x8000>;
+            cache-sets = <256>;
+            cache-block-size = <32>;
+            cache-line-size = <32>;
+            i-cache-size = <0x8000>;
+            i-cache-sets = <256>;
+            i-cache-block-size = <32>;
+            i-cache-line-size = <32>;
+            d-cache-size = <0x8000>;
+            d-cache-sets = <256>;
+            d-cache-block-size = <32>;
+            d-cache-line-size = <32>;
+            next-level-cache = <&L2_0>;
+
+            L2_0: l2-cache {
+                compatible = "cache";
+                cache-level = <2>;
+            };
+        };
     };
 
     child {
         serial-number = "wrong-node"; // should not return hover since it is only a root property
         chassis-type = "wrong-node"; // should not return hover since it is only a root property
+
+        memory-region = <&display_reserved>;
+        memory-region-names = "display";
 
         aliases { // should not return hover since it is only a root node
         };

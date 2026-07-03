@@ -34,263 +34,214 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns the contents of the "/memory node" section from the devicetree specification
     And hovering over a memory node declaration outside the root node returns nothing
 
-  # Scenario: Hover on "initial-mapped-area" on a memory node returns the definition of "initial-mapped-area" from the "/memory node" section of the devicetree specification
-  #   Given a memory node with initial-mapped-area
-  #   When hovering over "initial-mapped-area"
-  #   Then the hover returns the definition of "initial-mapped-area" from the "/memory node" section of the devicetree specification
-  #
-  # Scenario: Hover on "hotpluggable" on a memory node returns the definition of "hotpluggable" from the "/memory node" section of the devicetree specification
-  #   Given a memory node with hotpluggable
-  #   When hovering over "hotpluggable"
-  #   Then the hover returns the definition of "hotpluggable" from the "/memory node" section of the devicetree specification
-  #
-  # # /reserved-memory node
-  #
-  # Scenario: Hover on "/reserved-memory" returns the "/reserved-memory Node" section and subsections from the devicetree specification
-  #   Given a devicetree with a "/reserved-memory" node at the root
-  #   When hovering over the node path "/reserved-memory"
-  #   Then the hover returns the contents of the "/reserved-memory Node" section and subsections from the devicetree specification
-  #
-  # Scenario: Hover on "size" on a reserved-memory child node returns the definition of "size" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #   Given a reserved-memory child node with size
-  #   When hovering over "size"
-  #   Then the hover returns the definition of "size" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #
-  # Scenario: Hover on "alignment" on a reserved-memory child node returns the definition of "alignment" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #   Given a reserved-memory child node with alignment
-  #   When hovering over "alignment"
-  #   Then the hover returns the definition of "alignment" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #
-  # Scenario: Hover on "alloc-ranges" on a reserved-memory child node returns the definition of "alloc-ranges" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #   Given a reserved-memory child node with alloc-ranges
-  #   When hovering over "alloc-ranges"
-  #   Then the hover returns the definition of "alloc-ranges" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #
-  # Scenario: Hover on "no-map" on a reserved-memory child node returns the definition of "no-map" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #   Given a reserved-memory child node with no-map
-  #   When hovering over "no-map"
-  #   Then the hover returns the definition of "no-map" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #
-  # Scenario: Hover on "reusable" on a reserved-memory child node returns the definition of "reusable" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #   Given a reserved-memory child node with reusable
-  #   When hovering over "reusable"
-  #   Then the hover returns the definition of "reusable" from the "/reserved-memory/ child nodes" section of the devicetree specification
-  #
-  # Scenario: Hover on "memory-region" on a device node returns the definition of "memory-region" from the "/reserved-memory" section of the devicetree specification
-  #   Given a device node with memory-region
-  #   When hovering over "memory-region"
-  #   Then the hover returns the definition of "memory-region" from the "/reserved-memory" section of the devicetree specification
-  #
-  # Scenario: Hover on "memory-region-names" on a device node returns the definition of "memory-region-names" from the "/reserved-memory" section of the devicetree specification
-  #   Given a device node with memory-region-names
-  #   When hovering over "memory-region-names"
-  #   Then the hover returns the definition of "memory-region-names" from the "/reserved-memory" section of the devicetree specification
-  #
-  # # /chosen node
-  #
-  # Scenario: Hover on "/chosen" returns the "/chosen Node" section from the devicetree specification
-  #   Given a devicetree with a "/chosen" node at the root
-  #   When hovering over the node path "/chosen"
-  #   Then the hover returns the contents of the "/chosen Node" section from the devicetree specification
-  #
-  # Scenario: Hover on "bootargs" on the chosen node returns the definition of "bootargs" from the "/chosen Node" section of the devicetree specification
-  #   Given a chosen node with bootargs = "root=/dev/nfs"
-  #   When hovering over "bootargs"
-  #   Then the hover returns the definition of "bootargs" from the "/chosen Node" section of the devicetree specification
-  #
-  # Scenario: Hover on "bootsource" on the chosen node returns the definition of "bootsource" from the "/chosen Node" section of the devicetree specification
-  #   Given a chosen node with bootsource
-  #   When hovering over "bootsource"
-  #   Then the hover returns the definition of "bootsource" from the "/chosen Node" section of the devicetree specification
-  #
-  # Scenario: Hover on "stdout-path" on the chosen node returns the definition of "stdout-path" from the "/chosen Node" section of the devicetree specification
-  #   Given a chosen node with stdout-path
-  #   When hovering over "stdout-path"
-  #   Then the hover returns the definition of "stdout-path" from the "/chosen Node" section of the devicetree specification
-  #
-  # Scenario: Hover on "stdin-path" on the chosen node returns the definition of "stdin-path" from the "/chosen Node" section of the devicetree specification
-  #   Given a chosen node with stdin-path
-  #   When hovering over "stdin-path"
-  #   Then the hover returns the definition of "stdin-path" from the "/chosen Node" section of the devicetree specification
-  #
-  # # /cpus node
-  #
-  # Scenario: Hover on "/cpus" returns the "/cpus Node Properties" section from the devicetree specification
-  #   Given a devicetree with a "/cpus" node at the root
-  #   When hovering over the node path "/cpus"
-  #   Then the hover returns the contents of the "/cpus Node Properties" section from the devicetree specification
-  #
-  # # /cpus/cpu* nodes
-  #
-  # Scenario: Hover on a "/cpus/cpu*" node returns the "/cpus/cpu* Node Properties" section and subsections from the devicetree specification
-  #   Given a devicetree with a "cpu" node under "/cpus"
-  #   When hovering over the node path "/cpus/cpu@0"
-  #   Then the hover returns the contents of the "/cpus/cpu* Node Properties" section and subsections from the devicetree specification
-  #
-  # Scenario: Hover on "clock-frequency" on a cpu node returns the definition of "clock-frequency" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #   Given a cpu node with clock-frequency
-  #   When hovering over "clock-frequency"
-  #   Then the hover returns the definition of "clock-frequency" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "timebase-frequency" on a cpu node returns the definition of "timebase-frequency" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #   Given a cpu node with timebase-frequency
-  #   When hovering over "timebase-frequency"
-  #   Then the hover returns the definition of "timebase-frequency" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "enable-method" on a cpu node returns the definition of "enable-method" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #   Given a disabled cpu node with enable-method = "spin-table"
-  #   When hovering over "enable-method"
-  #   Then the hover returns the definition of "enable-method" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cpu-release-addr" on a cpu node returns the definition of "cpu-release-addr" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #   Given a cpu node with cpu-release-addr
-  #   When hovering over "cpu-release-addr"
-  #   Then the hover returns the definition of "cpu-release-addr" from the "/cpus/cpu* Node Properties" section of the devicetree specification
-  #
-  # # Power ISA properties
-  #
-  # Scenario: Hover on "power-isa-version" on a cpu node returns the definition of "power-isa-version" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #   Given a cpu node with power-isa-version = "2.06"
-  #   When hovering over "power-isa-version"
-  #   Then the hover returns the definition of "power-isa-version" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on a "power-isa-*" category property on a cpu node returns the definition of "power-isa-*" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #   Given a cpu node with power-isa-e-hv
-  #   When hovering over "power-isa-e-hv"
-  #   Then the hover returns the definition of "power-isa-*" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cache-op-block-size" on a cpu node returns the definition of "cache-op-block-size" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #   Given a cpu node with cache-op-block-size
-  #   When hovering over "cache-op-block-size"
-  #   Then the hover returns the definition of "cache-op-block-size" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "reservation-granule-size" on a cpu node returns the definition of "reservation-granule-size" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #   Given a cpu node with reservation-granule-size
-  #   When hovering over "reservation-granule-size"
-  #   Then the hover returns the definition of "reservation-granule-size" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "mmu-type" on a cpu node returns the definition of "mmu-type" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #   Given a cpu node with mmu-type = "powerpc-classic"
-  #   When hovering over "mmu-type"
-  #   Then the hover returns the definition of "mmu-type" from the "/cpus/cpu* Node Power ISA Properties" section of the devicetree specification
-  #
-  # # TLB properties
-  #
-  # Scenario: Hover on "tlb-split" on a cpu node returns the definition of "tlb-split" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with tlb-split
-  #   When hovering over "tlb-split"
-  #   Then the hover returns the definition of "tlb-split" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "tlb-size" on a cpu node returns the definition of "tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with tlb-size
-  #   When hovering over "tlb-size"
-  #   Then the hover returns the definition of "tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "tlb-sets" on a cpu node returns the definition of "tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with tlb-sets
-  #   When hovering over "tlb-sets"
-  #   Then the hover returns the definition of "tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-tlb-size" on a cpu node returns the definition of "d-tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with d-tlb-size
-  #   When hovering over "d-tlb-size"
-  #   Then the hover returns the definition of "d-tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-tlb-sets" on a cpu node returns the definition of "d-tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with d-tlb-sets
-  #   When hovering over "d-tlb-sets"
-  #   Then the hover returns the definition of "d-tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-tlb-size" on a cpu node returns the definition of "i-tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with i-tlb-size
-  #   When hovering over "i-tlb-size"
-  #   Then the hover returns the definition of "i-tlb-size" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-tlb-sets" on a cpu node returns the definition of "i-tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #   Given a cpu node with i-tlb-sets
-  #   When hovering over "i-tlb-sets"
-  #   Then the hover returns the definition of "i-tlb-sets" from the "/cpu/cpu* Node Power ISA TLB Properties" section of the devicetree specification
-  #
-  # # Cache properties
-  #
-  # Scenario: Hover on "cache-unified" on a cpu node returns the definition of "cache-unified" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with cache-unified
-  #   When hovering over "cache-unified"
-  #   Then the hover returns the definition of "cache-unified" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cache-size" on a cpu node returns the definition of "cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with cache-size
-  #   When hovering over "cache-size"
-  #   Then the hover returns the definition of "cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cache-sets" on a cpu node returns the definition of "cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with cache-sets
-  #   When hovering over "cache-sets"
-  #   Then the hover returns the definition of "cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cache-block-size" on a cpu node returns the definition of "cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with cache-block-size
-  #   When hovering over "cache-block-size"
-  #   Then the hover returns the definition of "cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "cache-line-size" on a cpu node returns the definition of "cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with cache-line-size
-  #   When hovering over "cache-line-size"
-  #   Then the hover returns the definition of "cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-cache-size" on a cpu node returns the definition of "i-cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with i-cache-size
-  #   When hovering over "i-cache-size"
-  #   Then the hover returns the definition of "i-cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-cache-sets" on a cpu node returns the definition of "i-cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with i-cache-sets
-  #   When hovering over "i-cache-sets"
-  #   Then the hover returns the definition of "i-cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-cache-block-size" on a cpu node returns the definition of "i-cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with i-cache-block-size
-  #   When hovering over "i-cache-block-size"
-  #   Then the hover returns the definition of "i-cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "i-cache-line-size" on a cpu node returns the definition of "i-cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with i-cache-line-size
-  #   When hovering over "i-cache-line-size"
-  #   Then the hover returns the definition of "i-cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-cache-size" on a cpu node returns the definition of "d-cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with d-cache-size
-  #   When hovering over "d-cache-size"
-  #   Then the hover returns the definition of "d-cache-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-cache-sets" on a cpu node returns the definition of "d-cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with d-cache-sets
-  #   When hovering over "d-cache-sets"
-  #   Then the hover returns the definition of "d-cache-sets" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-cache-block-size" on a cpu node returns the definition of "d-cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with d-cache-block-size
-  #   When hovering over "d-cache-block-size"
-  #   Then the hover returns the definition of "d-cache-block-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "d-cache-line-size" on a cpu node returns the definition of "d-cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with d-cache-line-size
-  #   When hovering over "d-cache-line-size"
-  #   Then the hover returns the definition of "d-cache-line-size" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # Scenario: Hover on "next-level-cache" on a cpu node returns the definition of "next-level-cache" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #   Given a cpu node with next-level-cache
-  #   When hovering over "next-level-cache"
-  #   Then the hover returns the definition of "next-level-cache" from the "/cpu/cpu* Node Power ISA Cache Properties" section of the devicetree specification
-  #
-  # # Multi-level cache nodes
-  #
-  # Scenario: Hover on a cache node returns the "Multi-level and Shared Cache Nodes" section and subsections from the devicetree specification
-  #   Given a devicetree with an "l2-cache" node under a cpu node
-  #   When hovering over the node path "/cpus/cpu@0/l2-cache"
-  #   Then the hover returns the contents of the "Multi-level and Shared Cache Nodes" section and subsections from the devicetree specification
-  #
-  # Scenario: Hover on "cache-level" on a cache node returns the definition of "cache-level" from the "Multi-level and Shared Cache Nodes" section of the devicetree specification
-  #   Given a cache node with cache-level = <2>
-  #   When hovering over "cache-level"
-  #   Then the hover returns the definition of "cache-level" from the "Multi-level and Shared Cache Nodes" section of the devicetree specification
+  Scenario: Hover on an "initial-mapped-area" property name on a memory node returns the full "initial-mapped-area" row from the "``/memory`` Node Properties" table from the devicetree specification
+    When hovering over an "initial-mapped-area" property name
+    Then the hover returns usage, value type, and definition for "initial-mapped-area" from the "``/memory`` Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "hotpluggable" property name on a memory node returns the full "hotpluggable" row from the "``/memory`` Node Properties" table from the devicetree specification
+    When hovering over a "hotpluggable" property name
+    Then the hover returns usage, value type, and definition for "hotpluggable" from the "``/memory`` Node Properties" table from the devicetree specification
+
+  # /reserved-memory node
+
+  Scenario: Hover on a reserved-memory node declaration on the root node returns the "``/reserved-memory`` Node" section from the devicetree specification
+    When hovering over a reserved-memory node declaration on the root node
+    Then the hover returns the contents of the "/reserved-memory Node" section from the devicetree specification
+
+  Scenario: Hover on a "size" property name on a reserved-memory child node returns the full "size" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over a "size" property name
+    Then the hover returns usage, value type, and definition for "size" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+
+  Scenario: Hover on an "alignment" property name on a reserved-memory child node returns the full "alignment" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over an "alignment" property name
+    Then the hover returns usage, value type, and definition for "alignment" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+
+  Scenario: Hover on an "alloc-ranges" property name on a reserved-memory child node returns the full "alloc-ranges" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over an "alloc-ranges" property name
+    Then the hover returns usage, value type, and definition for "alloc-ranges" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "no-map" property name on a reserved-memory child node returns the full "no-map" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over a "no-map" property name
+    Then the hover returns usage, value type, and definition for "no-map" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "reusable" property name on a reserved-memory child node returns the full "reusable" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over a "reusable" property name
+    Then the hover returns usage, value type, and definition for "reusable" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "memory-region" property name on a device node returns the full "memory-region" row from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+    When hovering over a "memory-region" property name
+    Then the hover returns usage, value type, and definition for "memory-region" from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+
+  Scenario: Hover on a "memory-region-names" property name on a device node returns the full "memory-region-names" row from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+    When hovering over a "memory-region-names" property name
+    Then the hover returns usage, value type, and definition for "memory-region-names" from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+
+  # /chosen node
+
+  Scenario: Hover on a chosen node declaration on the root node returns the "``/chosen`` Node" section from the devicetree specification
+    When hovering over a chosen node declaration on the root node
+    Then the hover returns the contents of the "/chosen Node" section from the devicetree specification
+
+  Scenario: Hover on a "bootargs" property name on the chosen node returns the full "bootargs" row from the "``/chosen`` Node Properties" table from the devicetree specification
+    When hovering over a "bootargs" property name
+    Then the hover returns usage, value type, and definition for "bootargs" from the "``/chosen`` Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "bootsource" property name on the chosen node returns the full "bootsource" row from the "``/chosen`` Node Properties" table from the devicetree specification
+    When hovering over a "bootsource" property name
+    Then the hover returns usage, value type, and definition for "bootsource" from the "``/chosen`` Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "stdout-path" property name on the chosen node returns the full "stdout-path" row from the "``/chosen`` Node Properties" table from the devicetree specification
+    When hovering over a "stdout-path" property name
+    Then the hover returns usage, value type, and definition for "stdout-path" from the "``/chosen`` Node Properties" table from the devicetree specification
+
+  Scenario: Hover on a "stdin-path" property name on the chosen node returns the full "stdin-path" row from the "``/chosen`` Node Properties" table from the devicetree specification
+    When hovering over a "stdin-path" property name
+    Then the hover returns usage, value type, and definition for "stdin-path" from the "``/chosen`` Node Properties" table from the devicetree specification
+
+  # /cpus node
+
+  Scenario: Hover on a cpus node declaration on the root node returns the "``/cpus`` Node Properties" section from the devicetree specification
+    When hovering over a cpus node declaration on the root node
+    Then the hover returns the contents of the "/cpus Node Properties" section from the devicetree specification
+
+  # /cpus/cpu* nodes
+
+  Scenario: Hover on a cpu node declaration under the cpus node returns the "``/cpus/cpu*`` Node Properties" section from the devicetree specification
+    When hovering over a cpu node declaration under the cpus node
+    Then the hover returns the contents of the "/cpus/cpu* Node Properties" section from the devicetree specification
+
+  Scenario: Hover on a "clock-frequency" property name on a cpu node returns the full "clock-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    When hovering over a "clock-frequency" property name
+    Then the hover returns usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+
+  Scenario: Hover on a "timebase-frequency" property name on a cpu node returns the full "timebase-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    When hovering over a "timebase-frequency" property name
+    Then the hover returns usage, value type, and definition for "timebase-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+
+  Scenario: Hover on an "enable-method" property name on a cpu node returns the full "enable-method" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    When hovering over an "enable-method" property name
+    Then the hover returns usage, value type, and definition for "enable-method" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cpu-release-addr" property name on a cpu node returns the full "cpu-release-addr" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    When hovering over a "cpu-release-addr" property name
+    Then the hover returns usage, value type, and definition for "cpu-release-addr" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+
+  # Power ISA properties
+
+  Scenario: Hover on a "power-isa-version" property name on a cpu node returns the full "power-isa-version" row from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+    When hovering over a "power-isa-version" property name
+    Then the hover returns usage, value type, and definition for "power-isa-version" from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+
+  Scenario: Hover on a "power-isa-e-hv" property name on a cpu node returns the full "power-isa-*" row from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+    When hovering over a "power-isa-e-hv" property name
+    Then the hover returns usage, value type, and definition for "power-isa-*" from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cache-op-block-size" property name on a cpu node returns the full "cache-op-block-size" row from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+    When hovering over a "cache-op-block-size" property name
+    Then the hover returns usage, value type, and definition for "cache-op-block-size" from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+
+  Scenario: Hover on a "reservation-granule-size" property name on a cpu node returns the full "reservation-granule-size" row from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+    When hovering over a "reservation-granule-size" property name
+    Then the hover returns usage, value type, and definition for "reservation-granule-size" from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+
+  Scenario: Hover on a "mmu-type" property name on a cpu node returns the full "mmu-type" row from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+    When hovering over a "mmu-type" property name
+    Then the hover returns usage, value type, and definition for "mmu-type" from the "``/cpus/cpu*`` Node Power ISA Properties" table from the devicetree specification
+
+  # TLB properties
+
+  Scenario: Hover on a "tlb-split" property name on a cpu node returns the full "tlb-split" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over a "tlb-split" property name
+    Then the hover returns usage, value type, and definition for "tlb-split" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on a "tlb-size" property name on a cpu node returns the full "tlb-size" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over a "tlb-size" property name
+    Then the hover returns usage, value type, and definition for "tlb-size" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on a "tlb-sets" property name on a cpu node returns the full "tlb-sets" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over a "tlb-sets" property name
+    Then the hover returns usage, value type, and definition for "tlb-sets" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-tlb-size" property name on a cpu node returns the full "d-tlb-size" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over a "d-tlb-size" property name
+    Then the hover returns usage, value type, and definition for "d-tlb-size" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-tlb-sets" property name on a cpu node returns the full "d-tlb-sets" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over a "d-tlb-sets" property name
+    Then the hover returns usage, value type, and definition for "d-tlb-sets" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-tlb-size" property name on a cpu node returns the full "i-tlb-size" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over an "i-tlb-size" property name
+    Then the hover returns usage, value type, and definition for "i-tlb-size" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-tlb-sets" property name on a cpu node returns the full "i-tlb-sets" row from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+    When hovering over an "i-tlb-sets" property name
+    Then the hover returns usage, value type, and definition for "i-tlb-sets" from the "``/cpu/cpu*`` Node Power ISA TLB Properties" table from the devicetree specification
+
+  # Cache properties
+
+  Scenario: Hover on a "cache-unified" property name on a cpu node returns the full "cache-unified" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "cache-unified" property name
+    Then the hover returns usage, value type, and definition for "cache-unified" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cache-size" property name on a cpu node returns the full "cache-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "cache-size" property name
+    Then the hover returns usage, value type, and definition for "cache-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cache-sets" property name on a cpu node returns the full "cache-sets" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "cache-sets" property name
+    Then the hover returns usage, value type, and definition for "cache-sets" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cache-block-size" property name on a cpu node returns the full "cache-block-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "cache-block-size" property name
+    Then the hover returns usage, value type, and definition for "cache-block-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "cache-line-size" property name on a cpu node returns the full "cache-line-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "cache-line-size" property name
+    Then the hover returns usage, value type, and definition for "cache-line-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-cache-size" property name on a cpu node returns the full "i-cache-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over an "i-cache-size" property name
+    Then the hover returns usage, value type, and definition for "i-cache-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-cache-sets" property name on a cpu node returns the full "i-cache-sets" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over an "i-cache-sets" property name
+    Then the hover returns usage, value type, and definition for "i-cache-sets" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-cache-block-size" property name on a cpu node returns the full "i-cache-block-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over an "i-cache-block-size" property name
+    Then the hover returns usage, value type, and definition for "i-cache-block-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on an "i-cache-line-size" property name on a cpu node returns the full "i-cache-line-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over an "i-cache-line-size" property name
+    Then the hover returns usage, value type, and definition for "i-cache-line-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-cache-size" property name on a cpu node returns the full "d-cache-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "d-cache-size" property name
+    Then the hover returns usage, value type, and definition for "d-cache-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-cache-sets" property name on a cpu node returns the full "d-cache-sets" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "d-cache-sets" property name
+    Then the hover returns usage, value type, and definition for "d-cache-sets" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-cache-block-size" property name on a cpu node returns the full "d-cache-block-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "d-cache-block-size" property name
+    Then the hover returns usage, value type, and definition for "d-cache-block-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "d-cache-line-size" property name on a cpu node returns the full "d-cache-line-size" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "d-cache-line-size" property name
+    Then the hover returns usage, value type, and definition for "d-cache-line-size" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  Scenario: Hover on a "next-level-cache" property name on a cpu node returns the full "next-level-cache" row from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+    When hovering over a "next-level-cache" property name
+    Then the hover returns usage, value type, and definition for "next-level-cache" from the "``/cpu/cpu*`` Node Power ISA Cache Properties" table from the devicetree specification
+
+  # Multi-level cache nodes
+
+  Scenario: Hover on a cache node declaration returns the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
+    When hovering over a cache node declaration
+    Then the hover returns the contents of the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
+
+  Scenario: Hover on a "cache-level" property name on a cache node returns the full "cache-level" row from the "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and Shared Cache Properties" table from the devicetree specification
+    When hovering over a "cache-level" property name
+    Then the hover returns usage, value type, and definition for "cache-level" from the "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and Shared Cache Properties" table from the devicetree specification
