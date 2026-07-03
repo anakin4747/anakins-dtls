@@ -2,24 +2,49 @@
 
 A Device Tree Language Server.
 
+## Non-Negotiable Rules
+
+- Run tests with `make`; do not run `pytest` directly.
+- Keep each commit focused on one workflow phase.
+- Never implement a feature or parser fix before the required failing test commit exists.
+- Do not mix tests and implementation.
+- Validate every workflow commit only touches its allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+- If a workflow commit changes files outside its allowed paths, amend it and revalidate the touched files before continuing.
+- Stop for user review only when the user explicitly asks.
+
+## Workflow Selection
+
+- Use the Feature Workflow when adding user-visible behavior.
+- Use the optional Feature Workflow DTS Specification TDD step only when the feature requires changing hover documentation generated from `devicetree-specification/`.
+- Use the Documentation Parsing Bug Workflow for bugs in `tools/generate_docs.py` parsing or formatting of Device Tree Specification content.
+- The `devicetree-specification/` submodule is the official Device Tree Specification source. Use it as the reference for hover documentation content.
+
 ## Feature Workflow
 
 When adding a user-visible feature, use this commit sequence unless the user
-explicitly asks for a different workflow. Keep each commit focused on its phase.
+explicitly asks for a different workflow.
 
 ### 1. BDD Test Commit
 
-Start with the user-visible behavior. Change the relevant `.feature` file first.
+Purpose:
+Start with user-visible behavior. Change the relevant `.feature` file first.
 Only change step definitions when required to make the scenario executable. Only
 change fixtures when required to provide input data for the scenario. Never
 change step definitions or fixtures without changing a `.feature` file in the
 same commit.
 
-Do not change application code, docs-generation code, or unit tests in this
-commit. Run `make` and verify the test fails because the feature is not
-implemented.
+Do not change:
+- Application code
+- Docs-generation implementation
+- Unit tests
 
-Commit message template:
+Verify:
+Run `make` and verify the test fails because the feature is not implemented.
+
+Commit message:
 ```sh
 git commit -m "test(bdd): require <feature behavior>"
 ```
@@ -32,27 +57,32 @@ tests/features/step_definitions/**/*.py
 tests/fixtures/**
 ```
 
-Validate the commit only changed the allowed files with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
+Validation:
 The commit is valid only if every changed file is allowed and at least one
-changed file is a `.feature` file. If the commit is not valid, amend it to
-correct it until it is valid.
+changed file is a `.feature` file. If the commit is not valid, amend it until it
+is valid.
 
-### 2. Optional Docs-Generation TDD Test Commit
+### 2. Optional DTS Specification TDD Test Commit
 
-If the feature requires changing docs-generation behavior, write the smallest
-failing unit test for the docs-generation contract before implementation. Do not
-make this commit if no docs-generation change is needed.
+Purpose:
+If the feature requires changing hover documentation generated from the Device
+Tree Specification, write the smallest failing unit test for the generation
+contract before implementation. Do not make this commit if no DTS Specification
+generation change is needed.
 
-Do not change docs-generation implementation, BDD features, step definitions, or
-fixtures in this commit. Run `make` and verify the docs-generation test fails.
+Do not change:
+- DTS Specification generation implementation
+- BDD features
+- Step definitions
+- Fixtures
+- Application code
 
-Commit message template:
+Verify:
+Run `make` and verify the DTS Specification generation test fails.
+
+Commit message:
 ```sh
-git commit -m "test(docs): require <feature> hover docs generation"
+git commit -m "test(dtspec): require <feature> hover docs generation"
 ```
 
 Allowed files:
@@ -61,24 +91,26 @@ tests/test_generate_docs.py
 tests/**/test_generate_docs.py
 ```
 
-Validate the commit only changed the allowed files with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
-The commit is valid only if every changed file is a docs-generation test file.
-If the commit is not valid, amend it to correct it until it is valid.
+Validation:
+The commit is valid only if every changed file is a DTS Specification generation
+test file. If the commit is not valid, amend it until it is valid.
 
 ### 3. Feature Implementation Commit
 
-Implement only the behavior required by the failing BDD commit and optional
-docs-generation TDD commit. Do not change tests, fixtures, feature files, or step
-definitions in this commit.
+Purpose:
+Implement only the behavior required by the failing BDD commit and optional DTS
+Specification TDD commit.
 
-Once the implementation of the feature is done run `make` to verify all tests
-pass.
+Do not change:
+- Tests
+- Fixtures
+- Feature files
+- Step definitions
 
-Commit message template:
+Verify:
+Run `make` and verify all tests pass.
+
+Commit message:
 ```sh
 git commit -m "feat: support <feature behavior>"
 ```
@@ -89,17 +121,14 @@ anakins_dtls/**
 tools/**
 ```
 
-Validate the commit only changed the allowed files with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
+Validation:
 The commit is valid only if every changed file is application or tool code and no
-changed file is under `tests/`. If the commit is not valid, amend it to correct
-it until it is valid.
+changed file is under `tests/`. If the commit is not valid, amend it until it is
+valid.
 
 ### 4. Review Refactor Commit
 
+Purpose:
 After the passing feature commit, code review the work. Ask the following
 questions to see how the code can be made cleaner:
 - Did your change create any dead code?
@@ -114,13 +143,18 @@ questions to see how the code can be made cleaner:
 - Is there a simpler way to implement this solution?
 - Did you add any extra functionality that doesn't have a corresponding test?
 
-Refactor only if it improves the code without changing behavior. Save any
-needed cleanup in this refactor commit.
+Refactor only if it improves the code without changing behavior. Skip this
+commit when no useful refactor is found.
 
-Do not change feature files, fixtures, or unit tests in this commit. Run `make`
-and verify all tests pass.
+Do not change:
+- Feature files
+- Fixtures
+- Unit tests
 
-Commit message template:
+Verify:
+Run `make` and verify all tests pass.
+
+Commit message:
 ```sh
 git commit -m "refactor: clarify <feature area>"
 ```
@@ -140,33 +174,34 @@ tests/test_*.py
 tests/fixtures/**
 ```
 
-Validate the commit with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
+Validation:
 The commit is valid only if every changed file is allowed and no changed file is
-forbidden. If the commit is not valid, amend it to correct it until it is valid.
+forbidden. If the commit is not valid, amend it until it is valid.
 
-## Bug Workflow
+## Documentation Parsing Bug Workflow
 
-### Documentation Parsing Bugs
-
-Documentation parsing bugs in `tools/generate_docs.py` must use TDD. Capture
-the bug with the smallest failing unit test before changing parser or formatter
+Documentation parsing bugs in `tools/generate_docs.py` must use TDD. Capture the
+bug with the smallest failing unit test before changing parser or formatter
 implementation.
 
-#### 1. Failing DTS Specification Test Commit
+### 1. Failing DTS Specification Test Commit
 
+Purpose:
 Write the smallest failing Device Tree Specification generation test that
 reproduces the parsing bug. Prefer inline RST samples unless the bug depends on
 real specification structure from `devicetree-specification/`.
 
-Do not change implementation, application code, BDD features, step definitions,
-or fixtures in this commit. Run `make` and verify the test fails because of the
-parsing bug.
+Do not change:
+- DTS Specification generation implementation
+- Application code
+- BDD features
+- Step definitions
+- Fixtures
 
-Commit message template:
+Verify:
+Run `make` and verify the test fails because of the parsing bug.
+
+Commit message:
 ```sh
 git commit -m "test(dtspec): reproduce <spec parsing bug>"
 ```
@@ -177,23 +212,27 @@ tests/test_generate_docs.py
 tests/**/test_generate_docs.py
 ```
 
-Validate the commit only changed the allowed files with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
+Validation:
+The commit is valid only if every changed file is a DTS Specification generation
+test file. If the commit is not valid, amend it until it is valid.
 
-The commit is valid only if every changed file is a Device Tree Specification
-generation test file. If the commit is not valid, amend it to correct it until
-it is valid.
+### 2. DTS Specification Parser Fix Commit
 
-#### 2. DTS Specification Parser Fix Commit
-
+Purpose:
 Implement only the behavior required by the failing Device Tree Specification
-generation test. Do not change tests in this commit.
+generation test.
 
+Do not change:
+- Tests
+- Application code
+- BDD features
+- Step definitions
+- Fixtures
+
+Verify:
 Run `make` and verify all tests pass.
 
-Commit message template:
+Commit message:
 ```sh
 git commit -m "fix(dtspec): handle <spec parsing case>"
 ```
@@ -203,23 +242,26 @@ Allowed files:
 tools/**
 ```
 
-Validate the commit only changed the allowed files with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
+Validation:
 The commit is valid only if every changed file is Device Tree Specification
-generation implementation. If the commit is not valid, amend it to correct it
-until it is valid.
+generation implementation. If the commit is not valid, amend it until it is
+valid.
 
-#### 3. Optional DTS Specification Parser Refactor Commit
+### 3. Optional DTS Specification Parser Refactor Commit
 
+Purpose:
 After the passing fix commit, review the Device Tree Specification generation
-code and refactor only if it improves clarity without changing behavior.
+code and refactor only if it improves clarity without changing behavior. Skip
+this commit when no useful refactor is found.
 
+Do not change:
+- Tests
+- Application code
+
+Verify:
 Run `make` and verify all tests pass.
 
-Commit message template:
+Commit message:
 ```sh
 git commit -m "refactor(dtspec): clarify <parser area>"
 ```
@@ -235,10 +277,6 @@ tests/**
 anakins_dtls/**
 ```
 
-Validate the commit with:
-```sh
-git diff-tree --no-commit-id --name-only -r HEAD
-```
-
+Validation:
 The commit is valid only if every changed file is allowed and no changed file is
-forbidden. If the commit is not valid, amend it to correct it until it is valid.
+forbidden. If the commit is not valid, amend it until it is valid.
