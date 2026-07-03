@@ -36,51 +36,39 @@ EXPECTED = {
     'device_type': 'was used in IEEE 1275',
 }
 
-@pytest.fixture
-def ctx():
-    return {}
 
-
-@given('the language server is running')
-def server_running(ctx, request):
+@given('the language server is running', target_fixture='lsp')
+def server_running(request):
     lsp = LSPClient(cmd=['python3', '-m', 'anakins_dtls'], root=os.getcwd())
     lsp.start()
     request.addfinalizer(lsp.stop)
     lsp.initialize()
-    ctx['lsp'] = lsp
+    return lsp
 
 
-@given('a devicetree source file is open')
-def file_open(ctx):
-    lsp = ctx['lsp']
+@given('a devicetree source file is open', target_fixture='uri')
+def file_open(lsp):
     fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover_standard_properties.dts')
-    uri = lsp.open(fixture)
-    ctx['uri'] = uri
+    return lsp.open(fixture)
 
 
-@given(parsers.re(r'a (?:node|bus node|cpu node) with.*'))
+@given(parsers.re(r'a (node|bus node|cpu node) with.*'))
 def node_with():
     pass
 
 
-@when(parsers.parse('hovering over "{property}"'))
-def hover_over(ctx, property):
-    lsp = ctx['lsp']
-    uri = ctx['uri']
+@when(parsers.parse('hovering over "{property}"'), target_fixture='response')
+def hover_over(lsp, uri, property):
     pos = TARGET.get(property)
     if pos is None:
         pytest.fail(f'Unknown property: {property}')
     line, col = pos
-    ctx['response'] = lsp.hover(uri, line - 1, col - 1)
-    ctx['property'] = property
+    return lsp.hover(uri, line - 1, col - 1)
 
 
 @then(parsers.parse('the hover returns the contents of the "{subsection}" subsection from the devicetree specification'))
-def check_hover(ctx, subsection):
-    resp = ctx.get('response')
-    if resp is None:
-        pytest.fail('No hover response stored')
-    result = resp.get('result')
+def check_hover(response, subsection):
+    result = response.get('result')
     if result is None:
         pytest.fail('Hover returned null result (no documentation for property)')
     contents = result.get('contents', '')
