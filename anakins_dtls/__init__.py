@@ -13,6 +13,11 @@ ROOT_NODE_PROPERTIES = {
     'chassis-type',
 }
 
+DEVICE_NODE_ONLY_PROPERTIES = {
+    'memory-region',
+    'memory-region-names',
+}
+
 STANDARD_NODE_NAMES = {
     'aliases',
     'chosen',
@@ -133,6 +138,11 @@ def _node_depth_at(text: str, line: int) -> int:
 
 
 def _parent_node_name_at(text: str, line: int) -> str | None:
+    stack = _ancestor_node_names_at(text, line)
+    return stack[-1] if stack else None
+
+
+def _ancestor_node_names_at(text: str, line: int) -> list[str]:
     stack: list[str] = []
     for line_text in text.split('\n')[:line]:
         m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
@@ -141,7 +151,7 @@ def _parent_node_name_at(text: str, line: int) -> str | None:
         for _ in range(line_text.count('}')):
             if stack:
                 stack.pop()
-    return stack[-1] if stack else None
+    return stack
 
 
 def handle_notification(method: str, params: dict | None) -> None:
@@ -181,6 +191,10 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             return None
         if prop in ROOT_NODE_PROPERTIES and _node_depth_at(text, line) != 1:
             return None
+        if prop in DEVICE_NODE_ONLY_PROPERTIES:
+            ancestors = _ancestor_node_names_at(text, line)
+            if _node_depth_at(text, line) == 1 or 'reserved-memory' in ancestors:
+                return None
 
         doc = HOVER_DOCS.get(prop)
         if doc is None and ',' in prop:
