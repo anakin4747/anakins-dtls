@@ -6,10 +6,10 @@ endif
 
 .PHONY: test
 test:
-	$(SHELL_PREFIX) python3 -m pytest tests/
 	$(SHELL_PREFIX) cog check
+	$(SHELL_PREFIX) python3 -m pytest tests/
 
 .PHONY: dtspec
 dtspec:
-	$(SHELL_PREFIX) python3 -m pytest tests/test_dtspec.py
 	$(SHELL_PREFIX) cog check
+	$(SHELL_PREFIX) python3 -m pytest tests/test_dtspec.py
