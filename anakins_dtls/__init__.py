@@ -68,6 +68,19 @@ def _property_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _root_node_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    idx = line_text.find('/')
+    if idx == -1:
+        return None
+    if re.match(r'\s*/\s*\{', line_text) and idx <= character <= idx + 1:
+        return '__root__'
+    return None
+
+
 def handle_notification(method: str, params: dict | None) -> None:
     if method == 'textDocument/didOpen':
         uri = params['textDocument']['uri']
@@ -96,7 +109,9 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if not text:
             return None
 
-        prop = _property_at(text, line, character)
+        prop = _root_node_at(text, line, character)
+        if prop is None:
+            prop = _property_at(text, line, character)
         if prop is None:
             return None
 

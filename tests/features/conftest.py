@@ -25,6 +25,8 @@ TARGET = {
     'name': (17, 5),
     'device_type': (18, 5),
     'linux,phandle': (19, 5),
+    'serial-number': (20, 5),
+    'chassis-type': (21, 5),
 }
 
 @given('the language server is running', target_fixture='lsp')
@@ -42,7 +44,7 @@ def file_open(lsp):
     return lsp.open(fixture)
 
 
-@when(parsers.re(r'hovering over a "?(?P<hover_target>[^"]+?)"?(?: property name)?$'), target_fixture='response')
+@when(parsers.re(r'hovering over a "?(?P<hover_target>[^"]+?)"?(?: property name)?(?: on the root node)?$'), target_fixture='response')
 def hover_over(lsp, uri, hover_target):
     pos = TARGET.get(hover_target)
     if pos is None:

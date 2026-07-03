@@ -545,7 +545,7 @@ def test_build_hover_docs_all_keys_present():
         "compatible", "model", "phandle", "status",
         "#address-cells", "#size-cells", "reg", "virtual-reg",
         "ranges", "dma-ranges", "dma-coherent", "dma-noncoherent",
-        "name", "device_type",
+        "name", "device_type", "__root__", "serial-number", "chassis-type",
     }
     assert set(docs.keys()) == expected
 
@@ -558,10 +558,28 @@ def test_build_hover_docs_address_and_size_cells_identical():
     docs = build_hover_docs()
     assert docs["#address-cells"] == docs["#size-cells"]
 
+def test_build_hover_docs_root_node_properties_from_table():
+    docs = build_hover_docs()
+
+    assert docs["serial-number"] == get_table_entry(
+        "Root Node Properties",
+        "serial-number",
+        "Definition",
+    )
+    assert docs["chassis-type"] == get_table_entry(
+        "Root Node Properties",
+        "chassis-type",
+        "Definition",
+    )
+
 def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
     for key, value in docs.items():
+        if key in {"serial-number", "chassis-type"}:
+            continue
         assert value.startswith("#"), f"{key} does not start with a heading"
+        if key == "__root__":
+            continue
         assert "**Property name:**" in value, f"{key} missing Property name"
 
 def test_build_hover_docs_no_raw_rst_directives():

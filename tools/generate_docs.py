@@ -615,6 +615,7 @@ def _format_section(raw: str) -> str:
 
 
 PROPERTY_SECTIONS: dict[str, str] = {
+    "__root__": "Root node",
     "compatible": "compatible",
     "model": "model",
     "phandle": "phandle",
@@ -631,6 +632,11 @@ PROPERTY_SECTIONS: dict[str, str] = {
     "device_type": "device_type (deprecated)",
 }
 
+ROOT_NODE_PROPERTIES = {
+    "serial-number",
+    "chassis-type",
+}
+
 
 def build_hover_docs() -> dict[str, str]:
     docs: dict[str, str] = {}
@@ -640,6 +646,12 @@ def build_hover_docs() -> dict[str, str]:
             docs[prop_name] = _format_section(raw)
         else:
             docs[prop_name] = ""
+    for prop_name in ROOT_NODE_PROPERTIES:
+        docs[prop_name] = get_table_entry(
+            "Root Node Properties",
+            prop_name,
+            "Definition",
+        ) or ""
     return docs
 
 
