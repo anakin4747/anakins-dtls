@@ -84,6 +84,12 @@ Hard gate:
   editing the relevant `.feature` file first, then return to the required
   step-definition or fixture edit.
 
+Hover fixture guidance:
+- Any target in a hover fixture whose purpose is to assert that no hover is
+  returned must include an inline comment explaining why no hover is expected.
+  This applies to invalid placements, node declarations outside their valid
+  scope, and properties that are only valid in specific nodes.
+
 Do not change:
 - Application code
 - Docs-generation implementation
