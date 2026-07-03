@@ -564,7 +564,9 @@ def test_build_hover_docs_all_keys_present():
         "d-cache-sets", "d-cache-block-size", "d-cache-line-size",
         "next-level-cache", "cache-level", "status:okay",
         "status:disabled", "status:reserved", "status:fail",
-        "status:fail-sss",
+        "status:fail-sss", "interrupts", "interrupt-parent",
+        "interrupts-extended", "interrupt-controller", "#interrupt-cells",
+        "interrupt-map", "interrupt-map-mask",
     }
     assert set(docs.keys()) == expected
 
@@ -576,6 +578,23 @@ def test_build_hover_docs_all_non_empty():
 def test_build_hover_docs_address_and_size_cells_identical():
     docs = build_hover_docs()
     assert docs["#address-cells"] == docs["#size-cells"]
+
+def test_build_hover_docs_interrupt_properties_from_spec_sections():
+    docs = build_hover_docs()
+    expected = {
+        "interrupts",
+        "interrupt-parent",
+        "interrupts-extended",
+        "interrupt-controller",
+        "#interrupt-cells",
+        "interrupt-map",
+        "interrupt-map-mask",
+    }
+
+    for prop_name in expected:
+        raw = get_section(prop_name)
+        assert raw is not None
+        assert docs[prop_name] == _format_section(raw)
 
 def test_build_hover_docs_root_node_properties_from_table():
     docs = build_hover_docs()
