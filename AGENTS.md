@@ -36,9 +36,16 @@ see how the code can be made cleaner:
 
 Fix the code accordingly in new commits.
 
-## Test Driven Development
+## Behaviour and Test Driven Development
 
-Use the `lsts` bats library in `tests/lsts/` for end-to-end LSP testing.
+User-visible behavior must be driven with BDD. Start by changing or adding the
+relevant `.feature` file so the desired behavior is expressed in terms the end
+user can observe. Only after the feature captures the behavior should step
+definitions, unit tests, and implementation code be changed.
+
+For implementation details that do not matter to the end user, always use TDD:
+write the smallest failing unit test that describes the implementation contract,
+verify it fails, then implement the change.
 
 To run the tests in the test environment run the default make target like so:
 ```sh
