@@ -4,7 +4,7 @@ Feature: Standard Property Hover Documentation
     Given the language server is running
     And a devicetree source file is open
 
-  Scenario: Hover on "compatible" shows driver selection documentation
+  Scenario: Hover on a "compatible" property returns "compatible" section from the devicetree specification
     Given a node with compatible = "fsl,mpc8641", "ns16550"
     When hovering over "compatible"
     Then the hover returns the contents of the "compatible" subsection from the devicetree specification
