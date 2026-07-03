@@ -562,7 +562,9 @@ def test_build_hover_docs_all_keys_present():
         "cache-line-size", "i-cache-size", "i-cache-sets",
         "i-cache-block-size", "i-cache-line-size", "d-cache-size",
         "d-cache-sets", "d-cache-block-size", "d-cache-line-size",
-        "next-level-cache", "cache-level",
+        "next-level-cache", "cache-level", "status:okay",
+        "status:disabled", "status:reserved", "status:fail",
+        "status:fail-sss",
     }
     assert set(docs.keys()) == expected
 
@@ -608,6 +610,8 @@ def test_build_hover_docs_each_begins_with_heading():
         if key in {
             "__root__", "/aliases", "/memory", "/reserved-memory",
             "/chosen", "/cpus", "/cpus/cpu*", "/cpus/cpu*/l?-cache",
+            "status:okay", "status:disabled", "status:reserved",
+            "status:fail", "status:fail-sss",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
@@ -683,6 +687,22 @@ def test_build_hover_docs_standard_node_properties_from_tables():
 
     for prop_name, table in expected.items():
         assert docs[prop_name] == format_table_row_hover(table, prop_name)
+
+
+def test_build_hover_docs_status_values_from_table():
+    docs = build_hover_docs()
+    expected = {
+        'status:okay': '"okay"',
+        'status:disabled': '"disabled"',
+        'status:reserved': '"reserved"',
+        'status:fail': '"fail"',
+        'status:fail-sss': '"fail-sss"',
+    }
+
+    for key, value in expected.items():
+        assert docs[key].startswith(f'### {value}\n')
+        assert f'**Value:** `{value}`' in docs[key]
+        assert '**Description:**' in docs[key]
 
 def test_build_hover_docs_no_raw_rst_directives():
     docs = build_hover_docs()
