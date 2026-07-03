@@ -8,6 +8,11 @@ from anakins_dtls._hover_docs import HOVER_DOCS
 
 documents: dict[str, str] = {}
 
+ROOT_NODE_PROPERTIES = {
+    'serial-number',
+    'chassis-type',
+}
+
 
 def _send(msg: dict) -> None:
     data = json.dumps(msg, separators=(',', ':')).encode('utf-8')
@@ -81,6 +86,15 @@ def _root_node_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _node_depth_at(text: str, line: int) -> int:
+    lines = text.split('\n')
+    depth = 0
+    for line_text in lines[:line]:
+        depth += line_text.count('{')
+        depth -= line_text.count('}')
+    return depth
+
+
 def handle_notification(method: str, params: dict | None) -> None:
     if method == 'textDocument/didOpen':
         uri = params['textDocument']['uri']
@@ -113,6 +127,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:
+            return None
+        if prop in ROOT_NODE_PROPERTIES and _node_depth_at(text, line) != 1:
             return None
 
         doc = HOVER_DOCS.get(prop)
