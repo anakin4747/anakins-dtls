@@ -458,11 +458,39 @@ def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
 
 def _handle_bullet_list(lines: list[str], i: int) -> tuple[str, int]:
     block: list[str] = []
-    while i < len(lines) and lines[i].strip().startswith("*"):
-        item = lines[i].strip()
-        block.append(_convert_inline(item))
+    indent = len(lines[i]) - len(lines[i].lstrip())
+    item: list[str] = []
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        line_indent = len(line) - len(line.lstrip())
+
+        if stripped.startswith("* "):
+            if item:
+                block.append(_convert_inline(" ".join(item)))
+            item = [stripped]
+            i += 1
+            continue
+
+        if not stripped:
+            break
+        if line_indent <= indent:
+            break
+        if not item:
+            break
+
+        item.append(stripped)
         i += 1
+    if item:
+        block.append(_convert_inline(" ".join(item)))
     return "\n".join(block) + "\n", i
+
+
+def _format_bullet_markers(md: str) -> str:
+    return "\n".join(
+        line.replace("* ", "- ", 1) if line.startswith("* ") else line
+        for line in md.split("\n")
+    )
 
 
 _LABEL_RE = re.compile(
@@ -570,7 +598,7 @@ def _format_section(raw: str) -> str:
         if line.strip().startswith("* "):
             _flush_para()
             md, i = _handle_bullet_list(lines, i)
-            out.append(md.replace("* ", "- "))
+            out.append(_format_bullet_markers(md))
             continue
 
         if not line.strip():

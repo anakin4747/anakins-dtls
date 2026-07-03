@@ -571,6 +571,28 @@ def test_build_hover_docs_no_raw_rst_directives():
             f"{key} contains unconverted RST code-block directive"
         )
 
+def test_build_hover_docs_dma_ranges_bullets_keep_wrapped_text_together():
+    docs = build_hover_docs()
+    doc = docs["dma-ranges"]
+
+    assert "*child-bus-address-" not in doc
+    assert "*parent-bus-address-" not in doc
+    assert "*length-" not in doc
+    assert "dma-rang\nes" not in doc
+    assert "#size-cel\nls" not in doc
+    assert (
+        "- The *child-bus-address* is a physical address within the child bus' "
+        "address space."
+    ) in doc
+    assert (
+        "- The *parent-bus-address* is a physical address within the parent "
+        "bus' address space."
+    ) in doc
+    assert (
+        "- The *length* specifies the size of the range in the child's address "
+        "space."
+    ) in doc
+
 # }}}
 
 # get_section tests {{{
