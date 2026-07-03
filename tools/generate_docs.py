@@ -1,5 +1,6 @@
 import os
 import re
+import textwrap
 
 HEADING_CHARS = frozenset("=-~^\"")
 LEVELS = {"=": 0, "-": 1, "~": 2, "^": 3, '"': 4}
@@ -104,23 +105,23 @@ def get_section(name: str) -> str | None:
 
 
 def _is_label(line: str) -> bool:
-    return line.startswith(".. _")
+    return line.lstrip().startswith(".. _")
 
 
 def _is_code_block_start(line: str) -> bool:
-    return line.startswith(".. code-block::")
+    return line.lstrip().startswith(".. code-block::")
 
 
 def _is_note_start(line: str) -> bool:
-    return line.startswith(".. note::")
+    return line.lstrip().startswith(".. note::")
 
 
 def _is_table_start(line: str) -> bool:
-    return line.startswith(".. table::")
+    return line.lstrip().startswith(".. table::")
 
 
 def _is_tabularcolumns(line: str) -> bool:
-    return line.startswith(".. tabularcolumns::")
+    return line.lstrip().startswith(".. tabularcolumns::")
 
 
 def _is_literal_block_marker(line: str) -> bool:
@@ -159,7 +160,7 @@ def _handle_code_block(lines: list[str], i: int) -> tuple[str, int]:
 
 
 def _handle_note(lines: list[str], i: int) -> tuple[str, int]:
-    inline = lines[i].removeprefix(".. note::").strip()
+    inline = lines[i].lstrip().removeprefix(".. note::").strip()
     if inline:
         return f"> **Note:** {inline}\n", i + 1
     block, i = _consume_indented_block(lines, i + 1)
@@ -241,18 +242,44 @@ def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
     if current is not None:
         rows.append(current)
 
-    col_widths = [0] * len(col_start)
+    MAX_CELL_WIDTH = 60
+
+    wrapped_rows: list[list[list[str]]] = []
     for row in rows:
+        wrapped_cells: list[list[str]] = []
+        for c in row:
+            stripped = c.strip()
+            if not stripped:
+                wrapped_cells.append([""])
+            elif len(stripped) <= MAX_CELL_WIDTH:
+                wrapped_cells.append([stripped])
+            else:
+                wrapped_cells.append(textwrap.wrap(stripped, width=MAX_CELL_WIDTH))
+        wrapped_rows.append(wrapped_cells)
+
+    col_widths = [0] * len(wrapped_rows[0])
+    for row in wrapped_rows:
         for ci, cell in enumerate(row):
-            col_widths[ci] = max(col_widths[ci], len(cell.strip()))
+            for line in cell:
+                converted = _convert_inline(line)
+                col_widths[ci] = max(col_widths[ci], len(converted))
 
     md_rows: list[str] = []
-    for row in rows:
-        md_cells = [f" {_convert_inline(c.strip())} " for c in row]
-        md_rows.append("|" + "|".join(md_cells) + "|")
+    for ri, row in enumerate(wrapped_rows):
+        max_lines = max(len(cell) for cell in row)
+        for li in range(max_lines):
+            md_cells: list[str] = []
+            for ci, cell_lines in enumerate(row):
+                if li < len(cell_lines):
+                    content = _convert_inline(cell_lines[li])
+                else:
+                    content = ""
+                md_cells.append(f" {content:<{col_widths[ci]}} ")
+            md_rows.append("|" + "|".join(md_cells) + "|")
 
+    header_line_count = max(len(cell) for cell in wrapped_rows[0])
     seps = ["-" * (w + 2) for w in col_widths]
-    md_rows.insert(1, "|" + "|".join(seps) + "|")
+    md_rows.insert(header_line_count, "|" + "|".join(seps) + "|")
     return "\n".join(md_rows) + "\n", i
 
 

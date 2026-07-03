@@ -118,22 +118,42 @@ def test_is_label():
     assert _is_label(".. _foo:")
     assert not _is_label("foo")
 
+def test_is_label_indented():
+    assert _is_label("   .. _foo:")
+    assert _is_label("\t.. _bar:")
+
 def test_is_code_block_start():
     assert _is_code_block_start(".. code-block:: dts")
     assert not _is_code_block_start(".. note::")
+
+def test_is_code_block_start_indented():
+    assert _is_code_block_start("   .. code-block:: dts")
+    assert _is_code_block_start("\t.. code-block:: python")
 
 def test_is_note_start():
     assert _is_note_start(".. note::")
     assert not _is_note_start(".. code-block::")
 
+def test_is_note_start_indented():
+    assert _is_note_start("   .. note::")
+    assert _is_note_start("  .. note:: This is a note.")
+
 def test_is_table_start():
     assert _is_table_start(".. table::")
     assert not _is_table_start(".. note::")
+
+def test_is_table_start_indented():
+    assert _is_table_start("   .. table::")
+    assert _is_table_start("\t.. table::")
 
 def test_is_tabularcolumns():
     assert _is_tabularcolumns(".. tabularcolumns::")
     assert _is_tabularcolumns(".. tabularcolumns:: |p|")
     assert not _is_tabularcolumns(".. code-block::")
+
+def test_is_tabularcolumns_indented():
+    assert _is_tabularcolumns("   .. tabularcolumns::")
+    assert _is_tabularcolumns("\t.. tabularcolumns:: |p|")
 
 def test_is_literal_block_marker():
     assert _is_literal_block_marker("Some text::")
@@ -174,6 +194,30 @@ class TestHandleCodeBlock:
         assert "/dts-v1/" in md
         assert i == 2
 
+    def test_indented_directive(self):
+        lines = [
+            "   .. code-block:: dts",
+            "",
+            "      pic@10000000 {",
+            "         phandle = <1>;",
+            "      };",
+            "",
+            "other",
+        ]
+        md, i = _handle_code_block(lines, 0)
+        assert md == "```dts\npic@10000000 {\n   phandle = <1>;\n};\n\n```\n"
+        assert i == 6
+
+    def test_indented_directive_no_blank_line(self):
+        lines = [
+            "   .. code-block:: dts",
+            "      /dts-v1/;",
+        ]
+        md, i = _handle_code_block(lines, 0)
+        assert "```dts" in md
+        assert "/dts-v1/" in md
+        assert i == 2
+
 
 class TestHandleNote:
     def test_inline_note(self):
@@ -189,6 +233,26 @@ class TestHandleNote:
             "   First paragraph.",
             "",
             "   Second paragraph.",
+        ]
+        md, i = _handle_note(lines, 0)
+        assert "> **Note:**" in md
+        assert "> First paragraph." in md
+        assert "> Second paragraph." in md
+        assert i == 5
+
+    def test_indented_inline_note(self):
+        lines = ["   .. note:: This is a note."]
+        md, i = _handle_note(lines, 0)
+        assert md == "> **Note:** This is a note.\n"
+        assert i == 1
+
+    def test_indented_block_note(self):
+        lines = [
+            "   .. note::",
+            "",
+            "      First paragraph.",
+            "",
+            "      Second paragraph.",
         ]
         md, i = _handle_note(lines, 0)
         assert "> **Note:**" in md
@@ -250,8 +314,26 @@ class TestParseSimpleTable:
         rows = md.strip().split("\n")
         assert rows[0] == "| Prop | Value |"
         assert rows[1] == "|------|-------|"
-        assert rows[2] == "| foo | 1 |"
+        assert rows[2] == "| foo  | 1     |"
+        assert rows[3] == "| bar  | 2     |"
         assert i == 6
+
+    def test_wraps_long_cell_text(self):
+        lines = [
+            "  =====  ========================",
+            "  Prop   Description",
+            "  =====  ========================",
+            "  val    The quick brown fox jumps"
+            " over the lazy dog near the riverbank.",
+            "  =====  ========================",
+        ]
+        md, i = _parse_simple_table(lines, 0)
+        rows = md.strip().split("\n")
+        assert rows[0] == "| Prop | Description                                          |"
+        assert rows[1] == "|------|------------------------------------------------------|"
+        assert rows[2] == "| val  | The quick brown fox jumps over the lazy dog near the |"
+        assert rows[3] == "|      | riverbank.                                           |"
+        assert i == 5
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +389,24 @@ def test_format_section_code_block():
     result = _format_section(raw)
     assert "```dts" in result
     assert 'model = "acme"' in result
+
+def test_format_section_code_block_indented():
+    raw = (
+        "Example:\n"
+        "\n"
+        "   .. code-block:: dts\n"
+        "\n"
+        "      /dts-v1/;\n"
+        "      / {\n"
+        '          model = "acme";\n'
+        "      };\n"
+    )
+    result = _format_section(raw)
+    assert "```dts" in result
+    assert "/dts-v1/" in result
+    assert 'model = "acme"' in result
+    assert "```" in result
+    assert ".. code-block::" not in result
 
 def test_format_section_note():
     raw = (
@@ -403,6 +503,13 @@ def test_build_hover_docs_each_begins_with_heading():
     for key, value in docs.items():
         assert value.startswith("#"), f"{key} does not start with a heading"
         assert "**Property name:**" in value, f"{key} missing Property name"
+
+def test_build_hover_docs_no_raw_rst_directives():
+    docs = build_hover_docs()
+    for key, value in docs.items():
+        assert ".. code-block::" not in value, (
+            f"{key} contains unconverted RST code-block directive"
+        )
 
 
 # ---------------------------------------------------------------------------
