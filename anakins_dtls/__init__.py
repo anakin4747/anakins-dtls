@@ -91,6 +91,21 @@ def _property_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _status_value_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    m = re.match(r'\s*status\s*=\s*"([^"]+)"', line_text)
+    if not m:
+        return None
+
+    start, end = m.span(1)
+    if start <= character <= end:
+        return f'status:{m.group(1)}'
+    return None
+
+
 def _root_node_at(text: str, line: int, character: int) -> str | None:
     lines = text.split('\n')
     if line >= len(lines):
@@ -185,6 +200,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         prop = _root_node_at(text, line, character)
         if prop is None:
             prop = _standard_node_at(text, line, character)
+        if prop is None:
+            prop = _status_value_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:

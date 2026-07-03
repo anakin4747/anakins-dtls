@@ -367,6 +367,53 @@ def format_table_row_hover(table: str, row: str) -> str | None:
     return "\n".join(parts) + "\n"
 
 
+def get_value_table_row(table: str, row: str) -> dict[str, str] | None:
+    for fpath in _rst_files():
+        with open(fpath) as f:
+            lines = f.read().split("\n")
+
+        for idx, line in enumerate(lines):
+            if line.lstrip() != f".. table:: {table}":
+                continue
+
+            block, _ = _consume_indented_block(lines, idx + 1)
+            rows = _parse_table_rows(_skip_table_options(block))
+            if not rows:
+                continue
+
+            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            try:
+                row_idx = header.index("Value")
+            except ValueError:
+                return None
+
+            for cells in rows[1:]:
+                if _strip_literal_markup(cells[row_idx]) != row:
+                    continue
+
+                result = dict(zip(header, (_convert_inline(cell) for cell in cells)))
+                result["Value"] = _strip_literal_markup(cells[row_idx])
+                return result
+    return None
+
+
+def format_value_table_row_hover(table: str, row: str) -> str | None:
+    entry = get_value_table_row(table, row)
+    if entry is None:
+        return None
+
+    value = entry.get("Value", row)
+    description = entry.get("Description")
+    parts = [
+        f"### {value}",
+        "",
+        f"**Value:** `{value}`",
+    ]
+    if description:
+        parts.extend(["", "**Description:**", "", description])
+    return "\n".join(parts) + "\n"
+
+
 def _handle_code_block(lines: list[str], i: int) -> tuple[str, int]:
     lang = lines[i].split("::", 1)[1].strip()
     block, i = _consume_indented_block(lines, i + 1)
@@ -784,6 +831,14 @@ TABLE_ROW_DOCS: dict[str, str] = {
     ),
 }
 
+STATUS_VALUES = (
+    '"okay"',
+    '"disabled"',
+    '"reserved"',
+    '"fail"',
+    '"fail-sss"',
+)
+
 
 def build_hover_docs() -> dict[str, str]:
     docs: dict[str, str] = {}
@@ -800,6 +855,11 @@ def build_hover_docs() -> dict[str, str]:
         ) or ""
     for prop_name, table_name in TABLE_ROW_DOCS.items():
         docs[prop_name] = format_table_row_hover(table_name, prop_name) or ""
+    for value in STATUS_VALUES:
+        docs[f"status:{value.strip(chr(34))}"] = format_value_table_row_hover(
+            "Values for status property",
+            value,
+        ) or ""
     return docs
 
 
