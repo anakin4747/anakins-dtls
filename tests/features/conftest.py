@@ -10,8 +10,8 @@ from generate_docs import _format_section, format_table_row_hover, get_section
 
 TARGET = {
     'Root node declaration': (3, 1),
-    'aliases node declaration': (23, 9),
-    'memory node declaration': (26, 9),
+    'aliases node declaration': (25, 9),
+    'memory node declaration': (28, 9),
     'compatible': (4, 5),
     'model': (5, 5),
     '#address-cells': (6, 5),
@@ -29,62 +29,69 @@ TARGET = {
     'linux,phandle': (19, 5),
     'serial-number': (20, 5),
     'chassis-type': (21, 5),
-    'initial-mapped-area': (27, 9),
-    'hotpluggable': (28, 9),
-    'reserved-memory node declaration': (31, 5),
-    'size': (33, 13),
-    'alignment': (34, 13),
-    'alloc-ranges': (35, 13),
-    'no-map': (36, 13),
-    'reusable': (37, 13),
-    'chosen node declaration': (41, 5),
-    'bootargs': (42, 9),
-    'bootsource': (43, 9),
-    'stdout-path': (44, 9),
-    'stdin-path': (45, 9),
-    'cpus node declaration': (48, 5),
-    'cpu node declaration under the cpus node': (52, 9),
-    'clock-frequency': (55, 13),
-    'timebase-frequency': (56, 13),
-    'enable-method': (58, 13),
-    'cpu-release-addr': (59, 13),
-    'power-isa-version': (60, 13),
-    'power-isa-e-hv': (61, 13),
-    'cache-op-block-size': (62, 13),
-    'reservation-granule-size': (63, 13),
-    'mmu-type': (64, 13),
-    'tlb-split': (65, 13),
-    'tlb-size': (66, 13),
-    'tlb-sets': (67, 13),
-    'd-tlb-size': (68, 13),
-    'd-tlb-sets': (69, 13),
-    'i-tlb-size': (70, 13),
-    'i-tlb-sets': (71, 13),
-    'cache-unified': (72, 13),
-    'cache-size': (73, 13),
-    'cache-sets': (74, 13),
-    'cache-block-size': (75, 13),
-    'cache-line-size': (76, 13),
-    'i-cache-size': (77, 13),
-    'i-cache-sets': (78, 13),
-    'i-cache-block-size': (79, 13),
-    'i-cache-line-size': (80, 13),
-    'd-cache-size': (81, 13),
-    'd-cache-sets': (82, 13),
-    'd-cache-block-size': (83, 13),
-    'd-cache-line-size': (84, 13),
-    'next-level-cache': (85, 13),
-    'cache node declaration': (87, 19),
-    'cache-level': (89, 17),
-    'memory-region': (98, 9),
-    'memory-region-names': (99, 9),
+    'initial-mapped-area': (29, 9),
+    'hotpluggable': (30, 9),
+    'reserved-memory node declaration': (33, 5),
+    'size': (35, 13),
+    'alignment': (36, 13),
+    'alloc-ranges': (37, 13),
+    'no-map': (38, 13),
+    'reusable': (39, 13),
+    'chosen node declaration': (45, 5),
+    'bootargs': (46, 9),
+    'bootsource': (47, 9),
+    'stdout-path': (48, 9),
+    'stdin-path': (49, 9),
+    'cpus node declaration': (52, 5),
+    'cpu node declaration under the cpus node': (56, 9),
+    'clock-frequency': (59, 13),
+    'timebase-frequency': (60, 13),
+    'enable-method': (62, 13),
+    'cpu-release-addr': (63, 13),
+    'power-isa-version': (64, 13),
+    'power-isa-e-hv': (65, 13),
+    'cache-op-block-size': (66, 13),
+    'reservation-granule-size': (67, 13),
+    'mmu-type': (68, 13),
+    'tlb-split': (69, 13),
+    'tlb-size': (70, 13),
+    'tlb-sets': (71, 13),
+    'd-tlb-size': (72, 13),
+    'd-tlb-sets': (73, 13),
+    'i-tlb-size': (74, 13),
+    'i-tlb-sets': (75, 13),
+    'cache-unified': (76, 13),
+    'cache-size': (77, 13),
+    'cache-sets': (78, 13),
+    'cache-block-size': (79, 13),
+    'cache-line-size': (80, 13),
+    'i-cache-size': (81, 13),
+    'i-cache-sets': (82, 13),
+    'i-cache-block-size': (83, 13),
+    'i-cache-line-size': (84, 13),
+    'd-cache-size': (85, 13),
+    'd-cache-sets': (86, 13),
+    'd-cache-block-size': (87, 13),
+    'd-cache-line-size': (88, 13),
+    'next-level-cache': (89, 13),
+    'cache node declaration': (91, 19),
+    'cache-level': (93, 17),
+    'memory-region': (102, 9),
+    'memory-region-names': (103, 9),
 }
 
 NON_ROOT_TARGET = {
-    'serial-number': (95, 9),
-    'chassis-type': (96, 9),
-    'aliases node declaration': (101, 13),
-    'memory node declaration': (104, 13),
+    'serial-number': (99, 9),
+    'chassis-type': (100, 9),
+    'aliases node declaration': (105, 13),
+    'memory node declaration': (108, 13),
+}
+
+INVALID_PLACEMENT_TARGET = {
+    ('memory-region', 'root node'): (22, 5),
+    ('memory-region-names', 'root node'): (23, 5),
+    ('memory-region', 'reserved-memory node'): (40, 13),
+    ('memory-region-names', 'reserved-memory node'): (41, 13),
 }
 
 
@@ -160,6 +167,27 @@ def check_no_hover_outside_root_node(lsp, uri, hover_target):
             text = contents or ''
         pytest.fail(
             f'Expected no hover outside root node for target: {hover_target}\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.re(r'hovering over an? (?P<hover_target>.+?) (?:on|in) the (?P<placement>root node|reserved-memory node) returns nothing'))
+def check_no_hover_in_invalid_placement(lsp, uri, hover_target, placement):
+    hover_target = _normalize_hover_target(hover_target)
+    pos = INVALID_PLACEMENT_TARGET.get((hover_target, placement))
+    if pos is None:
+        pytest.fail(f'Unknown invalid hover target: {hover_target} in {placement}')
+    line, col = pos
+    response = lsp.hover(uri, line - 1, col - 1)
+    result = response.get('result')
+    if result is not None:
+        contents = result.get('contents', '')
+        if isinstance(contents, dict):
+            text = contents.get('value', '')
+        else:
+            text = contents or ''
+        pytest.fail(
+            f'Expected no hover for target: {hover_target} in {placement}\n'
             f'  Got: {text[:500]}...'
         )
 

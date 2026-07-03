@@ -71,10 +71,14 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a "memory-region" property name on a device node returns the full "memory-region" row from the "Properties for referencing reserved-memory regions" table from the devicetree specification
     When hovering over a "memory-region" property name
     Then the hover returns usage, value type, and definition for "memory-region" from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+    And hovering over a "memory-region" property name on the root node returns nothing
+    And hovering over a "memory-region" property name in the reserved-memory node returns nothing
 
   Scenario: Hover on a "memory-region-names" property name on a device node returns the full "memory-region-names" row from the "Properties for referencing reserved-memory regions" table from the devicetree specification
     When hovering over a "memory-region-names" property name
     Then the hover returns usage, value type, and definition for "memory-region-names" from the "Properties for referencing reserved-memory regions" table from the devicetree specification
+    And hovering over a "memory-region-names" property name on the root node returns nothing
+    And hovering over a "memory-region-names" property name in the reserved-memory node returns nothing
 
   # /chosen node
 
