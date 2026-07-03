@@ -317,20 +317,50 @@ def _is_table_separator(line: str) -> bool:
     return all(p and all(c in "=-" for c in p) for p in parts)
 
 
-def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
-    indent = len(lines[i]) - len(lines[i].lstrip())
-    parts = lines[i].split()
+def _simple_table_column_starts(separator: str) -> list[int]:
+    parts = separator.split()
     widths = [len(p) for p in parts]
     col_start: list[int] = []
     pos = 0
     for w in widths:
         col_start.append(pos)
         pos += w + 1
+    return col_start
 
-    i += 1
+
+def _simple_table_cells(body: str, col_start: list[int]) -> list[str]:
+    cells: list[str] = []
+    for idx, cs in enumerate(col_start):
+        if idx + 1 < len(col_start):
+            end = col_start[idx + 1] - 1
+            cells.append(body[cs:end].strip())
+        else:
+            cells.append(body[cs:].strip())
+    return cells
+
+
+def _simple_table_first_cell(body: str, col_start: list[int]) -> str:
+    if len(col_start) > 1:
+        return body[col_start[0]:col_start[1] - 1].strip()
+    return body[col_start[0]:].strip()
+
+
+def _append_simple_table_continuation(
+    current: list[str], body: str, col_start: list[int]
+) -> None:
+    last = len(current) - 1
+    tail = body[col_start[last]:]
+    if tail.strip():
+        current[last] += " " + tail.strip()
+
+
+def _parse_simple_table_rows(
+    lines: list[str], i: int, indent: int, col_start: list[int]
+) -> tuple[list[list[str]], int]:
     rows: list[list[str]] = []
     current: list[str] | None = None
 
+    i += 1
     while i < len(lines):
         line = lines[i]
 
@@ -352,33 +382,23 @@ def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
 
         body = line[indent:]
 
-        if current is not None:
-            first_content = body[col_start[0]:col_start[1] - 1].strip() if len(col_start) > 1 else body[col_start[0]:].strip()
-            if first_content:
-                rows.append(current)
-                current = None
+        if current is not None and _simple_table_first_cell(body, col_start):
+            rows.append(current)
+            current = None
 
         if current is None:
-            cells: list[str] = []
-            for idx, cs in enumerate(col_start):
-                if idx + 1 < len(col_start):
-                    end = col_start[idx + 1] - 1
-                    cells.append(body[cs:end].strip())
-                else:
-                    cells.append(body[cs:].strip())
-            current = cells
+            current = _simple_table_cells(body, col_start)
         else:
-            last = len(current) - 1
-            tail = body[col_start[last]:]
-            if tail.strip():
-                current[last] += " " + tail.strip()
+            _append_simple_table_continuation(current, body, col_start)
         i += 1
 
     if current is not None:
         rows.append(current)
+    return rows, i
 
-    MAX_CELL_WIDTH = 60
 
+def _wrap_simple_table_rows(rows: list[list[str]]) -> list[list[list[str]]]:
+    max_cell_width = 60
     wrapped_rows: list[list[list[str]]] = []
     for row in rows:
         wrapped_cells: list[list[str]] = []
@@ -386,21 +406,29 @@ def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
             stripped = c.strip()
             if not stripped:
                 wrapped_cells.append([""])
-            elif len(stripped) <= MAX_CELL_WIDTH:
+            elif len(stripped) <= max_cell_width:
                 wrapped_cells.append([stripped])
             else:
-                wrapped_cells.append(textwrap.wrap(stripped, width=MAX_CELL_WIDTH))
+                wrapped_cells.append(textwrap.wrap(stripped, width=max_cell_width))
         wrapped_rows.append(wrapped_cells)
+    return wrapped_rows
 
+
+def _simple_table_column_widths(wrapped_rows: list[list[list[str]]]) -> list[int]:
     col_widths = [0] * len(wrapped_rows[0])
     for row in wrapped_rows:
         for ci, cell in enumerate(row):
             for line in cell:
                 converted = _convert_inline(line)
                 col_widths[ci] = max(col_widths[ci], len(converted))
+    return col_widths
 
+
+def _format_simple_table_rows(
+    wrapped_rows: list[list[list[str]]], col_widths: list[int]
+) -> list[str]:
     md_rows: list[str] = []
-    for ri, row in enumerate(wrapped_rows):
+    for row in wrapped_rows:
         max_lines = max(len(cell) for cell in row)
         for li in range(max_lines):
             md_cells: list[str] = []
@@ -411,6 +439,16 @@ def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
                     content = ""
                 md_cells.append(f" {content:<{col_widths[ci]}} ")
             md_rows.append("|" + "|".join(md_cells) + "|")
+    return md_rows
+
+
+def _parse_simple_table(lines: list[str], i: int) -> tuple[str, int]:
+    indent = len(lines[i]) - len(lines[i].lstrip())
+    col_start = _simple_table_column_starts(lines[i])
+    rows, i = _parse_simple_table_rows(lines, i, indent, col_start)
+    wrapped_rows = _wrap_simple_table_rows(rows)
+    col_widths = _simple_table_column_widths(wrapped_rows)
+    md_rows = _format_simple_table_rows(wrapped_rows, col_widths)
 
     header_line_count = max(len(cell) for cell in wrapped_rows[0])
     seps = ["-" * (w + 2) for w in col_widths]
