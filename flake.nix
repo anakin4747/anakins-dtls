@@ -108,13 +108,18 @@ MEOF
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
-            kernel_root="$(pwd)"
+            workspace_root="$(pwd)"
+            repo_fixture="$workspace_root/tests/fixtures/hover_standard_properties.dts"
 
-            dts_files="$(find "$kernel_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 10 || true)"
-            if [[ -z "$dts_files" ]]; then
-              echo "tryout: no .dts files found under $kernel_root/arch" >&2
-              echo "Run this from the root of a Linux kernel source tree." >&2
-              exit 1
+            if [[ -f "$repo_fixture" ]]; then
+              dts_files="$repo_fixture"
+            else
+              dts_files="$(find "$workspace_root/arch" \( -name '*.dts' -o -name '*.dtsi' \) 2>/dev/null | shuf -n 10 || true)"
+              if [[ -z "$dts_files" ]]; then
+                echo "tryout: no local fixture or .dts files found under $workspace_root/arch" >&2
+                echo "Run this from the anakins-dtls repo or the root of a Linux kernel source tree." >&2
+                exit 1
+              fi
             fi
 
             nvim_config=$(mktemp -d)
@@ -125,7 +130,7 @@ MEOF
             printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
             printf '            name = "anakins-dtls",\n' >> "$nvim_config/init.lua"
             printf '            cmd = { "anakins-dtls" },\n' >> "$nvim_config/init.lua"
-            printf '            root_dir = "%s",\n' "$kernel_root" >> "$nvim_config/init.lua"
+            printf '            root_dir = "%s",\n' "$workspace_root" >> "$nvim_config/init.lua"
             printf '            filetypes = { "dts" },\n' >> "$nvim_config/init.lua"
             printf '        })\n' >> "$nvim_config/init.lua"
             printf '    end,\n' >> "$nvim_config/init.lua"
