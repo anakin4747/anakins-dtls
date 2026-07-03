@@ -149,3 +149,96 @@ The commit is valid only if every changed file is allowed and no changed file is
 forbidden. If the commit is not valid, amend it to correct it until it is valid.
 
 ## Bug Workflow
+
+### Documentation Parsing Bugs
+
+Documentation parsing bugs in `tools/generate_docs.py` must use TDD. Capture
+the bug with the smallest failing unit test before changing parser or formatter
+implementation.
+
+#### 1. Failing DTS Specification Test Commit
+
+Write the smallest failing Device Tree Specification generation test that
+reproduces the parsing bug. Prefer inline RST samples unless the bug depends on
+real specification structure from `devicetree-specification/`.
+
+Do not change implementation, application code, BDD features, step definitions,
+or fixtures in this commit. Run `make` and verify the test fails because of the
+parsing bug.
+
+Commit message template:
+```sh
+git commit -m "test(dtspec): reproduce <spec parsing bug>"
+```
+
+Allowed files:
+```text
+tests/test_generate_docs.py
+tests/**/test_generate_docs.py
+```
+
+Validate the commit only changed the allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is a Device Tree Specification
+generation test file. If the commit is not valid, amend it to correct it until
+it is valid.
+
+#### 2. DTS Specification Parser Fix Commit
+
+Implement only the behavior required by the failing Device Tree Specification
+generation test. Do not change tests in this commit.
+
+Run `make` and verify all tests pass.
+
+Commit message template:
+```sh
+git commit -m "fix(dtspec): handle <spec parsing case>"
+```
+
+Allowed files:
+```text
+tools/**
+```
+
+Validate the commit only changed the allowed files with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is Device Tree Specification
+generation implementation. If the commit is not valid, amend it to correct it
+until it is valid.
+
+#### 3. Optional DTS Specification Parser Refactor Commit
+
+After the passing fix commit, review the Device Tree Specification generation
+code and refactor only if it improves clarity without changing behavior.
+
+Run `make` and verify all tests pass.
+
+Commit message template:
+```sh
+git commit -m "refactor(dtspec): clarify <parser area>"
+```
+
+Allowed files:
+```text
+tools/**
+```
+
+Forbidden files:
+```text
+tests/**
+anakins_dtls/**
+```
+
+Validate the commit with:
+```sh
+git diff-tree --no-commit-id --name-only -r HEAD
+```
+
+The commit is valid only if every changed file is allowed and no changed file is
+forbidden. If the commit is not valid, amend it to correct it until it is valid.
