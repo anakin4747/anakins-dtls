@@ -840,6 +840,10 @@ STATUS_VALUES = (
 )
 
 
+def _status_value_key(value: str) -> str:
+    return f"status:{value.strip('\"')}"
+
+
 def build_hover_docs() -> dict[str, str]:
     docs: dict[str, str] = {}
     for prop_name, section_name in SECTION_DOCS.items():
@@ -856,7 +860,7 @@ def build_hover_docs() -> dict[str, str]:
     for prop_name, table_name in TABLE_ROW_DOCS.items():
         docs[prop_name] = format_table_row_hover(table_name, prop_name) or ""
     for value in STATUS_VALUES:
-        docs[f"status:{value.strip(chr(34))}"] = format_value_table_row_hover(
+        docs[_status_value_key(value)] = format_value_table_row_hover(
             "Values for status property",
             value,
         ) or ""
