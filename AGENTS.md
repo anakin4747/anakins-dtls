@@ -13,7 +13,45 @@ A Device Tree Language Server.
 git diff-tree --no-commit-id --name-only -r HEAD
 ```
 - If a workflow commit changes files outside its allowed paths, amend it and revalidate the touched files before continuing.
-- Stop for user review only when the user explicitly asks.
+- Pause for user review only when the user explicitly asks.
+
+## Mandatory Workflow Gate
+
+Before making any edit, determine whether the user request matches a workflow.
+
+If the request adds or changes user-visible behavior, the Feature Workflow must
+be used. If the request fixes `tools/generate_docs.py` parsing or formatting of
+Device Tree Specification content, the Documentation Parsing Bug Workflow must be
+used.
+
+When a workflow applies, declare the current workflow phase before editing files.
+Do not skip, reorder, merge, or reinterpret workflow phases. The phrase
+"allowed files" describes valid commit contents only; it does not override phase
+order, first-edit requirements, or required failing-test-before-implementation
+rules.
+
+## Pre-Edit Workflow Check
+
+Before every edit in a workflow, check:
+- Workflow
+- Phase
+- Target file
+- Why the file is allowed in this phase
+- Whether every required prior gate is already satisfied
+
+If a required prior gate is not satisfied, self-correct by performing the missing
+earlier workflow action first, then return to the intended edit after the gate is
+satisfied.
+
+## Workflow Violation Self-Correction
+
+If an edit violates workflow order, immediately identify the violated rule and
+repair the workflow state without requesting user direction.
+
+For an uncommitted violation made solely by the assistant, revert or replace only
+the assistant-made violating edit needed to restore workflow order. Preserve all
+unrelated user changes and any unrelated worktree changes. After repair,
+continue from the earliest required workflow phase.
 
 ## Workflow Selection
 
@@ -35,6 +73,16 @@ Only change step definitions when required to make the scenario executable. Only
 change fixtures when required to provide input data for the scenario. Never
 change step definitions or fixtures without changing a `.feature` file in the
 same commit.
+
+Hard gate:
+- The first edited file in this phase must be `tests/features/**/*.feature`.
+- Do not edit step definitions, `tests/features/conftest.py`, or fixtures until
+  after a `.feature` file has already been modified in the working tree.
+- Before editing any non-`.feature` BDD file, verify the working diff already
+  includes at least one `tests/features/**/*.feature` file.
+- If the working diff does not already include a `.feature` file, self-correct by
+  editing the relevant `.feature` file first, then return to the required
+  step-definition or fixture edit.
 
 Do not change:
 - Application code
