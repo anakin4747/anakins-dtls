@@ -10,9 +10,9 @@ Feature: Standard Top-Level Node Hover Documentation
     When hovering over a Root node declaration
     Then the hover returns the contents of the "Root node" section from the devicetree specification
 
-  Scenario: Hover on a "serial-number" property name on the root node returns the definition of "serial-number" from the "Root node" section of the devicetree specification
+  Scenario: Hover on a "serial-number" property name on the root node returns the "Definition" column for "serial-number" from the "Root Node Properties" table from the devicetree specification
     When hovering over a "serial-number" property name on the root node
-    Then the hover returns the definition of "serial-number" from the "Root Node Properties" table from the devicetree specification
+    Then the hover returns the "Definition" column for "serial-number" from the "Root Node Properties" table from the devicetree specification
 
   # Scenario: Hover on "chassis-type" on the root node returns the definition of "chassis-type" from the "Root node" section of the devicetree specification
   #   Given a root node with chassis-type = "embedded"

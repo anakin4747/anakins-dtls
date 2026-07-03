@@ -82,17 +82,18 @@ def check_hover(response, section):
         )
 
 
-@then(parsers.parse('the hover returns the definition of "{property}" from the "{table}" table from the devicetree specification'))
-def check_hover_table_definition(response, property, table):
+@then(parsers.parse('the hover returns the "{column}" column for "{property}" from the "{table}" table from the devicetree specification'))
+def check_hover_table_entry(response, column, property, table):
     text = _hover_text(response)
-    expected = get_table_entry(table, property, 'Definition')
+    expected = get_table_entry(table, property, column)
     if expected is None:
-        pytest.fail(f'Unknown table entry: {table}.{property}.Definition')
+        pytest.fail(f'Unknown table entry: {table}.{property}.{column}')
     if expected not in text:
         pytest.fail(
-            f'Hover response did not contain table definition\n'
+            f'Hover response did not contain table entry\n'
             f'  Table: {table}\n'
             f'  Property: {property}\n'
+            f'  Column: {column}\n'
             f'  Expected: {expected}\n'
             f'  Got: {text[:500]}...'
         )
