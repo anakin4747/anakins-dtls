@@ -35,3 +35,10 @@ be able to specify sandbox rules by commands in anakins-agents
 ---
 
 align devicetree spec submodule with the nix flake input
+
+---
+
+serial-number doesn't show value type like other hovers do
+chassis-type doesn't show value type like other hovers do
+
+chassis-type's list of possible values formatting is lost
