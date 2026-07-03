@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 from generate_docs import _format_section, get_section
 
 TARGET = {
+    'Root node declaration': (3, 1),
     'compatible': (4, 5),
     'model': (5, 5),
     '#address-cells': (6, 5),
@@ -41,11 +42,11 @@ def file_open(lsp):
     return lsp.open(fixture)
 
 
-@when(parsers.parse('hovering over a "{property}" property name'), target_fixture='response')
-def hover_over(lsp, uri, property):
-    pos = TARGET.get(property)
+@when(parsers.re(r'hovering over a "?(?P<hover_target>[^"]+?)"?(?: property name)?$'), target_fixture='response')
+def hover_over(lsp, uri, hover_target):
+    pos = TARGET.get(hover_target)
     if pos is None:
-        pytest.fail(f'Unknown property: {property}')
+        pytest.fail(f'Unknown hover target: {hover_target}')
     line, col = pos
     return lsp.hover(uri, line - 1, col - 1)
 
