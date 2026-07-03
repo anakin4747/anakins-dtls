@@ -24,10 +24,10 @@
     };
 
     child {
-        serial-number = "wrong-node";
-        chassis-type = "wrong-node";
+        serial-number = "wrong-node"; // should not return hover since it is only a root property
+        chassis-type = "wrong-node"; // should not return hover since it is only a root property
 
-        aliases {
+        aliases { // should not return hover since it is only a root node
         };
     };
 };
