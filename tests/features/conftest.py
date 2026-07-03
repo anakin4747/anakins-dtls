@@ -29,7 +29,7 @@ EXPECTED = {
     'reg': "describes the address of the device's resources",
     'virtual-reg': 'specifies an effective address',
     'ranges': 'provides a means of defining a mapping or translation',
-    'dma-ranges': 'describes the direct memory access',
+    'dma-ranges': 'describe the direct memory access',
     'dma-coherent': 'capable of coherent DMA operations',
     'dma-noncoherent': 'not capable of coherent DMA operations',
     'name': 'is a string specifying the name of the node',
