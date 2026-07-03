@@ -95,6 +95,10 @@ TARGET = {
     '#interrupt-cells': (113, 9),
     'interrupt-map': (114, 9),
     'interrupt-map-mask': (115, 9),
+    'gpio-map': (116, 9),
+    'gpio-map-mask': (117, 9),
+    'gpio-map-pass-thru': (118, 9),
+    '#gpio-cells': (119, 9),
 }
 
 STATUS_VALUE_TARGET = {
@@ -108,8 +112,8 @@ STATUS_VALUE_TARGET = {
 NON_ROOT_TARGET = {
     'serial-number': (99, 9),
     'chassis-type': (100, 9),
-    'aliases node declaration': (117, 13),
-    'memory node declaration': (120, 13),
+    'aliases node declaration': (121, 13),
+    'memory node declaration': (124, 13),
 }
 
 INVALID_PLACEMENT_TARGET = {

@@ -113,6 +113,10 @@
         #interrupt-cells = <2>;
         interrupt-map = <0 0 1 &pic 1 1>;
         interrupt-map-mask = <0xf800 0 0 7>;
+        gpio-map = <0 0 &gpio 0 0>;
+        gpio-map-mask = <0xf 0x0>;
+        gpio-map-pass-thru = <0x0 0x1>;
+        #gpio-cells = <2>;
 
         aliases { // should not return hover since it is only a root node
         };
