@@ -470,6 +470,40 @@ _LABEL_RE = re.compile(
 )
 
 
+def _format_paragraph(para: list[str]) -> str:
+    non_empty = [line for line in para if line.strip()]
+    if not non_empty:
+        return ""
+    min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
+    text = " ".join(line[min_indent:].strip() for line in para)
+    converted = _convert_inline(text)
+    if _LABEL_RE.match(converted.strip()):
+        colon = converted.index(":")
+        return "**" + converted[:colon] + ":**" + converted[colon + 1:] + "\n"
+    if converted.strip():
+        return converted.strip() + "\n"
+    return "\n"
+
+
+def _format_heading(lines: list[str], i: int) -> tuple[str | None, int]:
+    if i == 0 and i + 1 < len(lines) and _is_underline(lines[i + 1]):
+        level = _heading_level(lines[i + 1]) + 1
+        return f"{'#' * level} {_convert_inline(lines[i])}\n", i + 2
+    if i == 1 and not lines[0].strip() and i + 1 < len(lines) and _is_underline(lines[i + 1]):
+        level = _heading_level(lines[i + 1]) + 1
+        return f"{'#' * level} {_convert_inline(lines[i])}\n", i + 2
+    return None, i
+
+
+def _format_literal_block(lines: list[str], i: int) -> tuple[str, int]:
+    prefix = lines[i].rstrip()[:-2]
+    out = ""
+    if prefix.strip():
+        out += _convert_inline(prefix) + "\n"
+    md, i = _handle_literal_block(lines, i)
+    return out + md, i
+
+
 def _format_section(raw: str) -> str:
     lines = raw.split("\n")
     out: list[str] = []
@@ -478,26 +512,21 @@ def _format_section(raw: str) -> str:
 
     def _flush_para() -> None:
         nonlocal para
-        if not para:
-            return
-        non_empty = [l for l in para if l.strip()]
-        if not non_empty:
+        if para:
+            formatted = _format_paragraph(para)
+            if formatted:
+                out.append(formatted)
             para = []
-            return
-        min_indent = min(len(l) - len(l.lstrip()) for l in non_empty)
-        text = " ".join(l[min_indent:].strip() for l in para)
-        converted = _convert_inline(text)
-        if _LABEL_RE.match(converted.strip()):
-            colon = converted.index(":")
-            out.append("**" + converted[:colon] + ":**" + converted[colon + 1:] + "\n")
-        elif converted.strip():
-            out.append(converted.strip() + "\n")
-        else:
-            out.append("\n")
-        para = []
 
     while i < len(lines):
         line = lines[i]
+
+        heading, next_i = _format_heading(lines, i)
+        if heading is not None:
+            _flush_para()
+            out.append(heading)
+            i = next_i
+            continue
 
         if _is_underline(line):
             _flush_para()
@@ -528,10 +557,7 @@ def _format_section(raw: str) -> str:
 
         if _is_literal_block_marker(line):
             _flush_para()
-            prefix = line.rstrip()[:-2]
-            if prefix.strip():
-                out.append(_convert_inline(prefix) + "\n")
-            md, i = _handle_literal_block(lines, i)
+            md, i = _format_literal_block(lines, i)
             out.append(md)
             continue
 
@@ -551,17 +577,6 @@ def _format_section(raw: str) -> str:
             _flush_para()
             out.append("\n")
             i += 1
-            continue
-
-        if i == 0 and i + 1 < len(lines) and _is_underline(lines[i + 1]):
-            level = _heading_level(lines[i + 1]) + 1
-            out.append(f"{'#' * level} {_convert_inline(lines[i])}\n")
-            i += 2
-            continue
-        if i == 1 and not lines[0].strip() and i + 1 < len(lines) and _is_underline(lines[i + 1]):
-            level = _heading_level(lines[i + 1]) + 1
-            out.append(f"{'#' * level} {_convert_inline(lines[i])}\n")
-            i += 2
             continue
 
         para.append(line)
