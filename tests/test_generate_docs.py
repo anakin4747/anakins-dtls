@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 
@@ -23,6 +24,7 @@ from generate_docs import (
     _resolve_numref,
     build_hover_docs,
     get_section,
+    SUBSTITUTIONS,
 )
 
 SPEC_PATH = os.path.join(
@@ -34,9 +36,7 @@ SPEC_PATH = os.path.join(
 )
 
 
-# ---------------------------------------------------------------------------
-# _convert_inline
-# ---------------------------------------------------------------------------
+# _convert_inline {{{
 
 def test_convert_inline_unicode_punctuation():
     assert _convert_inline("\u2018foo\u2019") == "'foo'"
@@ -54,34 +54,31 @@ def test_convert_inline_resolves_chapter_numref():
     assert result == "see Chapter 1 for details"
 
 def test_resolve_numref_with_chapter():
-    import re
     m = re.match(r"(^|\s):numref:`([^`]+)`", " :numref:`Chapter %s <chapter-devicetree>`")
     assert m
     result = _resolve_numref(m)
     assert result == " Chapter 2"
 
 def test_resolve_numref_with_unknown_label():
-    import re
     m = re.match(r"(^|\s):numref:`([^`]+)`", " :numref:`unknown-label>`")
     assert m
     result = _resolve_numref(m)
     assert result == " `unknown-label>`"
 
 def test_resolve_numref_preserves_start_of_line():
-    import re
     m = re.match(r"(^|\s):numref:`([^`]+)`", ":numref:`some-ref`")
     assert m
     result = _resolve_numref(m)
     assert result == "`some-ref`"
 
 def test_convert_inline_resolves_all_chapters():
-    for label, number in [
-        ("chapter-introduction", "1"),
-        ("chapter-devicetree", "2"),
-        ("chapter-device-node-requirements", "3"),
-        ("chapter-device-bindings", "4"),
-        ("chapter-fdt-structure", "5"),
-        ("chapter-devicetree-source-format", "6"),
+    for number, label in [
+        ("1", "chapter-introduction"),
+        ("2", "chapter-devicetree"),
+        ("3", "chapter-device-node-requirements"),
+        ("4", "chapter-device-bindings"),
+        ("5", "chapter-fdt-structure"),
+        ("6", "chapter-devicetree-source-format"),
     ]:
         result = _convert_inline(
             f"see :numref:`Chapter %s <{label}>` for details"
@@ -113,26 +110,21 @@ def test_convert_inline_combined():
     )
     assert result == '"the `x` `<string>` value"'
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# _expand_subst
-# ---------------------------------------------------------------------------
+# _expand_subst {{{
 
 def test_expand_subst_known():
-    from generate_docs import SUBSTITUTIONS
-    import re
     m = re.match(r"\|([^|]+)\|", "|spec|")
     assert _expand_subst(m) == SUBSTITUTIONS["|spec|"]
 
 def test_expand_subst_unknown_preserved():
-    import re
     m = re.match(r"\|([^|]+)\|", "|foo|")
     assert _expand_subst(m) == "|foo|"
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# _is_underline
-# ---------------------------------------------------------------------------
+# _is_underline {{{
 
 def test_is_underline_true():
     assert _is_underline("=====")
@@ -151,10 +143,7 @@ def test_is_underline_false_bad_char():
 def test_is_underline_false_empty():
     assert not _is_underline("")
 
-
-# ---------------------------------------------------------------------------
-# Block-level detection helpers
-# ---------------------------------------------------------------------------
+# Block-level detection helpers {{{
 
 def test_is_label():
     assert _is_label(".. _foo:")
@@ -207,10 +196,9 @@ def test_is_table_separator():
     assert _is_table_separator("-----  -------")
     assert not _is_table_separator("foo  bar")
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# Block handlers
-# ---------------------------------------------------------------------------
+# Block handlers {{{
 
 class TestHandleCodeBlock:
     def test_with_language(self):
@@ -352,12 +340,6 @@ class TestHandleLiteralBlock:
         assert md == "```\nliteral line 1\nliteral line 2\n```\n"
         assert i == 4
 
-    def test_with_prefix(self):
-        prefix_line = "Here is some code::"
-        lines = [prefix_line, "", "   code"]
-        md = _handle_literal_block(lines, 1)
-        # invoke from after prefix
-
 
 class TestHandleBulletList:
     def test_simple(self):
@@ -375,7 +357,7 @@ class TestHandleBulletList:
         lines = [
             "* ``<string>`` value",
         ]
-        md, i = _handle_bullet_list(lines, 0)
+        md, _ = _handle_bullet_list(lines, 0)
         assert "`<string>`" in md
 
 
@@ -414,10 +396,9 @@ class TestParseSimpleTable:
         assert rows[3] == "|      | riverbank.                                           |"
         assert i == 5
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# _format_section
-# ---------------------------------------------------------------------------
+# _format_section {{{
 
 def test_format_section_labels_are_bolded():
     raw = (
@@ -553,10 +534,9 @@ def test_format_section_just_a_heading():
     result = _format_section(raw)
     assert result == "# Foo\n"
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# build_hover_docs
-# ---------------------------------------------------------------------------
+# build_hover_docs {{{
 
 def test_build_hover_docs_all_keys_present():
     docs = build_hover_docs()
@@ -590,10 +570,9 @@ def test_build_hover_docs_no_raw_rst_directives():
             f"{key} contains unconverted RST code-block directive"
         )
 
+# }}}
 
-# ---------------------------------------------------------------------------
-# Existing get_section tests
-# ---------------------------------------------------------------------------
+# get_section tests {{{
 
 def test_get_section_compatible():
     with open(SPEC_PATH) as f:
@@ -619,6 +598,4 @@ def test_get_section_properties_includes_sub_sections():
     assert "Property Names\n^^^^^^^^^^^^^^" in section
     assert "Property Values\n^^^^^^^^^^^^^^^" in section
 
-def test_get_subsection():
-    pass
-
+# }}}
