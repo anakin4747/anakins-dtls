@@ -6,7 +6,7 @@ from tests.lsp_client import LSPClient
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
-from generate_docs import _format_section, get_section
+from generate_docs import _format_section, get_section, get_table_entry
 
 TARGET = {
     'Root node declaration': (3, 1),
@@ -51,9 +51,7 @@ def hover_over(lsp, uri, hover_target):
     return lsp.hover(uri, line - 1, col - 1)
 
 
-@then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))
-def check_hover(response, section):
-    section = section.replace('\\#', '#')
+def _hover_text(response):
     result = response.get('result')
     if result is None:
         pytest.fail('Hover returned null result (no documentation for property)')
@@ -64,6 +62,13 @@ def check_hover(response, section):
         text = contents or ''
     if not text:
         pytest.fail('Hover contents is empty')
+    return text
+
+
+@then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))
+def check_hover(response, section):
+    section = section.replace('\\#', '#')
+    text = _hover_text(response)
     raw = get_section(section)
     if raw is None:
         pytest.fail(f'Unknown section: {section}')
@@ -73,5 +78,21 @@ def check_hover(response, section):
             f'Hover response did not match spec section\n'
             f'  Section: {section}\n'
             f'  Expected: {expected[:500]}...\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.parse('the hover returns the definition of "{property}" from the "{table}" table from the devicetree specification'))
+def check_hover_table_definition(response, property, table):
+    text = _hover_text(response)
+    expected = get_table_entry(table, property, 'Definition')
+    if expected is None:
+        pytest.fail(f'Unknown table entry: {table}.{property}.Definition')
+    if expected not in text:
+        pytest.fail(
+            f'Hover response did not contain table definition\n'
+            f'  Table: {table}\n'
+            f'  Property: {property}\n'
+            f'  Expected: {expected}\n'
             f'  Got: {text[:500]}...'
         )
