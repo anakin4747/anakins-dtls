@@ -1,7 +1,12 @@
 import os
+import sys
 import pytest
 from pytest_bdd import given, when, then, parsers
 from tests.lsp_client import LSPClient
+
+sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
+
+from generate_docs import _format_section, get_section
 
 TARGET = {
     'compatible': (4, 5),
@@ -21,23 +26,6 @@ TARGET = {
     'linux,phandle': (19, 5),
 }
 
-EXPECTED = {
-    'compatible': 'define the specific programming model for the device',
-    'model': "specifies the manufacturer's model number",
-    'phandle': 'specifies a numerical identifier for a node',
-    'status': 'indicates the operational status of a device',
-    'address-cells and size-cells': 'how child device nodes should be addressed',
-    'reg': "describes the address of the device's resources",
-    'virtual-reg': 'specifies an effective address',
-    'ranges': 'provides a means of defining a mapping or translation',
-    'dma-ranges': 'describe the direct memory access',
-    'dma-coherent': 'capable of coherent DMA operations',
-    'dma-noncoherent': 'not capable of coherent DMA operations',
-    'name': 'is a string specifying the name of the node',
-    'device_type': 'was used in IEEE 1275',
-}
-
-
 @given('the language server is running', target_fixture='lsp')
 def server_running(request):
     lsp = LSPClient(cmd=['python3', '-m', 'anakins_dtls'], root=os.getcwd())
@@ -53,12 +41,7 @@ def file_open(lsp):
     return lsp.open(fixture)
 
 
-@given(parsers.re(r'a (node|bus node|cpu node) with.*'))
-def node_with():
-    pass
-
-
-@when(parsers.parse('hovering over "{property}"'), target_fixture='response')
+@when(parsers.parse('hovering over a "{property}" property name'), target_fixture='response')
 def hover_over(lsp, uri, property):
     pos = TARGET.get(property)
     if pos is None:
@@ -67,8 +50,9 @@ def hover_over(lsp, uri, property):
     return lsp.hover(uri, line - 1, col - 1)
 
 
-@then(parsers.parse('the hover returns the contents of the "{subsection}" subsection from the devicetree specification'))
-def check_hover(response, subsection):
+@then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))
+def check_hover(response, section):
+    section = section.replace('\\#', '#')
     result = response.get('result')
     if result is None:
         pytest.fail('Hover returned null result (no documentation for property)')
@@ -79,12 +63,14 @@ def check_hover(response, subsection):
         text = contents or ''
     if not text:
         pytest.fail('Hover contents is empty')
-    expected = EXPECTED.get(subsection)
-    if expected is None:
-        pytest.fail(f'Unknown subsection: {subsection}')
-    if expected not in text:
+    raw = get_section(section)
+    if raw is None:
+        pytest.fail(f'Unknown section: {section}')
+    expected = _format_section(raw)
+    if text != expected:
         pytest.fail(
-            f'Expected text not found in hover response\n'
-            f'  Expected substring: {expected}\n'
-            f'  Got: {text[:200]}...'
+            f'Hover response did not match spec section\n'
+            f'  Section: {section}\n'
+            f'  Expected: {expected[:500]}...\n'
+            f'  Got: {text[:500]}...'
         )
