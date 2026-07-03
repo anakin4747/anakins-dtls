@@ -548,7 +548,21 @@ def test_build_hover_docs_all_keys_present():
         "#address-cells", "#size-cells", "reg", "virtual-reg",
         "ranges", "dma-ranges", "dma-coherent", "dma-noncoherent",
         "name", "device_type", "__root__", "/aliases", "/memory",
-        "serial-number", "chassis-type",
+        "/reserved-memory", "/chosen", "/cpus", "/cpus/cpu*",
+        "/cpus/cpu*/l?-cache", "serial-number", "chassis-type",
+        "initial-mapped-area", "hotpluggable", "size", "alignment",
+        "alloc-ranges", "no-map", "reusable", "memory-region",
+        "memory-region-names", "bootargs", "bootsource", "stdout-path",
+        "stdin-path", "clock-frequency", "timebase-frequency",
+        "enable-method", "cpu-release-addr", "power-isa-version",
+        "power-isa-*", "cache-op-block-size", "reservation-granule-size",
+        "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
+        "d-tlb-size", "d-tlb-sets", "i-tlb-size", "i-tlb-sets",
+        "cache-unified", "cache-size", "cache-sets", "cache-block-size",
+        "cache-line-size", "i-cache-size", "i-cache-sets",
+        "i-cache-block-size", "i-cache-line-size", "d-cache-size",
+        "d-cache-sets", "d-cache-block-size", "d-cache-line-size",
+        "next-level-cache", "cache-level",
     }
     assert set(docs.keys()) == expected
 
@@ -591,9 +605,84 @@ def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
     for key, value in docs.items():
         assert value.startswith("#"), f"{key} does not start with a heading"
-        if key in {"__root__", "/aliases", "/memory"}:
+        if key in {
+            "__root__", "/aliases", "/memory", "/reserved-memory",
+            "/chosen", "/cpus", "/cpus/cpu*", "/cpus/cpu*/l?-cache",
+        }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
+
+def test_build_hover_docs_standard_node_sections_from_spec():
+    docs = build_hover_docs()
+    expected = {
+        "/reserved-memory": "``/reserved-memory`` Node",
+        "/chosen": "``/chosen`` Node",
+        "/cpus": "``/cpus`` Node Properties",
+        "/cpus/cpu*": "``/cpus/cpu*`` Node Properties",
+        "/cpus/cpu*/l?-cache": (
+            "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)"
+        ),
+    }
+
+    for key, section in expected.items():
+        raw = get_section(section)
+        assert raw is not None
+        assert docs[key] == _format_section(raw)
+
+def test_build_hover_docs_standard_node_properties_from_tables():
+    docs = build_hover_docs()
+    expected = {
+        "initial-mapped-area": "``/memory`` Node Properties",
+        "hotpluggable": "``/memory`` Node Properties",
+        "size": "``/reserved-memory/`` Child Node Properties",
+        "alignment": "``/reserved-memory/`` Child Node Properties",
+        "alloc-ranges": "``/reserved-memory/`` Child Node Properties",
+        "no-map": "``/reserved-memory/`` Child Node Properties",
+        "reusable": "``/reserved-memory/`` Child Node Properties",
+        "memory-region": "Properties for referencing reserved-memory regions",
+        "memory-region-names": "Properties for referencing reserved-memory regions",
+        "bootargs": "``/chosen`` Node Properties",
+        "bootsource": "``/chosen`` Node Properties",
+        "stdout-path": "``/chosen`` Node Properties",
+        "stdin-path": "``/chosen`` Node Properties",
+        "clock-frequency": "``/cpus/cpu*`` Node General Properties",
+        "timebase-frequency": "``/cpus/cpu*`` Node General Properties",
+        "enable-method": "``/cpus/cpu*`` Node General Properties",
+        "cpu-release-addr": "``/cpus/cpu*`` Node General Properties",
+        "power-isa-version": "``/cpus/cpu*`` Node Power ISA Properties",
+        "power-isa-*": "``/cpus/cpu*`` Node Power ISA Properties",
+        "cache-op-block-size": "``/cpus/cpu*`` Node Power ISA Properties",
+        "reservation-granule-size": "``/cpus/cpu*`` Node Power ISA Properties",
+        "mmu-type": "``/cpus/cpu*`` Node Power ISA Properties",
+        "tlb-split": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "d-tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "d-tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "i-tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "i-tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+        "cache-unified": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "i-cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "i-cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "i-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "i-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "d-cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "d-cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "d-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "d-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "next-level-cache": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache-level": (
+            "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
+            "Shared Cache Properties"
+        ),
+    }
+
+    for prop_name, table in expected.items():
+        assert docs[prop_name] == format_table_row_hover(table, prop_name)
 
 def test_build_hover_docs_no_raw_rst_directives():
     docs = build_hover_docs()
