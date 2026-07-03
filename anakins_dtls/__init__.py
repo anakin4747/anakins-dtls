@@ -15,7 +15,15 @@ ROOT_NODE_PROPERTIES = {
 
 STANDARD_NODE_NAMES = {
     'aliases',
+    'chosen',
+    'cpus',
     'memory',
+    'reserved-memory',
+}
+
+STANDARD_CHILD_NODE_NAMES = {
+    ('cpus', 'cpu'): '/cpus/cpu*',
+    ('cpu', 'l2-cache'): '/cpus/cpu*/l?-cache',
 }
 
 
@@ -96,17 +104,22 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     if line >= len(lines):
         return None
     line_text = lines[line]
-    m = re.match(r'\s*([\w,-]+)\s*\{', line_text)
+    m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
     if not m:
         return None
-    if m.group(1) not in STANDARD_NODE_NAMES:
-        return None
-    if _node_depth_at(text, line) != 1:
+    node_name = m.group(2)
+    doc_key = None
+    if node_name in STANDARD_NODE_NAMES and _node_depth_at(text, line) == 1:
+        doc_key = f'/{node_name}'
+    else:
+        parent = _parent_node_name_at(text, line)
+        doc_key = STANDARD_CHILD_NODE_NAMES.get((parent, node_name))
+    if doc_key is None:
         return None
 
-    start, end = m.span(1)
+    start, end = m.span(2)
     if start <= character <= end:
-        return f'/{m.group(1)}'
+        return doc_key
     return None
 
 
@@ -117,6 +130,18 @@ def _node_depth_at(text: str, line: int) -> int:
         depth += line_text.count('{')
         depth -= line_text.count('}')
     return depth
+
+
+def _parent_node_name_at(text: str, line: int) -> str | None:
+    stack: list[str] = []
+    for line_text in text.split('\n')[:line]:
+        m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
+        if m:
+            stack.append(m.group(2))
+        for _ in range(line_text.count('}')):
+            if stack:
+                stack.pop()
+    return stack[-1] if stack else None
 
 
 def handle_notification(method: str, params: dict | None) -> None:
@@ -160,6 +185,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         doc = HOVER_DOCS.get(prop)
         if doc is None and ',' in prop:
             doc = HOVER_DOCS.get(prop.split(',', 1)[1])
+        if doc is None and prop.startswith('power-isa-'):
+            doc = HOVER_DOCS.get('power-isa-*')
 
         return {
             'contents': {

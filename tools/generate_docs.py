@@ -252,6 +252,14 @@ def _parse_table_rows(lines: list[str]) -> list[list[str]]:
     return rows
 
 
+def _skip_table_options(block: list[str]) -> list[str]:
+    while block and block[0].lstrip().startswith(":"):
+        block = block[1:]
+    while block and not block[0].strip():
+        block = block[1:]
+    return block
+
+
 def get_table_entry(table: str, row: str, column: str) -> str | None:
     for fpath in _rst_files():
         with open(fpath) as f:
@@ -262,6 +270,7 @@ def get_table_entry(table: str, row: str, column: str) -> str | None:
                 continue
 
             block, _ = _consume_indented_block(lines, idx + 1)
+            block = _skip_table_options(block)
             rows = _parse_table_rows(block)
             if not rows:
                 continue
@@ -306,6 +315,7 @@ def get_table_row(table: str, row: str) -> dict[str, str] | None:
                 continue
 
             block, _ = _consume_indented_block(lines, idx + 1)
+            block = _skip_table_options(block)
             rows = _parse_table_rows(block)
             if not rows:
                 continue
@@ -696,6 +706,13 @@ SECTION_DOCS: dict[str, str] = {
     "__root__": "Root node",
     "/aliases": "``/aliases`` node",
     "/memory": "``/memory`` node",
+    "/reserved-memory": "``/reserved-memory`` Node",
+    "/chosen": "``/chosen`` Node",
+    "/cpus": "``/cpus`` Node Properties",
+    "/cpus/cpu*": "``/cpus/cpu*`` Node Properties",
+    "/cpus/cpu*/l?-cache": (
+        "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)"
+    ),
     "compatible": "compatible",
     "model": "model",
     "phandle": "phandle",
@@ -717,6 +734,56 @@ ROOT_NODE_PROPERTIES = {
     "chassis-type",
 }
 
+TABLE_ROW_DOCS: dict[str, str] = {
+    "initial-mapped-area": "``/memory`` Node Properties",
+    "hotpluggable": "``/memory`` Node Properties",
+    "size": "``/reserved-memory/`` Child Node Properties",
+    "alignment": "``/reserved-memory/`` Child Node Properties",
+    "alloc-ranges": "``/reserved-memory/`` Child Node Properties",
+    "no-map": "``/reserved-memory/`` Child Node Properties",
+    "reusable": "``/reserved-memory/`` Child Node Properties",
+    "memory-region": "Properties for referencing reserved-memory regions",
+    "memory-region-names": "Properties for referencing reserved-memory regions",
+    "bootargs": "``/chosen`` Node Properties",
+    "bootsource": "``/chosen`` Node Properties",
+    "stdout-path": "``/chosen`` Node Properties",
+    "stdin-path": "``/chosen`` Node Properties",
+    "clock-frequency": "``/cpus/cpu*`` Node General Properties",
+    "timebase-frequency": "``/cpus/cpu*`` Node General Properties",
+    "enable-method": "``/cpus/cpu*`` Node General Properties",
+    "cpu-release-addr": "``/cpus/cpu*`` Node General Properties",
+    "power-isa-version": "``/cpus/cpu*`` Node Power ISA Properties",
+    "power-isa-*": "``/cpus/cpu*`` Node Power ISA Properties",
+    "cache-op-block-size": "``/cpus/cpu*`` Node Power ISA Properties",
+    "reservation-granule-size": "``/cpus/cpu*`` Node Power ISA Properties",
+    "mmu-type": "``/cpus/cpu*`` Node Power ISA Properties",
+    "tlb-split": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "d-tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "d-tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "i-tlb-size": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "i-tlb-sets": "``/cpu/cpu*`` Node Power ISA TLB Properties",
+    "cache-unified": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "i-cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "i-cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "i-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "i-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "d-cache-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "d-cache-sets": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "d-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "d-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "next-level-cache": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache-level": (
+        "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
+        "Shared Cache Properties"
+    ),
+}
+
 
 def build_hover_docs() -> dict[str, str]:
     docs: dict[str, str] = {}
@@ -731,6 +798,8 @@ def build_hover_docs() -> dict[str, str]:
             "Root Node Properties",
             prop_name,
         ) or ""
+    for prop_name, table_name in TABLE_ROW_DOCS.items():
+        docs[prop_name] = format_table_row_hover(table_name, prop_name) or ""
     return docs
 
 
