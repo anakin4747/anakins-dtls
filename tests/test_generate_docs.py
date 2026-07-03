@@ -547,7 +547,7 @@ def test_build_hover_docs_all_keys_present():
         "compatible", "model", "phandle", "status",
         "#address-cells", "#size-cells", "reg", "virtual-reg",
         "ranges", "dma-ranges", "dma-coherent", "dma-noncoherent",
-        "name", "device_type", "__root__", "/aliases",
+        "name", "device_type", "__root__", "/aliases", "/memory",
         "serial-number", "chassis-type",
     }
     assert set(docs.keys()) == expected
@@ -580,11 +580,18 @@ def test_build_hover_docs_aliases_node_from_spec_section():
     assert raw is not None
     assert docs["/aliases"] == _format_section(raw)
 
+def test_build_hover_docs_memory_node_from_spec_section():
+    docs = build_hover_docs()
+    raw = get_section("``/memory`` node")
+
+    assert raw is not None
+    assert docs["/memory"] == _format_section(raw)
+
 def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
     for key, value in docs.items():
         assert value.startswith("#"), f"{key} does not start with a heading"
-        if key in {"__root__", "/aliases"}:
+        if key in {"__root__", "/aliases", "/memory"}:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
 
