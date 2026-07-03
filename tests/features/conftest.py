@@ -77,7 +77,7 @@ def hover_over(lsp, uri, hover_target):
 def _hover_text(response):
     result = response.get('result')
     if result is None:
-        pytest.fail('Hover returned null result (no documentation for property)')
+        pytest.fail('Hover returned null result (no documentation for target)')
     contents = result.get('contents', '')
     if isinstance(contents, dict):
         text = contents.get('value', '')

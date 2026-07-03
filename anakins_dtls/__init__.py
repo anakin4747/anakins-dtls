@@ -13,6 +13,11 @@ ROOT_NODE_PROPERTIES = {
     'chassis-type',
 }
 
+STANDARD_NODE_NAMES = {
+    'aliases',
+    'memory',
+}
+
 
 def _send(msg: dict) -> None:
     data = json.dumps(msg, separators=(',', ':')).encode('utf-8')
@@ -91,8 +96,10 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     if line >= len(lines):
         return None
     line_text = lines[line]
-    m = re.match(r'\s*(aliases|memory)\s*\{', line_text)
+    m = re.match(r'\s*([\w,-]+)\s*\{', line_text)
     if not m:
+        return None
+    if m.group(1) not in STANDARD_NODE_NAMES:
         return None
     if _node_depth_at(text, line) != 1:
         return None

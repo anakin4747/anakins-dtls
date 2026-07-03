@@ -692,7 +692,7 @@ def _format_section(raw: str) -> str:
     return "".join(out).strip() + "\n"
 
 
-PROPERTY_SECTIONS: dict[str, str] = {
+SECTION_DOCS: dict[str, str] = {
     "__root__": "Root node",
     "/aliases": "``/aliases`` node",
     "/memory": "``/memory`` node",
@@ -720,7 +720,7 @@ ROOT_NODE_PROPERTIES = {
 
 def build_hover_docs() -> dict[str, str]:
     docs: dict[str, str] = {}
-    for prop_name, section_name in PROPERTY_SECTIONS.items():
+    for prop_name, section_name in SECTION_DOCS.items():
         raw = get_section(section_name)
         if raw:
             docs[prop_name] = _format_section(raw)
