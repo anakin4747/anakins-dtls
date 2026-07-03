@@ -55,7 +55,7 @@ make
 This will run the tests in the development environment managed by the nix
 flake.
 
-The `tests/devicetree-specification/` submodule is the official Device Tree
+The `devicetree-specification/` submodule is the official Device Tree
 Specification source. Use it as the reference for hover documentation content.
 
 **Every bug fix must follow this order — no exceptions:**
@@ -68,8 +68,3 @@ Specification source. Use it as the reference for hover documentation content.
 
 Never fix a bug without a test that would have caught it. Never commit a fix
 before the test exists.
-
-## The Language Server
-
-The language server binary is `anakins-dtls` at the repo root. It communicates
-via JSON-RPC over stdin/stdout following the LSP specification.
