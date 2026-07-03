@@ -13,4 +13,21 @@ diagnostics:
 - diagnostics for invalid characters in property names
 
 figure out a way to have go to type definition take you to a tmp file that
-contains the documentation for devicetree types
+contains the documentation for devicetree types or return a hover if possible
+
+---
+
+for diagnostics pull out rules (sentances from the specification, often which
+include the word shall) to be parsed out of feature files for implementing
+diagnostics from the spec, or something like that
+
+---
+
+how to, when running make, first poll (only if 6 months have passed since the
+last time it was supposed to poll previously) if there has been any updates to
+the spec upstream and if there has automatically some ci that updates the spec,
+runs the tests and if it all passes, it commits it as a chore: commit.
+
+---
+
+be able to specify sandbox rules by commands in anakins-agents
