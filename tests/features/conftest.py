@@ -86,27 +86,30 @@ TARGET = {
     'next-level-cache': (89, 13),
     'cache node declaration': (91, 19),
     'cache-level': (93, 17),
-    'memory-region': (108, 9),
-    'memory-region-names': (109, 9),
-    'interrupts': (115, 9),
-    'interrupt-parent': (116, 9),
-    'interrupts-extended': (117, 9),
-    'interrupt-controller': (118, 9),
-    '#interrupt-cells': (119, 9),
-    'interrupt-map': (129, 9),
-    'interrupt-map-mask': (130, 9),
-    'gpio-map': (131, 9),
-    'gpio-map-mask': (132, 9),
-    'gpio-map-pass-thru': (133, 9),
-    '#gpio-cells': (134, 9),
+    'memory-region': (102, 9),
+    'memory-region-names': (103, 9),
+    'interrupts': (109, 9),
+    'interrupt-parent': (110, 9),
+    'interrupts-extended': (111, 9),
+    'interrupt-controller': (112, 9),
+    '#interrupt-cells': (113, 9),
+}
+
+NEXUS_TARGET = {
+    ('interrupt-map', 'pci nexus node'): (132, 9),
+    ('interrupt-map-mask', 'pci nexus node'): (133, 9),
+    ('gpio-map', 'connector nexus node'): (138, 9),
+    ('gpio-map-mask', 'connector nexus node'): (139, 9),
+    ('gpio-map-pass-thru', 'connector nexus node'): (140, 9),
+    ('#gpio-cells', 'connector nexus node'): (137, 9),
 }
 
 STATUS_VALUE_TARGET = {
-    'okay': (110, 19),
-    'disabled': (111, 19),
-    'reserved': (112, 19),
-    'fail': (113, 19),
-    'fail-sss': (114, 19),
+    'okay': (104, 19),
+    'disabled': (105, 19),
+    'reserved': (106, 19),
+    'fail': (107, 19),
+    'fail-sss': (108, 19),
 }
 
 NON_ROOT_TARGET = {
@@ -121,12 +124,16 @@ INVALID_PLACEMENT_TARGET = {
     ('memory-region-names', 'root node'): (23, 5),
     ('memory-region', 'reserved-memory node'): (40, 13),
     ('memory-region-names', 'reserved-memory node'): (41, 13),
-    ('interrupt-map', 'non-nexus device node'): (101, 9),
-    ('interrupt-map-mask', 'non-nexus device node'): (102, 9),
-    ('gpio-map', 'non-nexus device node'): (103, 9),
-    ('gpio-map-mask', 'non-nexus device node'): (104, 9),
-    ('gpio-map-pass-thru', 'non-nexus device node'): (105, 9),
-    ('#gpio-cells', 'non-nexus device node'): (106, 9),
+    ('interrupt-map', 'non-nexus device node'): (123, 9),
+    ('interrupt-map-mask', 'non-nexus device node'): (124, 9),
+    ('gpio-map', 'non-nexus device node'): (125, 9),
+    ('gpio-map-mask', 'non-nexus device node'): (126, 9),
+    ('gpio-map-pass-thru', 'non-nexus device node'): (127, 9),
+    ('interrupt-map', 'node named nexus without nexus properties'): (144, 9),
+    ('interrupt-map-mask', 'node named nexus without nexus properties'): (145, 9),
+    ('gpio-map', 'node named nexus without nexus properties'): (146, 9),
+    ('gpio-map-mask', 'node named nexus without nexus properties'): (147, 9),
+    ('gpio-map-pass-thru', 'node named nexus without nexus properties'): (148, 9),
 }
 
 
@@ -160,9 +167,19 @@ def file_open(lsp):
     return lsp.open(fixture)
 
 
-@when(parsers.re(r'hovering over an? (?P<hover_target>.+?)(?: on the root node)?$'), target_fixture='response')
+@when(parsers.re(r'hovering over an? (?P<hover_target>(?!.* in a ).+?)(?: on the root node)?$'), target_fixture='response')
 def hover_over(lsp, uri, hover_target):
     return _hover_at(lsp, uri, TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) in a (?P<placement>pci nexus node|connector nexus node)$'), target_fixture='response')
+def hover_over_nexus_property(lsp, uri, hover_target, placement):
+    hover_target = _normalize_hover_target(hover_target)
+    pos = NEXUS_TARGET.get((hover_target, placement))
+    if pos is None:
+        pytest.fail(f'Unknown nexus hover target: {hover_target} in {placement}')
+    line, col = pos
+    return lsp.hover(uri, line - 1, col - 1)
 
 
 @when(parsers.parse('the "status" property value is hovered for {value}'), target_fixture='response')
@@ -246,7 +263,7 @@ def check_no_hover_outside_root_node(lsp, uri, hover_target):
         )
 
 
-@then(parsers.re(r'hovering over an? (?P<hover_target>.+?) (?:on|in) (?:a|the) (?P<placement>root node|reserved-memory node|non-nexus device node) returns nothing'))
+@then(parsers.re(r'hovering over an? (?P<hover_target>.+?) (?:on|in) (?:a|the) (?P<placement>root node|reserved-memory node|non-nexus device node|node named nexus without nexus properties) returns nothing'))
 def check_no_hover_in_invalid_placement(lsp, uri, hover_target, placement):
     hover_target = _normalize_hover_target(hover_target)
     pos = INVALID_PLACEMENT_TARGET.get((hover_target, placement))

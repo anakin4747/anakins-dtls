@@ -24,12 +24,14 @@ Feature: Interrupt Property Hover Documentation
     When hovering over a "#interrupt-cells" property name
     Then the hover returns the contents of the "\#interrupt-cells" section from the devicetree specification
 
-  Scenario: Hover on an "interrupt-map" property name returns the "interrupt-map" section from the devicetree specification
-    When hovering over an "interrupt-map" property name
+  Scenario: Hover on an "interrupt-map" property name in an interrupt nexus node returns the "interrupt-map" section from the devicetree specification
+    When hovering over an "interrupt-map" property name in a pci nexus node
     Then the hover returns the contents of the "interrupt-map" section from the devicetree specification
     And hovering over an "interrupt-map" property name on a non-nexus device node returns nothing
+    And hovering over an "interrupt-map" property name in a node named nexus without nexus properties returns nothing
 
-  Scenario: Hover on an "interrupt-map-mask" property name returns the "interrupt-map-mask" section from the devicetree specification
-    When hovering over an "interrupt-map-mask" property name
+  Scenario: Hover on an "interrupt-map-mask" property name in an interrupt nexus node returns the "interrupt-map-mask" section from the devicetree specification
+    When hovering over an "interrupt-map-mask" property name in a pci nexus node
     Then the hover returns the contents of the "interrupt-map-mask" section from the devicetree specification
     And hovering over an "interrupt-map-mask" property name on a non-nexus device node returns nothing
+    And hovering over an "interrupt-map-mask" property name in a node named nexus without nexus properties returns nothing
