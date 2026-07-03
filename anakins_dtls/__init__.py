@@ -86,6 +86,23 @@ def _root_node_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _standard_node_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    m = re.match(r'\s*(aliases)\s*\{', line_text)
+    if not m:
+        return None
+    if _node_depth_at(text, line) != 1:
+        return None
+
+    start, end = m.span(1)
+    if start <= character <= end:
+        return f'/{m.group(1)}'
+    return None
+
+
 def _node_depth_at(text: str, line: int) -> int:
     lines = text.split('\n')
     depth = 0
@@ -124,6 +141,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             return None
 
         prop = _root_node_at(text, line, character)
+        if prop is None:
+            prop = _standard_node_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:

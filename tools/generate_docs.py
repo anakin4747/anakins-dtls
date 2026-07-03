@@ -694,6 +694,7 @@ def _format_section(raw: str) -> str:
 
 PROPERTY_SECTIONS: dict[str, str] = {
     "__root__": "Root node",
+    "/aliases": "``/aliases`` node",
     "compatible": "compatible",
     "model": "model",
     "phandle": "phandle",

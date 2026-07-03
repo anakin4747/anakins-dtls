@@ -20,8 +20,14 @@
     serial-number = "123456";
     chassis-type = "embedded";
 
+    aliases {
+    };
+
     child {
         serial-number = "wrong-node";
         chassis-type = "wrong-node";
+
+        aliases {
+        };
     };
 };

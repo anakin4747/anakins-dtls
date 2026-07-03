@@ -20,13 +20,13 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns usage, value type, and definition for "chassis-type" from the "Root Node Properties" table from the devicetree specification
     And hovering over a "chassis-type" property name outside the root node returns nothing
 
-  # # /aliases node
-  #
-  # Scenario: Hover on "/aliases" returns the "/aliases node" section from the devicetree specification
-  #   Given a devicetree with a "/aliases" node at the root
-  #   When hovering over the node path "/aliases"
-  #   Then the hover returns the contents of the "/aliases node" section from the devicetree specification
-  #
+  # /aliases node
+
+  Scenario: Hover on an aliases node declaration on the root node returns the "/aliases node" section from the devicetree specification
+    When hovering over an aliases node declaration on the root node
+    Then the hover returns the contents of the "/aliases node" section from the devicetree specification
+    And hovering over an aliases node declaration outside the root node returns nothing
+
   # # /memory node
   #
   # Scenario: Hover on "/memory" returns the "/memory node" section and subsections from the devicetree specification
