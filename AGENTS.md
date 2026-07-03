@@ -43,9 +43,10 @@ relevant `.feature` file so the desired behavior is expressed in terms the end
 user can observe. Only after the feature captures the behavior should step
 definitions, unit tests, and implementation code be changed.
 
-For implementation details that do not matter to the end user, always use TDD:
-write the smallest failing unit test that describes the implementation contract,
-verify it fails, then implement the change.
+For implementation details that do not matter to the end user, such as
+modifying the docs_generation functionality always use TDD: write the smallest
+failing unit test that describes the implementation contract, verify it fails,
+then implement the change.
 
 To run the tests in the test environment run the default make target like so:
 ```sh
