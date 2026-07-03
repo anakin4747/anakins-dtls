@@ -18,6 +18,7 @@ TARGET = {
     'dma-noncoherent': (16, 5),
     'name': (17, 5),
     'device_type': (18, 5),
+    'linux,phandle': (19, 5),
 }
 
 EXPECTED = {

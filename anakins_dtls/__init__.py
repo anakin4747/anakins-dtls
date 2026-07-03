@@ -54,7 +54,7 @@ def _property_at(text: str, line: int, character: int) -> str | None:
     if not line_text.strip():
         return None
 
-    m = re.match(r'([\w#-]+)\s*[=;]', line_text.strip())
+    m = re.match(r'([\w,#-]+)\s*[=;]', line_text.strip())
     if not m:
         return None
 
@@ -101,8 +101,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             return None
 
         doc = HOVER_DOCS.get(prop)
-        if doc is None:
-            return None
+        if doc is None and ',' in prop:
+            doc = HOVER_DOCS.get(prop.split(',', 1)[1])
 
         return {
             'contents': {

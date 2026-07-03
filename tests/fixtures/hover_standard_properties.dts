@@ -16,4 +16,5 @@
     dma-noncoherent;
     name = "cpu";
     device_type = "cpu";
+    linux,phandle = <1>;
 };

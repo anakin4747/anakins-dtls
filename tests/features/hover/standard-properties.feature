@@ -19,6 +19,11 @@ Feature: Standard Property Hover Documentation
     When hovering over "phandle"
     Then the hover returns the contents of the "phandle" subsection from the devicetree specification
 
+  Scenario: Hover on "linux,phandle" shows unique node identifier
+    Given a node with linux,phandle = <1>
+    When hovering over "linux,phandle"
+    Then the hover returns the contents of the "phandle" subsection from the devicetree specification
+
   Scenario: Hover on "status" shows operational status
     Given a node with status = "disabled"
     When hovering over "status"
