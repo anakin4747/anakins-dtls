@@ -98,6 +98,12 @@
     child {
         serial-number = "wrong-node"; // should not return hover since it is only a root property
         chassis-type = "wrong-node"; // should not return hover since it is only a root property
+        interrupt-map = <0 0 1 &pic 1 1>; // should not return hover since it is only valid on nexus nodes
+        interrupt-map-mask = <0xf800 0 0 7>; // should not return hover since it is only valid on nexus nodes
+        gpio-map = <0 0 &gpio 0 0>; // should not return hover since it is only valid on nexus nodes
+        gpio-map-mask = <0xf 0x0>; // should not return hover since it is only valid on nexus nodes
+        gpio-map-pass-thru = <0x0 0x1>; // should not return hover since it is only valid on nexus nodes
+        #gpio-cells = <2>; // should not return hover since it is only valid on nexus nodes
 
         memory-region = <&display_reserved>;
         memory-region-names = "display";
@@ -111,17 +117,20 @@
         interrupts-extended = <&pic 0xA 8>, <&gic 0xda>;
         interrupt-controller;
         #interrupt-cells = <2>;
-        interrupt-map = <0 0 1 &pic 1 1>;
-        interrupt-map-mask = <0xf800 0 0 7>;
-        gpio-map = <0 0 &gpio 0 0>;
-        gpio-map-mask = <0xf 0x0>;
-        gpio-map-pass-thru = <0x0 0x1>;
-        #gpio-cells = <2>;
 
         aliases { // should not return hover since it is only a root node
         };
 
         memory { // should not return hover since it is only a root node
         };
+    };
+
+    nexus {
+        interrupt-map = <0 0 1 &pic 1 1>;
+        interrupt-map-mask = <0xf800 0 0 7>;
+        gpio-map = <0 0 &gpio 0 0>;
+        gpio-map-mask = <0xf 0x0>;
+        gpio-map-pass-thru = <0x0 0x1>;
+        #gpio-cells = <2>;
     };
 };

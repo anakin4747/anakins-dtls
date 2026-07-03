@@ -27,7 +27,9 @@ Feature: Interrupt Property Hover Documentation
   Scenario: Hover on an "interrupt-map" property name returns the "interrupt-map" section from the devicetree specification
     When hovering over an "interrupt-map" property name
     Then the hover returns the contents of the "interrupt-map" section from the devicetree specification
+    And hovering over an "interrupt-map" property name on a non-nexus device node returns nothing
 
   Scenario: Hover on an "interrupt-map-mask" property name returns the "interrupt-map-mask" section from the devicetree specification
     When hovering over an "interrupt-map-mask" property name
     Then the hover returns the contents of the "interrupt-map-mask" section from the devicetree specification
+    And hovering over an "interrupt-map-mask" property name on a non-nexus device node returns nothing
