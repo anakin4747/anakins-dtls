@@ -18,6 +18,15 @@ DEVICE_NODE_ONLY_PROPERTIES = {
     'memory-region-names',
 }
 
+NEXUS_ONLY_PROPERTIES = {
+    'interrupt-map',
+    'interrupt-map-mask',
+    'gpio-map',
+    'gpio-map-mask',
+    'gpio-map-pass-thru',
+    '#gpio-cells',
+}
+
 STANDARD_NODE_NAMES = {
     'aliases',
     'chosen',
@@ -169,6 +178,10 @@ def _ancestor_node_names_at(text: str, line: int) -> list[str]:
     return stack
 
 
+def _is_nexus_node_at(text: str, line: int) -> bool:
+    return _parent_node_name_at(text, line) == 'nexus'
+
+
 def handle_notification(method: str, params: dict | None) -> None:
     if method == 'textDocument/didOpen':
         uri = params['textDocument']['uri']
@@ -212,6 +225,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             ancestors = _ancestor_node_names_at(text, line)
             if _node_depth_at(text, line) == 1 or 'reserved-memory' in ancestors:
                 return None
+        if prop in NEXUS_ONLY_PROPERTIES and not _is_nexus_node_at(text, line):
+            return None
 
         doc = HOVER_DOCS.get(prop)
         if doc is None and ',' in prop:
