@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "devicetree-specification": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773157703,
+        "narHash": "sha256-sCidIES3iHedNOni2ui4NIa2EpPB9nVgmHb6P4GCPcw=",
+        "owner": "devicetree-org",
+        "repo": "devicetree-specification",
+        "rev": "9e02fb809737ff25e7d04ab2932822f6a6ef0166",
+        "type": "github"
+      },
+      "original": {
+        "owner": "devicetree-org",
+        "repo": "devicetree-specification",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,6 +52,7 @@
     },
     "root": {
       "inputs": {
+        "devicetree-specification": "devicetree-specification",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }

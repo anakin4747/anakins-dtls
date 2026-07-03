@@ -31,3 +31,7 @@ runs the tests and if it all passes, it commits it as a chore: commit.
 ---
 
 be able to specify sandbox rules by commands in anakins-agents
+
+---
+
+align devicetree spec submodule with the nix flake input

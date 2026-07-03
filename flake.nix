@@ -4,9 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    devicetree-specification = {
+      url = "github:devicetree-org/devicetree-specification";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, devicetree-specification }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -19,6 +23,7 @@
           nativeBuildInputs = [ pkgs.python3Packages.setuptools ];
 
           preBuild = ''
+            ln -s ${devicetree-specification} devicetree-specification
             PYTHONPATH=tools python -c "from generate_docs import write_hover_docs; write_hover_docs()"
           '';
         };
