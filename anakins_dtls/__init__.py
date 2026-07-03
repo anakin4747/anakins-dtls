@@ -91,7 +91,7 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     if line >= len(lines):
         return None
     line_text = lines[line]
-    m = re.match(r'\s*(aliases)\s*\{', line_text)
+    m = re.match(r'\s*(aliases|memory)\s*\{', line_text)
     if not m:
         return None
     if _node_depth_at(text, line) != 1:
