@@ -13,8 +13,7 @@ dtspec:
 
 .PHONY: test
 test:
-	$(SHELL_PREFIX) \
-		python3 \
-			-m pytest tests/features/step_definitions/test_standard_properties.py \
-			--gherkin-terminal-reporter \
-			-v
+	$(SHELL_PREFIX) python3 \
+		-m pytest tests/features/step_definitions/test_standard_properties.py \
+		--gherkin-terminal-reporter \
+		-v
