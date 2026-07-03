@@ -88,6 +88,13 @@ TARGET = {
     'cache-level': (93, 17),
     'memory-region': (102, 9),
     'memory-region-names': (103, 9),
+    'interrupts': (109, 9),
+    'interrupt-parent': (110, 9),
+    'interrupts-extended': (111, 9),
+    'interrupt-controller': (112, 9),
+    '#interrupt-cells': (113, 9),
+    'interrupt-map': (114, 9),
+    'interrupt-map-mask': (115, 9),
 }
 
 STATUS_VALUE_TARGET = {
@@ -101,8 +108,8 @@ STATUS_VALUE_TARGET = {
 NON_ROOT_TARGET = {
     'serial-number': (99, 9),
     'chassis-type': (100, 9),
-    'aliases node declaration': (110, 13),
-    'memory node declaration': (113, 13),
+    'aliases node declaration': (117, 13),
+    'memory node declaration': (120, 13),
 }
 
 INVALID_PLACEMENT_TARGET = {

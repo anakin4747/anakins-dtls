@@ -106,6 +106,13 @@
         status = "reserved";
         status = "fail";
         status = "fail-sss";
+        interrupts = <0xA 8>;
+        interrupt-parent = <&pic>;
+        interrupts-extended = <&pic 0xA 8>, <&gic 0xda>;
+        interrupt-controller;
+        #interrupt-cells = <2>;
+        interrupt-map = <0 0 1 &pic 1 1>;
+        interrupt-map-mask = <0xf800 0 0 7>;
 
         aliases { // should not return hover since it is only a root node
         };
