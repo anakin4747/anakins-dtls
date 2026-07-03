@@ -127,6 +127,24 @@ def get_section(name: str) -> str | None:
     return None
 
 
+def _source_dir() -> str:
+    return os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "devicetree-specification",
+        "source",
+    )
+
+
+def _rst_files() -> list[str]:
+    source_dir = _source_dir()
+    return [
+        os.path.join(source_dir, fname)
+        for fname in sorted(os.listdir(source_dir))
+        if fname.endswith(".rst")
+    ]
+
+
 def _is_label(line: str) -> bool:
     return line.lstrip().startswith(".. _")
 
@@ -173,6 +191,92 @@ def _consume_indented_block(
             continue
         break
     return block, i
+
+
+def _strip_literal_markup(text: str) -> str:
+    return _convert_inline(text).replace("`", "")
+
+
+def _column_starts(separator: str) -> list[int]:
+    starts: list[int] = []
+    in_column = False
+    for idx, ch in enumerate(separator):
+        if ch in "=-":
+            if not in_column:
+                starts.append(idx)
+                in_column = True
+        else:
+            in_column = False
+    return starts
+
+
+def _split_table_line(line: str, col_start: list[int]) -> list[str]:
+    cells: list[str] = []
+    for idx, start in enumerate(col_start):
+        end = col_start[idx + 1] - 1 if idx + 1 < len(col_start) else None
+        cells.append(line[start:end].strip())
+    return cells
+
+
+def _parse_table_rows(lines: list[str]) -> list[list[str]]:
+    if not lines or not _is_table_separator(lines[0]):
+        return []
+
+    col_start = _column_starts(lines[0])
+    rows: list[list[str]] = []
+    current: list[str] | None = None
+
+    for line in lines[1:]:
+        if _is_table_separator(line):
+            if current is not None:
+                rows.append(current)
+                current = None
+            continue
+        if not line.strip():
+            continue
+
+        cells = _split_table_line(line, col_start)
+        if cells[0]:
+            if current is not None:
+                rows.append(current)
+            current = cells
+            continue
+
+        if current is not None:
+            for idx, cell in enumerate(cells):
+                if cell:
+                    current[idx] = (current[idx] + " " + cell).strip()
+
+    if current is not None:
+        rows.append(current)
+    return rows
+
+
+def get_table_entry(table: str, row: str, column: str) -> str | None:
+    for fpath in _rst_files():
+        with open(fpath) as f:
+            lines = f.read().split("\n")
+
+        for idx, line in enumerate(lines):
+            if line.lstrip() != f".. table:: {table}":
+                continue
+
+            block, _ = _consume_indented_block(lines, idx + 1)
+            rows = _parse_table_rows(block)
+            if not rows:
+                continue
+
+            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            try:
+                row_idx = header.index("Property Name")
+                col_idx = header.index(column)
+            except ValueError:
+                return None
+
+            for cells in rows[1:]:
+                if _strip_literal_markup(cells[row_idx]) == row:
+                    return _strip_literal_markup(cells[col_idx])
+    return None
 
 
 def _handle_code_block(lines: list[str], i: int) -> tuple[str, int]:

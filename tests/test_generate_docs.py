@@ -24,6 +24,7 @@ from generate_docs import (
     _resolve_numref,
     build_hover_docs,
     get_section,
+    get_table_entry,
     SUBSTITUTIONS,
 )
 
@@ -597,5 +598,18 @@ def test_get_section_properties_includes_sub_sections():
     assert section == expected
     assert "Property Names\n^^^^^^^^^^^^^^" in section
     assert "Property Values\n^^^^^^^^^^^^^^^" in section
+
+# }}}
+
+# get_table_entry tests {{{
+
+def test_get_table_entry_root_node_serial_number_definition():
+    entry = get_table_entry(
+        "Root Node Properties",
+        "serial-number",
+        "Definition",
+    )
+
+    assert entry == "Specifies a string representing the device's serial number."
 
 # }}}
