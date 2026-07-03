@@ -27,6 +27,18 @@ NEXUS_ONLY_PROPERTIES = {
     '#gpio-cells',
 }
 
+INTERRUPT_NEXUS_PROPERTIES = {
+    'interrupt-map',
+    'interrupt-map-mask',
+}
+
+SPECIFIER_NEXUS_PROPERTIES = {
+    'gpio-map',
+    'gpio-map-mask',
+    'gpio-map-pass-thru',
+    '#gpio-cells',
+}
+
 STANDARD_NODE_NAMES = {
     'aliases',
     'chosen',
@@ -178,8 +190,39 @@ def _ancestor_node_names_at(text: str, line: int) -> list[str]:
     return stack
 
 
-def _is_nexus_node_at(text: str, line: int) -> bool:
-    return _parent_node_name_at(text, line) == 'nexus'
+def _node_has_property_at(text: str, line: int, prop: str) -> bool:
+    stack: list[int] = []
+    lines = text.split('\n')
+    for index, line_text in enumerate(lines[:line]):
+        m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
+        if m:
+            stack.append(index)
+        for _ in range(line_text.count('}')):
+            if stack:
+                stack.pop()
+
+    if not stack:
+        return False
+
+    depth = 1
+    for line_text in lines[stack[-1] + 1:]:
+        if depth == 1:
+            m = re.match(r'\s*([\w,#-]+)\s*[=;]', line_text)
+            if m and m.group(1) == prop:
+                return True
+        depth += line_text.count('{')
+        depth -= line_text.count('}')
+        if depth == 0:
+            return False
+    return False
+
+
+def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
+    if prop in INTERRUPT_NEXUS_PROPERTIES:
+        return _node_has_property_at(text, line, '#interrupt-cells')
+    if prop in SPECIFIER_NEXUS_PROPERTIES:
+        return _node_has_property_at(text, line, '#gpio-cells')
+    return False
 
 
 def handle_notification(method: str, params: dict | None) -> None:
@@ -225,7 +268,7 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             ancestors = _ancestor_node_names_at(text, line)
             if _node_depth_at(text, line) == 1 or 'reserved-memory' in ancestors:
                 return None
-        if prop in NEXUS_ONLY_PROPERTIES and not _is_nexus_node_at(text, line):
+        if prop in NEXUS_ONLY_PROPERTIES and not _is_nexus_node_at(text, line, prop):
             return None
 
         doc = HOVER_DOCS.get(prop)
