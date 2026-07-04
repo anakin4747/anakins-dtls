@@ -136,6 +136,8 @@ Step-definition boundary:
   definitions.
 - In this phase, step-definition changes may only adapt scenario wording to
   existing helpers or compose existing helpers.
+- In this phase, `tests/features/test_features.py` may only register or
+  unregister feature files with `scenarios()`. Do not add behavior logic there.
 - If a BDD assertion needs a new way to derive expected hover text from the
   Device Tree Specification, do not implement that logic in step definitions.
   Add the required DTS Specification generation test phase first, then implement
@@ -170,6 +172,7 @@ git commit -m "test(bdd): require <feature behavior>"
 Allowed files:
 ```text
 tests/features/**/*.feature
+tests/features/test_features.py
 tests/features/conftest.py
 tests/features/step_definitions/**/*.py
 tests/fixtures/**
