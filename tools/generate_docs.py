@@ -785,6 +785,11 @@ SECTION_DOCS: dict[str, str] = {
     "/cpus/cpu*/l?-cache": (
         "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)"
     ),
+    "/ns16550": "National Semiconductor 16450/16550 Compatible UART Requirements",
+    "/network": "Network Class Binding",
+    "/ethernet": "Ethernet specific considerations",
+    "/open-pic": "Power ISA Open PIC Interrupt Controllers",
+    "/simple-bus": "``simple-bus`` Compatible Value",
     "compatible": "compatible",
     "model": "model",
     "phandle": "phandle",
@@ -865,6 +870,17 @@ TABLE_ROW_DOCS: dict[str, str] = {
         "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
         "Shared Cache Properties"
     ),
+    "ns16550:compatible": "ns16550 UART Properties",
+    "ns16550:clock-frequency": "ns16550 UART Properties",
+    "ns16550:current-speed": "ns16550 UART Properties",
+    "ns16550:reg-shift": "ns16550 UART Properties",
+    "ns16550:virtual-reg": "ns16550 UART Properties",
+    "open-pic:compatible": "Open-PIC properties",
+    "open-pic:#interrupt-cells": "Open-PIC properties",
+    "open-pic:#address-cells": "Open-PIC properties",
+    "open-pic:interrupt-controller": "Open-PIC properties",
+    "simple-bus:ranges": "``simple-bus`` Compatible Node Properties",
+    "simple-bus:nonposted-mmio": "``simple-bus`` Compatible Node Properties",
 }
 
 STATUS_VALUES = (
@@ -879,6 +895,46 @@ SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
     "misc:clock-frequency": (
         "Miscellaneous Properties",
         "``clock-frequency`` Property",
+    ),
+    "misc:reg-shift": (
+        "Miscellaneous Properties",
+        "``reg-shift`` Property",
+    ),
+    "misc:label": (
+        "Miscellaneous Properties",
+        "``label`` Property",
+    ),
+    "serial:current-speed": (
+        "Serial Class Binding",
+        "``current-speed`` Property",
+    ),
+    "network:address-bits": (
+        "Network Class Binding",
+        "``address-bits`` Property",
+    ),
+    "network:local-mac-address": (
+        "Network Class Binding",
+        "``local-mac-address`` Property",
+    ),
+    "network:mac-address": (
+        "Network Class Binding",
+        "``mac-address`` Property",
+    ),
+    "network:max-frame-size": (
+        "Network Class Binding",
+        "``max-frame-size`` Property",
+    ),
+    "ethernet:max-speed": (
+        "Ethernet specific considerations",
+        "``max-speed`` Property",
+    ),
+    "ethernet:phy-connection-type": (
+        "Ethernet specific considerations",
+        "``phy-connection-type`` Property",
+    ),
+    "ethernet:phy-handle": (
+        "Ethernet specific considerations",
+        "``phy-handle`` Property",
     ),
 }
 
@@ -910,15 +966,12 @@ def build_hover_docs() -> dict[str, str]:
             prop_name,
         ) or ""
     for prop_name, table_name in TABLE_ROW_DOCS.items():
-        docs[prop_name] = format_table_row_hover(table_name, prop_name) or ""
+        row_name = prop_name.split(":", 1)[-1]
+        docs[prop_name] = format_table_row_hover(table_name, row_name) or ""
     for doc_key, (parent, section) in SCOPED_SECTION_DOCS.items():
         raw = get_section_under(parent, section)
         docs[doc_key] = _format_section(raw) if raw else ""
-        if doc_key == "misc:clock-frequency":
-            docs[doc_key] = _append_heading_source(
-                docs[doc_key],
-                "Miscellaneous Properties",
-            )
+        docs[doc_key] = _append_heading_source(docs[doc_key], parent)
     for value in STATUS_VALUES:
         docs[_status_value_key(value)] = format_value_table_row_hover(
             "Values for status property",

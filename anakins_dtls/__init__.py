@@ -52,6 +52,59 @@ STANDARD_CHILD_NODE_NAMES = {
     ('cpu', 'l2-cache'): '/cpus/cpu*/l?-cache',
 }
 
+CHAPTER4_NODE_NAMES = {
+    'network-device': '/network',
+    'ethernet-device': '/ethernet',
+    'open-pic': '/open-pic',
+    'simple-bus': '/simple-bus',
+}
+
+NS16550_PROPERTIES = {
+    'compatible',
+    'clock-frequency',
+    'current-speed',
+    'reg-shift',
+    'virtual-reg',
+}
+
+NETWORK_PROPERTIES = {
+    'address-bits',
+    'local-mac-address',
+    'mac-address',
+    'max-frame-size',
+}
+
+ETHERNET_PROPERTIES = {
+    'max-speed',
+    'phy-connection-type',
+    'phy-handle',
+}
+
+OPEN_PIC_PROPERTIES = {
+    'compatible',
+    '#interrupt-cells',
+    '#address-cells',
+    'interrupt-controller',
+}
+
+SIMPLE_BUS_PROPERTIES = {
+    'ranges',
+    'nonposted-mmio',
+}
+
+RAW_SECTION_HOVER_KEYS = {
+    'misc:reg-shift',
+    'misc:label',
+    'serial:current-speed',
+    'network:address-bits',
+    'network:local-mac-address',
+    'network:mac-address',
+    'network:max-frame-size',
+    'ethernet:max-speed',
+    'ethernet:phy-connection-type',
+    'ethernet:phy-handle',
+}
+
 
 def _send(msg: dict) -> None:
     data = json.dumps(msg, separators=(',', ':')).encode('utf-8')
@@ -164,6 +217,25 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _chapter4_node_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
+    if not m:
+        return None
+
+    start, end = m.span(2)
+    if not start <= character <= end:
+        return None
+
+    node_name = m.group(2)
+    if node_name == 'serial' and _node_has_property_at(text, line + 1, 'compatible'):
+        return '/ns16550'
+    return CHAPTER4_NODE_NAMES.get(node_name)
+
+
 def _node_depth_at(text: str, line: int) -> int:
     lines = text.split('\n')
     depth = 0
@@ -176,6 +248,10 @@ def _node_depth_at(text: str, line: int) -> int:
 def _parent_node_name_at(text: str, line: int) -> str | None:
     stack = _ancestor_node_names_at(text, line)
     return stack[-1] if stack else None
+
+
+def _current_node_name_at(text: str, line: int) -> str | None:
+    return _parent_node_name_at(text, line)
 
 
 def _ancestor_node_names_at(text: str, line: int) -> list[str]:
@@ -217,6 +293,34 @@ def _node_has_property_at(text: str, line: int, prop: str) -> bool:
     return False
 
 
+def _current_node_property_value_contains(text: str, line: int, prop: str, value: str) -> bool:
+    stack: list[int] = []
+    lines = text.split('\n')
+    for index, line_text in enumerate(lines[:line]):
+        m = re.match(r'\s*(?:(\w+):\s*)?([\w,-]+)(?:@[\w,-]+)?\s*\{', line_text)
+        if m:
+            stack.append(index)
+        for _ in range(line_text.count('}')):
+            if stack:
+                stack.pop()
+
+    if not stack:
+        return False
+
+    depth = 1
+    pattern = re.compile(rf'\s*{re.escape(prop)}\s*=\s*(.*)')
+    for line_text in lines[stack[-1] + 1:]:
+        if depth == 1:
+            m = pattern.match(line_text)
+            if m and value in m.group(1):
+                return True
+        depth += line_text.count('{')
+        depth -= line_text.count('}')
+        if depth == 0:
+            return False
+    return False
+
+
 def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
     if prop in INTERRUPT_NEXUS_PROPERTIES:
         return _node_has_property_at(text, line, '#interrupt-cells')
@@ -226,11 +330,32 @@ def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
 
 
 def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
+    node_name = _current_node_name_at(text, line)
+    if prop in OPEN_PIC_PROPERTIES and node_name == 'open-pic':
+        return f'open-pic:{prop}'
+    if prop in NS16550_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'ns16550'):
+        return f'ns16550:{prop}'
+    if prop in SIMPLE_BUS_PROPERTIES and node_name == 'simple-bus':
+        return f'simple-bus:{prop}'
+    if prop in NETWORK_PROPERTIES and node_name == 'network-device':
+        return f'network:{prop}'
+    if prop in ETHERNET_PROPERTIES and node_name == 'ethernet-device':
+        return f'ethernet:{prop}'
+    if prop == 'current-speed' and node_name == 'serial-device':
+        return 'serial:current-speed'
+    if prop in {'reg-shift', 'label'}:
+        return f'misc:{prop}'
     if prop == 'clock-frequency':
         ancestors = _ancestor_node_names_at(text, line)
         if ancestors[-2:] != ['cpus', 'cpu']:
             return 'misc:clock-frequency'
     return prop
+
+
+def _strip_heading_source(doc: str) -> str:
+    heading, sep, rest = doc.partition('\n')
+    heading = re.sub(r' - [^\n]+$', '', heading)
+    return f'{heading}{sep}{rest}' if sep else heading
 
 
 def handle_notification(method: str, params: dict | None) -> None:
@@ -265,6 +390,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if prop is None:
             prop = _standard_node_at(text, line, character)
         if prop is None:
+            prop = _chapter4_node_at(text, line, character)
+        if prop is None:
             prop = _status_value_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
@@ -285,6 +412,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             doc = HOVER_DOCS.get(prop.split(',', 1)[1])
         if doc is None and prop.startswith('power-isa-'):
             doc = HOVER_DOCS.get('power-isa-*')
+        if doc is not None and doc_key in RAW_SECTION_HOVER_KEYS:
+            doc = _strip_heading_source(doc)
 
         return {
             'contents': {
