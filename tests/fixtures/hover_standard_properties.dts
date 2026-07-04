@@ -150,5 +150,46 @@
 
     miscellaneous-device {
         clock-frequency = <1000000>;
+        reg-shift = <2>;
+        label = "misc-device";
+    };
+
+    serial-device {
+        clock-frequency = <100000000>;
+        current-speed = <115200>;
+    };
+
+    serial@4600 {
+        compatible = "ns16550";
+        clock-frequency = <100000000>;
+        current-speed = <115200>;
+        reg-shift = <2>;
+        virtual-reg;
+    };
+
+    network-device {
+        address-bits = <48>;
+        local-mac-address = [ 00 00 12 34 56 78 ];
+        mac-address = [ 02 03 04 05 06 07 ];
+        max-frame-size = <1518>;
+    };
+
+    ethernet-device {
+        max-speed = <1000>;
+        phy-connection-type = "rgmii";
+        phy-handle = <&PHY0>;
+    };
+
+    open-pic {
+        compatible = "open-pic";
+        interrupt-controller;
+        #interrupt-cells = <2>;
+        #address-cells = <0>;
+    };
+
+    simple-bus {
+        compatible = "simple-bus";
+        ranges;
+        nonposted-mmio;
     };
 };

@@ -90,6 +90,11 @@ TARGET = {
     'interrupts-extended': (111, 9),
     'interrupt-controller': (112, 9),
     '#interrupt-cells': (113, 9),
+    'ns16550 UART node declaration': (162, 5),
+    'network class device node declaration': (170, 5),
+    'Ethernet device node declaration': (177, 5),
+    'Open PIC interrupt controller node declaration': (183, 5),
+    'simple-bus node declaration': (190, 5),
 }
 
 NEXUS_TARGET = {
@@ -110,6 +115,50 @@ CPU_NODE_TARGET = {
 
 MISCELLANEOUS_TARGET = {
     'clock-frequency': (152, 9),
+    'reg-shift': (153, 9),
+    'label': (154, 9),
+}
+
+SERIAL_TARGET = {
+    'current-speed': (159, 9),
+}
+
+NS16550_TARGET = {
+    'ns16550 UART node declaration': (162, 5),
+    'compatible': (163, 9),
+    'clock-frequency': (164, 9),
+    'current-speed': (165, 9),
+    'reg-shift': (166, 9),
+    'virtual-reg': (167, 9),
+}
+
+NETWORK_TARGET = {
+    'network class device node declaration': (170, 5),
+    'address-bits': (171, 9),
+    'local-mac-address': (172, 9),
+    'mac-address': (173, 9),
+    'max-frame-size': (174, 9),
+}
+
+ETHERNET_TARGET = {
+    'Ethernet device node declaration': (177, 5),
+    'max-speed': (178, 9),
+    'phy-connection-type': (179, 9),
+    'phy-handle': (180, 9),
+}
+
+OPEN_PIC_TARGET = {
+    'Open PIC interrupt controller node declaration': (183, 5),
+    'compatible': (184, 9),
+    'interrupt-controller': (185, 9),
+    '#interrupt-cells': (186, 9),
+    '#address-cells': (187, 9),
+}
+
+SIMPLE_BUS_TARGET = {
+    'simple-bus node declaration': (190, 5),
+    'ranges': (192, 9),
+    'nonposted-mmio': (193, 9),
 }
 
 STATUS_VALUE_TARGET = {
@@ -198,6 +247,61 @@ def hover_over_cpu_node_property(lsp, uri, hover_target):
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a miscellaneous device node$'), target_fixture='response')
 def hover_over_miscellaneous_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, MISCELLANEOUS_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a serial device node$'), target_fixture='response')
+def hover_over_serial_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, SERIAL_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on an ns16550 UART node$'), target_fixture='response')
+def hover_over_ns16550_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, NS16550_TARGET, hover_target)
+
+
+@when('hovering over an ns16550 UART node declaration', target_fixture='response')
+def hover_over_ns16550_node(lsp, uri):
+    return _hover_at(lsp, uri, NS16550_TARGET, 'ns16550 UART node declaration')
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a network device node$'), target_fixture='response')
+def hover_over_network_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, NETWORK_TARGET, hover_target)
+
+
+@when('hovering over a network class device node declaration', target_fixture='response')
+def hover_over_network_node(lsp, uri):
+    return _hover_at(lsp, uri, NETWORK_TARGET, 'network class device node declaration')
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on an Ethernet device node$'), target_fixture='response')
+def hover_over_ethernet_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, ETHERNET_TARGET, hover_target)
+
+
+@when(parsers.parse('hovering over an Ethernet device node declaration'), target_fixture='response')
+def hover_over_ethernet_node(lsp, uri):
+    return _hover_at(lsp, uri, ETHERNET_TARGET, 'Ethernet device node declaration')
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on an Open PIC interrupt controller node$'), target_fixture='response')
+def hover_over_open_pic_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, OPEN_PIC_TARGET, hover_target)
+
+
+@when(parsers.parse('hovering over an Open PIC interrupt controller node declaration'), target_fixture='response')
+def hover_over_open_pic_node(lsp, uri):
+    return _hover_at(lsp, uri, OPEN_PIC_TARGET, 'Open PIC interrupt controller node declaration')
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a simple-bus node$'), target_fixture='response')
+def hover_over_simple_bus_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, SIMPLE_BUS_TARGET, hover_target)
+
+
+@when(parsers.parse('hovering over a simple-bus node declaration'), target_fixture='response')
+def hover_over_simple_bus_node(lsp, uri):
+    return _hover_at(lsp, uri, SIMPLE_BUS_TARGET, 'simple-bus node declaration')
 
 
 @when(parsers.parse('the "status" property value is hovered for {value}'), target_fixture='response')
