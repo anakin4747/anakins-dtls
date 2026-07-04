@@ -115,22 +115,22 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns the contents of the "/cpus/cpu* Node Properties" section from the devicetree specification
 
   Scenario: Hover on a "clock-frequency" property name on a cpu node returns the full "clock-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
-    When hovering over a "clock-frequency" property name
+    When hovering over a "clock-frequency" property name on a cpu node
     Then the hover returns usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
     And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
     And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
     And the hover does not return usage, value type, and definition for "clock-frequency" from the "ns16550 UART Properties" table from the devicetree specification
 
   Scenario: Hover on a "timebase-frequency" property name on a cpu node returns the full "timebase-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
-    When hovering over a "timebase-frequency" property name
+    When hovering over a "timebase-frequency" property name on a cpu node
     Then the hover returns usage, value type, and definition for "timebase-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
 
   Scenario: Hover on an "enable-method" property name on a cpu node returns the full "enable-method" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
-    When hovering over an "enable-method" property name
+    When hovering over an "enable-method" property name on a cpu node
     Then the hover returns usage, value type, and definition for "enable-method" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
 
   Scenario: Hover on a "cpu-release-addr" property name on a cpu node returns the full "cpu-release-addr" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
-    When hovering over a "cpu-release-addr" property name
+    When hovering over a "cpu-release-addr" property name on a cpu node
     Then the hover returns usage, value type, and definition for "cpu-release-addr" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
 
   # Power ISA properties

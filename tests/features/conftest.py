@@ -99,6 +99,13 @@ NEXUS_TARGET = {
     ('#gpio-cells', 'connector nexus node'): (137, 9),
 }
 
+CPU_NODE_TARGET = {
+    'clock-frequency': (59, 13),
+    'timebase-frequency': (60, 13),
+    'enable-method': (62, 13),
+    'cpu-release-addr': (63, 13),
+}
+
 STATUS_VALUE_TARGET = {
     'okay': (104, 19),
     'disabled': (105, 19),
@@ -175,6 +182,11 @@ def hover_over_nexus_property(lsp, uri, hover_target, placement):
         pytest.fail(f'Unknown nexus hover target: {hover_target} in {placement}')
     line, col = pos
     return lsp.hover(uri, line - 1, col - 1)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a cpu node$'), target_fixture='response')
+def hover_over_cpu_node_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, CPU_NODE_TARGET, hover_target)
 
 
 @when(parsers.parse('the "status" property value is hovered for {value}'), target_fixture='response')
