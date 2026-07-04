@@ -355,8 +355,6 @@ def _get_spec_section_under(parent, section):
     if raw is None:
         pytest.fail(f'Unknown section: {parent}.{section}')
     formatted = _format_section(raw)
-    if parent in {'Miscellaneous Properties', 'Serial Class Binding'} and section == '``clock-frequency`` Property':
-        return _append_heading_source(formatted, parent)
     return formatted
 
 
@@ -447,8 +445,6 @@ def check_hover_table_row(response, property, table):
     expected = format_table_row_hover(table, property)
     if expected is None:
         pytest.fail(f'Unknown table row: {table}.{property}')
-    if table == 'ns16550 UART Properties' and property == 'clock-frequency':
-        expected = _append_heading_source(expected, table)
     if text != expected:
         pytest.fail(
             f'Hover response did not match table row\n'
