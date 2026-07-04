@@ -661,6 +661,9 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
     assert docs["serial:clock-frequency"].startswith(
         "#### `clock-frequency` Property - Serial Class Binding\n"
     )
+    assert docs["ns16550:clock-frequency"].startswith(
+        "### clock-frequency - ns16550 UART Properties\n"
+    )
 
 def test_build_hover_docs_remaining_chapter4_sections_from_spec():
     docs = build_hover_docs()
