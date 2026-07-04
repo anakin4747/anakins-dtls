@@ -90,11 +90,11 @@ TARGET = {
     'interrupts-extended': (111, 9),
     'interrupt-controller': (112, 9),
     '#interrupt-cells': (113, 9),
-    'ns16550 UART node declaration': (162, 5),
-    'network class device node declaration': (170, 5),
-    'Ethernet device node declaration': (177, 5),
-    'Open PIC interrupt controller node declaration': (183, 5),
-    'simple-bus node declaration': (190, 5),
+    'ns16550 UART node declaration': (166, 5),
+    'network class device node declaration': (174, 5),
+    'Ethernet device node declaration': (181, 5),
+    'Open PIC interrupt controller node declaration': (187, 5),
+    'simple-bus node declaration': (194, 5),
 }
 
 NEXUS_TARGET = {
@@ -120,46 +120,50 @@ MISCELLANEOUS_TARGET = {
 }
 
 SERIAL_TARGET = {
+    'clock-frequency': (162, 9),
+    'current-speed': (163, 9),
+}
+
+NODE_NAMED_SERIAL_DEVICE_TARGET = {
     'clock-frequency': (158, 9),
-    'current-speed': (159, 9),
 }
 
 NS16550_TARGET = {
-    'ns16550 UART node declaration': (162, 5),
-    'compatible': (163, 9),
-    'clock-frequency': (164, 9),
-    'current-speed': (165, 9),
-    'reg-shift': (166, 9),
-    'virtual-reg': (167, 9),
+    'ns16550 UART node declaration': (166, 6),
+    'compatible': (167, 9),
+    'clock-frequency': (168, 9),
+    'current-speed': (169, 9),
+    'reg-shift': (170, 9),
+    'virtual-reg': (171, 9),
 }
 
 NETWORK_TARGET = {
-    'network class device node declaration': (170, 5),
-    'address-bits': (171, 9),
-    'local-mac-address': (172, 9),
-    'mac-address': (173, 9),
-    'max-frame-size': (174, 9),
+    'network class device node declaration': (174, 6),
+    'address-bits': (175, 9),
+    'local-mac-address': (176, 9),
+    'mac-address': (177, 9),
+    'max-frame-size': (178, 9),
 }
 
 ETHERNET_TARGET = {
-    'Ethernet device node declaration': (177, 5),
-    'max-speed': (178, 9),
-    'phy-connection-type': (179, 9),
-    'phy-handle': (180, 9),
+    'Ethernet device node declaration': (181, 6),
+    'max-speed': (182, 9),
+    'phy-connection-type': (183, 9),
+    'phy-handle': (184, 9),
 }
 
 OPEN_PIC_TARGET = {
-    'Open PIC interrupt controller node declaration': (183, 5),
-    'compatible': (184, 9),
-    'interrupt-controller': (185, 9),
-    '#interrupt-cells': (186, 9),
-    '#address-cells': (187, 9),
+    'Open PIC interrupt controller node declaration': (187, 6),
+    'compatible': (188, 9),
+    'interrupt-controller': (189, 9),
+    '#interrupt-cells': (190, 9),
+    '#address-cells': (191, 9),
 }
 
 SIMPLE_BUS_TARGET = {
-    'simple-bus node declaration': (190, 5),
-    'ranges': (192, 9),
-    'nonposted-mmio': (193, 9),
+    'simple-bus node declaration': (194, 6),
+    'ranges': (196, 9),
+    'nonposted-mmio': (197, 9),
 }
 
 STATUS_VALUE_TARGET = {
@@ -250,9 +254,14 @@ def hover_over_miscellaneous_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, MISCELLANEOUS_TARGET, hover_target)
 
 
-@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a serial device node$'), target_fixture='response')
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a serial node$'), target_fixture='response')
 def hover_over_serial_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, SERIAL_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a node named serial-device$'), target_fixture='response')
+def hover_over_node_named_serial_device_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, NODE_NAMED_SERIAL_DEVICE_TARGET, hover_target)
 
 
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on an ns16550 UART node$'), target_fixture='response')
