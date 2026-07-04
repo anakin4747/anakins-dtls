@@ -28,7 +28,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on an aliases node declaration on the root node returns the "/aliases node" section from the devicetree specification
     When hovering over an aliases node declaration on the root node
     Then the hover returns the contents of the "/aliases node" section from the devicetree specification
-    And the hover title includes "/aliases node"
+    And the hover title includes "Root node"
     And hovering over an aliases node declaration outside the root node returns nothing
 
   # /memory node
@@ -36,7 +36,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a memory node declaration on the root node returns the "/memory node" section from the devicetree specification
     When hovering over a memory node declaration on the root node
     Then the hover returns the contents of the "/memory node" section from the devicetree specification
-    And the hover title includes "/memory node"
+    And the hover title includes "Root node"
     And hovering over a memory node declaration outside the root node returns nothing
 
   Scenario: Hover on an "initial-mapped-area" property name on a memory node returns the full "initial-mapped-area" row from the "``/memory`` Node Properties" table from the devicetree specification
@@ -54,7 +54,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a reserved-memory node declaration on the root node returns the "``/reserved-memory`` Node" section from the devicetree specification
     When hovering over a reserved-memory node declaration on the root node
     Then the hover returns the contents of the "/reserved-memory Node" section from the devicetree specification
-    And the hover title includes "/reserved-memory node"
+    And the hover title includes "Root node"
 
   Scenario: Hover on a "size" property name on a reserved-memory child node returns the full "size" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
     When hovering over a "size" property name
@@ -100,7 +100,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a chosen node declaration on the root node returns the "``/chosen`` Node" section from the devicetree specification
     When hovering over a chosen node declaration on the root node
     Then the hover returns the contents of the "/chosen Node" section from the devicetree specification
-    And the hover title includes "/chosen node"
+    And the hover title includes "Root node"
 
   Scenario: Hover on a "bootargs" property name on the chosen node returns the full "bootargs" row from the "``/chosen`` Node Properties" table from the devicetree specification
     When hovering over a "bootargs" property name
@@ -127,7 +127,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a cpus node declaration on the root node returns the "``/cpus`` Node Properties" section from the devicetree specification
     When hovering over a cpus node declaration on the root node
     Then the hover returns the contents of the "/cpus Node Properties" section from the devicetree specification
-    And the hover title includes "/cpus node"
+    And the hover title includes "Root node"
 
   # /cpus/cpu* nodes
 
