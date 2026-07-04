@@ -304,6 +304,18 @@ def check_hover_section_under_parent(response, section, parent):
         )
 
 
+@then(parsers.parse('the hover title includes "{source}"'))
+def check_hover_title_includes(response, source):
+    text = _hover_text(response)
+    first_line = text.split('\n', 1)[0]
+    if f' - {source}' not in first_line:
+        pytest.fail(
+            f'Hover title did not include source\n'
+            f'  Source: {source}\n'
+            f'  Title: {first_line}'
+        )
+
+
 @then(parsers.parse('the hover returns usage, value type, and definition for "{property}" from the "{table}" table from the devicetree specification'))
 def check_hover_table_row(response, property, table):
     text = _hover_text(response)

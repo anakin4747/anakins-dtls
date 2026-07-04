@@ -117,6 +117,7 @@ Feature: Standard Top-Level Node Hover Documentation
   Scenario: Hover on a "clock-frequency" property name on a cpu node returns the full "clock-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
     When hovering over a "clock-frequency" property name on a cpu node
     Then the hover returns usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    And the hover title includes "``/cpus/cpu*`` Node General Properties"
     And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
     And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
     And the hover does not return usage, value type, and definition for "clock-frequency" from the "ns16550 UART Properties" table from the devicetree specification
