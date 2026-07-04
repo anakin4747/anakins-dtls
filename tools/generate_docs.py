@@ -371,8 +371,12 @@ def format_table_row_hover(table: str, row: str) -> str | None:
     value_type = entry.get("Value Type")
     definition = entry.get("Definition")
 
+    heading = f"### {property_name}"
+    if table == "``/cpus/cpu*`` Node General Properties" and row == "clock-frequency":
+        heading = _append_heading_source(heading, table)
+
     parts = [
-        f"### {property_name}",
+        heading,
         "",
         f"**Property name:** `{property_name}`",
     ]
@@ -708,6 +712,8 @@ def _format_section(raw: str) -> str:
         heading, next_i = _format_heading(lines, i)
         if heading is not None:
             _flush_para()
+            if heading == "#### `clock-frequency` Property\n":
+                heading = _append_heading_source(heading, "Miscellaneous Properties")
             out.append(heading)
             i = next_i
             continue
@@ -881,6 +887,15 @@ SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
 
 def _status_value_key(value: str) -> str:
     return f"status:{value.strip('\"')}"
+
+
+def _append_heading_source(doc: str, source: str) -> str:
+    heading, sep, rest = doc.partition("\n")
+    if heading.endswith(f" - {source}"):
+        return doc
+    if not sep:
+        return f"{heading} - {source}"
+    return f"{heading} - {source}{sep}{rest}"
 
 
 def build_hover_docs() -> dict[str, str]:
