@@ -51,10 +51,17 @@ Feature: Chapter 4 Device Bindings Hover Documentation
     Examples:
       | property        | row             |
       | compatible      | compatible      |
-      | clock-frequency | clock-frequency |
       | current-speed   | current-speed   |
       | reg-shift       | reg-shift       |
       | virtual-reg     | virtual-reg     |
+
+  Scenario: Hover on a "clock-frequency" property name on an ns16550 UART node returns the "clock-frequency" row from the "ns16550 UART Properties" table from the devicetree specification
+    When hovering over a "clock-frequency" property name on an ns16550 UART node
+    Then the hover returns usage, value type, and definition for "clock-frequency" from the "ns16550 UART Properties" table from the devicetree specification
+    And the hover title includes "ns16550 UART Properties"
+    And the hover does not return usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
+    And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
 
   # --- Network devices ---
 
