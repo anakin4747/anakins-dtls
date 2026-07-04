@@ -817,11 +817,11 @@ SECTION_DOCS: dict[str, str] = {
 
 SECTION_DOC_SOURCES: dict[str, str] = {
     "__root__": "Root node",
-    "/aliases": "/aliases node",
-    "/memory": "/memory node",
-    "/reserved-memory": "/reserved-memory node",
-    "/chosen": "/chosen node",
-    "/cpus": "/cpus node",
+    "/aliases": "Root node",
+    "/memory": "Root node",
+    "/reserved-memory": "Root node",
+    "/chosen": "Root node",
+    "/cpus": "Root node",
     "/cpus/cpu*": "/cpus/cpu* nodes",
     "/cpus/cpu*/l?-cache": "/cpus/cpu*/l?-cache nodes",
     "/ns16550": "ns16550 UART",
