@@ -8,6 +8,10 @@ A Device Tree Language Server.
 - Keep each commit focused on one workflow phase.
 - Never implement a feature or parser fix before the required failing test commit exists.
 - Do not mix tests and implementation.
+- Review every workflow phase before committing it. Test code, fixtures, step
+  definitions, tooling, application code, and docs are all codebase changes and
+  must be reviewed for ownership, duplication, maintainability, and workflow
+  boundaries.
 - Validate every workflow commit only touches its allowed files with:
 ```sh
 git diff-tree --no-commit-id --name-only -r HEAD
@@ -45,6 +49,23 @@ Before every edit in a workflow, check:
 If a required prior gate is not satisfied, self-correct by performing the missing
 earlier workflow action first, then return to the intended edit after the gate is
 satisfied.
+
+## Pre-Commit Review Gate
+
+Before every workflow commit, review the staged diff. This review is mandatory
+for all phases, including tests, fixtures, step definitions, tools, application
+code, and docs. Ask:
+- Does every changed file belong to the current workflow phase?
+- Does any changed file contain logic that belongs in a different layer?
+- Did this change duplicate existing helpers, parser behavior, formatter
+  behavior, fixtures, or application behavior?
+- Are step definitions still thin glue over existing helpers?
+- Are tests asserting behavior without reimplementing the behavior under test?
+- Is this commit limited to one workflow phase and one concern?
+- Are there unrelated changes staged?
+
+The Review Refactor Commit is an additional end-to-end review, not the first
+time workflow changes are reviewed.
 
 ## Workflow Violation Self-Correction
 
@@ -106,6 +127,19 @@ Step-definition boundary:
   Device Tree Specification, do not implement that logic in step definitions.
   Add the required DTS Specification generation test phase first, then implement
   the parsing or formatting behavior in `tools/`.
+
+BDD phase review:
+- Before committing BDD changes, review every changed `.feature`, fixture, and
+  step-definition file.
+- Confirm `.feature` files describe behavior, not implementation details.
+- Confirm fixtures contain only input data and target markers needed by the
+  scenarios.
+- Confirm step definitions only locate targets, invoke the language server, and
+  compare results using existing helpers.
+- Confirm step definitions do not parse the Device Tree Specification, format
+  hover markdown, or duplicate logic from `tools/`, `anakins_dtls/`, or test
+  helpers.
+- Check existing helpers before adding any new assertion helper.
 
 Do not change:
 - Application code
@@ -200,8 +234,10 @@ valid.
 ### 4. Review Refactor Commit
 
 Purpose:
-After the passing feature commit, code review the work. Ask the following
-questions to see how the code can be made cleaner:
+After the passing feature commit, review the complete workflow diff since the
+first commit of the feature, including BDD tests, fixtures, step definitions,
+unit tests, tools, application code, and docs. Ask the following questions to see
+how the code can be made cleaner:
 - Did your change create any dead code?
 - Did your change invalidate some comments?
 - Is your change in the style of the codebase?
@@ -213,6 +249,12 @@ questions to see how the code can be made cleaner:
 - Did the commit duplicate any functionality already present in the codebase?
 - Is there a simpler way to implement this solution?
 - Did you add any extra functionality that doesn't have a corresponding test?
+- Did any test, fixture, or step-definition code duplicate parser, formatter,
+  application, or tool behavior?
+- Did any changed file take ownership of logic that belongs in another layer?
+- Are BDD step definitions still thin after all workflow phases?
+- Are expected values produced by shared helpers instead of reimplemented in
+  tests?
 
 Refactor only if it improves the code without changing behavior. Skip this
 commit when no useful refactor is found.
