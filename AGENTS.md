@@ -38,6 +38,9 @@ Before every edit in a workflow, check:
 - Target file
 - Why the file is allowed in this phase
 - Whether every required prior gate is already satisfied
+- For step-definition edits, whether the change only connects scenario wording to
+  existing helpers and does not add Device Tree Specification parsing, RST table
+  parsing, hover markdown formatting, or documentation-generation logic
 
 If a required prior gate is not satisfied, self-correct by performing the missing
 earlier workflow action first, then return to the intended edit after the gate is
@@ -89,6 +92,20 @@ Hover fixture guidance:
   returned must include an inline comment explaining why no hover is expected.
   This applies to invalid placements, node declarations outside their valid
   scope, and properties that are only valid in specific nodes.
+
+Step-definition boundary:
+- Keep BDD step definitions thin. They may locate hover targets, call the
+  language server, compare actual hover text to expected text, and call existing
+  test, application, or tool helpers.
+- Do not add Device Tree Specification parsing, RST table parsing, hover
+  markdown formatting, or documentation-generation logic to BDD step
+  definitions.
+- In this phase, step-definition changes may only adapt scenario wording to
+  existing helpers or compose existing helpers.
+- If a BDD assertion needs a new way to derive expected hover text from the
+  Device Tree Specification, do not implement that logic in step definitions.
+  Add the required DTS Specification generation test phase first, then implement
+  the parsing or formatting behavior in `tools/`.
 
 Do not change:
 - Application code
@@ -237,6 +254,13 @@ forbidden. If the commit is not valid, amend it until it is valid.
 Documentation parsing bugs in `tools/generate_docs.py` must use TDD. Capture the
 bug with the smallest failing unit test before changing parser or formatter
 implementation.
+
+Documentation-generation ownership:
+All logic that parses Device Tree Specification RST content or formats generated
+hover documentation belongs in `tools/generate_docs.py` and must be covered by
+DTS Specification generation tests. BDD tests may consume generated documentation
+or formatter helpers, but must not reimplement parsing or formatting behavior in
+step definitions.
 
 ### 1. Failing DTS Specification Test Commit
 
