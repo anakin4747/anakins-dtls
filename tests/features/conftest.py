@@ -277,6 +277,39 @@ def check_hover_table_row(response, property, table):
         )
 
 
+@then(parsers.parse('the hover does not return usage, value type, and definition for "{property}" from the "{table}" table from the devicetree specification'))
+def check_hover_excludes_table_row(response, property, table):
+    text = _hover_text(response)
+    unexpected = format_table_row_hover(table, property)
+    if unexpected is None:
+        pytest.fail(f'Unknown table row: {table}.{property}')
+    if text == unexpected:
+        pytest.fail(
+            f'Hover response unexpectedly matched table row\n'
+            f'  Table: {table}\n'
+            f'  Property: {property}\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.parse('the hover does not return the contents of the "{section}" section under the "{parent}" section from the devicetree specification'))
+def check_hover_excludes_section_under_parent(response, section, parent):
+    from generate_docs import get_section_under
+
+    text = _hover_text(response)
+    raw = get_section_under(parent, section)
+    if raw is None:
+        pytest.fail(f'Unknown section: {parent}.{section}')
+    unexpected = _format_section(raw)
+    if text == unexpected:
+        pytest.fail(
+            f'Hover response unexpectedly matched spec section\n'
+            f'  Parent section: {parent}\n'
+            f'  Section: {section}\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
 @then(parsers.parse('the hover returns value and description for {value} from the "{table}" table from the devicetree specification'))
 def check_hover_value_table_row(response, value, table):
     text = _hover_text(response)
