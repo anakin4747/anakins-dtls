@@ -25,6 +25,7 @@ from generate_docs import (
     build_hover_docs,
     format_table_row_hover,
     get_section,
+    get_section_under,
     get_table_entry,
     get_table_row,
     SUBSTITUTIONS,
@@ -794,6 +795,23 @@ def test_get_section_properties_includes_sub_sections():
     assert section == expected
     assert "Property Names\n^^^^^^^^^^^^^^" in section
     assert "Property Values\n^^^^^^^^^^^^^^^" in section
+
+
+def test_get_section_under_distinguishes_repeated_child_titles():
+    miscellaneous = get_section_under(
+        "Miscellaneous Properties",
+        "``clock-frequency`` Property",
+    )
+    serial = get_section_under(
+        "Serial Class Binding",
+        "``clock-frequency`` Property",
+    )
+
+    assert miscellaneous is not None
+    assert serial is not None
+    assert "Specifies the frequency of a clock in Hz." in miscellaneous
+    assert "baud rate generator's\n               input clock" in serial
+    assert miscellaneous != serial
 
 # }}}
 
