@@ -227,6 +227,15 @@ def _get_spec_section(section):
     return None
 
 
+def _get_spec_section_under(parent, section):
+    from generate_docs import get_section_under
+
+    raw = get_section_under(parent, section)
+    if raw is None:
+        pytest.fail(f'Unknown section: {parent}.{section}')
+    return _format_section(raw)
+
+
 @then(parsers.re(r'hovering over an? (?P<hover_target>.+?) outside the root node returns nothing'))
 def check_no_hover_outside_root_node(lsp, uri, hover_target):
     hover_target = _normalize_hover_target(hover_target)
@@ -284,13 +293,8 @@ def check_hover(response, section):
 
 @then(parsers.parse('the hover returns the contents of the "{section}" section under the "{parent}" section from the devicetree specification'))
 def check_hover_section_under_parent(response, section, parent):
-    from generate_docs import get_section_under
-
     text = _hover_text(response)
-    raw = get_section_under(parent, section)
-    if raw is None:
-        pytest.fail(f'Unknown section: {parent}.{section}')
-    expected = _format_section(raw)
+    expected = _get_spec_section_under(parent, section)
     if text != expected:
         pytest.fail(
             f'Hover response did not match spec section\n'
@@ -334,13 +338,8 @@ def check_hover_excludes_table_row(response, property, table):
 
 @then(parsers.parse('the hover does not return the contents of the "{section}" section under the "{parent}" section from the devicetree specification'))
 def check_hover_excludes_section_under_parent(response, section, parent):
-    from generate_docs import get_section_under
-
     text = _hover_text(response)
-    raw = get_section_under(parent, section)
-    if raw is None:
-        pytest.fail(f'Unknown section: {parent}.{section}')
-    unexpected = _format_section(raw)
+    unexpected = _get_spec_section_under(parent, section)
     if text == unexpected:
         pytest.fail(
             f'Hover response unexpectedly matched spec section\n'
