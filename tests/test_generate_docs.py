@@ -665,6 +665,45 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
         "### clock-frequency - ns16550 UART Properties\n"
     )
 
+def test_build_hover_docs_titles_include_semantic_sources():
+    docs = build_hover_docs()
+    expected = {
+        "compatible": "### compatible - Standard Properties\n",
+        "status:okay": "### \"okay\" - Standard Properties\n",
+        "__root__": "## Root node - Root node\n",
+        "serial-number": "### serial-number - Root node\n",
+        "/memory": "## `/memory` node - /memory node\n",
+        "initial-mapped-area": "### initial-mapped-area - /memory node\n",
+        "size": "### size - /reserved-memory/ child nodes\n",
+        "memory-region": "### memory-region - reserved-memory references\n",
+        "bootargs": "### bootargs - /chosen node\n",
+        "/cpus": "## `/cpus` Node Properties - /cpus node\n",
+        "/cpus/cpu*": "## `/cpus/cpu*` Node Properties - /cpus/cpu* nodes\n",
+        "timebase-frequency": "### timebase-frequency - /cpus/cpu* nodes\n",
+        "power-isa-version": "### power-isa-version - /cpus/cpu* Power ISA\n",
+        "tlb-split": "### tlb-split - /cpus/cpu* Power ISA TLB\n",
+        "cache-unified": "### cache-unified - /cpus/cpu* Power ISA cache\n",
+        "/cpus/cpu*/l?-cache": (
+            "## Multi-level and Shared Cache Nodes (`/cpus/cpu*/l?-cache`)"
+            " - /cpus/cpu*/l?-cache nodes\n"
+        ),
+        "cache-level": "### cache-level - /cpus/cpu*/l?-cache nodes\n",
+        "interrupts": "#### interrupts - Interrupts and Interrupt Mapping\n",
+        "gpio-map": "#### <specifier>-map - Specifier Mapping\n",
+        "/ns16550": (
+            "### National Semiconductor 16450/16550 Compatible UART Requirements"
+            " - ns16550 UART\n"
+        ),
+        "ns16550:compatible": "### compatible - ns16550 UART\n",
+        "/open-pic": "## Power ISA Open PIC Interrupt Controllers - Open PIC interrupt controllers\n",
+        "open-pic:compatible": "### compatible - Open PIC interrupt controllers\n",
+        "/simple-bus": "## `simple-bus` Compatible Value - simple-bus\n",
+        "simple-bus:ranges": "### ranges - simple-bus\n",
+    }
+
+    for key, heading in expected.items():
+        assert docs[key].startswith(heading)
+
 def test_build_hover_docs_remaining_chapter4_sections_from_spec():
     docs = build_hover_docs()
     expected = {
