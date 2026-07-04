@@ -556,7 +556,8 @@ def test_build_hover_docs_all_keys_present():
         "alloc-ranges", "no-map", "reusable", "memory-region",
         "memory-region-names", "bootargs", "bootsource", "stdout-path",
         "stdin-path", "clock-frequency", "misc:clock-frequency",
-        "misc:reg-shift", "misc:label", "serial:current-speed",
+        "misc:reg-shift", "misc:label", "serial:clock-frequency",
+        "serial:current-speed",
         "/ns16550", "ns16550:compatible", "ns16550:clock-frequency",
         "ns16550:current-speed", "ns16550:reg-shift",
         "ns16550:virtual-reg", "/network", "network:address-bits",
@@ -657,6 +658,9 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
     assert docs["misc:clock-frequency"].startswith(
         "#### `clock-frequency` Property - Miscellaneous Properties\n"
     )
+    assert docs["serial:clock-frequency"].startswith(
+        "#### `clock-frequency` Property - Serial Class Binding\n"
+    )
 
 def test_build_hover_docs_remaining_chapter4_sections_from_spec():
     docs = build_hover_docs()
@@ -687,6 +691,10 @@ def test_build_hover_docs_remaining_chapter4_properties_from_scoped_sections():
         "serial:current-speed": (
             "Serial Class Binding",
             "``current-speed`` Property",
+        ),
+        "serial:clock-frequency": (
+            "Serial Class Binding",
+            "``clock-frequency`` Property",
         ),
         "network:address-bits": (
             "Network Class Binding",
@@ -775,7 +783,8 @@ def test_build_hover_docs_each_begins_with_heading():
             "/ns16550", "/network", "/ethernet", "/open-pic", "/simple-bus",
             "status:okay", "status:disabled", "status:reserved",
             "status:fail", "status:fail-sss", "misc:clock-frequency",
-            "misc:reg-shift", "misc:label", "serial:current-speed",
+            "misc:reg-shift", "misc:label", "serial:clock-frequency",
+            "serial:current-speed",
             "network:address-bits", "network:local-mac-address",
             "network:mac-address", "network:max-frame-size",
             "ethernet:max-speed", "ethernet:phy-connection-type",
