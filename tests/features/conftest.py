@@ -7,14 +7,9 @@ from tests.lsp_client import LSPClient
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
 from generate_docs import (
-    _convert_inline,
-    _consume_indented_block,
     _format_section,
-    _parse_table_rows,
-    _rst_files,
-    _skip_table_options,
-    _strip_literal_markup,
     format_table_row_hover,
+    format_value_table_row_hover,
     get_section,
 )
 
@@ -211,41 +206,6 @@ def _get_spec_section(section):
     return None
 
 
-def _format_value_table_row_hover(table, value):
-    for fpath in _rst_files():
-        with open(fpath) as f:
-            lines = f.read().split('\n')
-
-        for idx, line in enumerate(lines):
-            if line.lstrip() != f'.. table:: {table}':
-                continue
-
-            block, _ = _consume_indented_block(lines, idx + 1)
-            rows = _parse_table_rows(_skip_table_options(block))
-            if not rows:
-                continue
-
-            header = [_strip_literal_markup(cell) for cell in rows[0]]
-            try:
-                value_idx = header.index('Value')
-                description_idx = header.index('Description')
-            except ValueError:
-                return None
-
-            for cells in rows[1:]:
-                if _strip_literal_markup(cells[value_idx]) != value:
-                    continue
-
-                description = _convert_inline(cells[description_idx])
-                return (
-                    f'### {value}\n\n'
-                    f'**Value:** `{value}`\n\n'
-                    f'**Description:**\n\n'
-                    f'{description}\n'
-                )
-    return None
-
-
 @then(parsers.re(r'hovering over an? (?P<hover_target>.+?) outside the root node returns nothing'))
 def check_no_hover_outside_root_node(lsp, uri, hover_target):
     hover_target = _normalize_hover_target(hover_target)
@@ -320,7 +280,7 @@ def check_hover_table_row(response, property, table):
 @then(parsers.parse('the hover returns value and description for {value} from the "{table}" table from the devicetree specification'))
 def check_hover_value_table_row(response, value, table):
     text = _hover_text(response)
-    expected = _format_value_table_row_hover(table, value)
+    expected = format_value_table_row_hover(table, value)
     if expected is None:
         pytest.fail(f'Unknown table row: {table}.{value}')
     if text != expected:
