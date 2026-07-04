@@ -554,10 +554,10 @@ def test_build_hover_docs_all_keys_present():
         "initial-mapped-area", "hotpluggable", "size", "alignment",
         "alloc-ranges", "no-map", "reusable", "memory-region",
         "memory-region-names", "bootargs", "bootsource", "stdout-path",
-        "stdin-path", "clock-frequency", "timebase-frequency",
-        "enable-method", "cpu-release-addr", "power-isa-version",
-        "power-isa-*", "cache-op-block-size", "reservation-granule-size",
-        "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
+        "stdin-path", "clock-frequency", "misc:clock-frequency",
+        "timebase-frequency", "enable-method", "cpu-release-addr",
+        "power-isa-version", "power-isa-*", "cache-op-block-size",
+        "reservation-granule-size", "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
         "d-tlb-size", "d-tlb-sets", "i-tlb-size", "i-tlb-sets",
         "cache-unified", "cache-size", "cache-sets", "cache-block-size",
         "cache-line-size", "i-cache-size", "i-cache-sets",
@@ -624,6 +624,16 @@ def test_build_hover_docs_root_node_properties_from_table():
         "chassis-type",
     )
 
+def test_build_hover_docs_miscellaneous_clock_frequency_from_scoped_section():
+    docs = build_hover_docs()
+    raw = get_section_under(
+        "Miscellaneous Properties",
+        "``clock-frequency`` Property",
+    )
+
+    assert raw is not None
+    assert docs["misc:clock-frequency"] == _format_section(raw)
+
 def test_build_hover_docs_aliases_node_from_spec_section():
     docs = build_hover_docs()
     raw = get_section("``/aliases`` node")
@@ -646,7 +656,7 @@ def test_build_hover_docs_each_begins_with_heading():
             "__root__", "/aliases", "/memory", "/reserved-memory",
             "/chosen", "/cpus", "/cpus/cpu*", "/cpus/cpu*/l?-cache",
             "status:okay", "status:disabled", "status:reserved",
-            "status:fail", "status:fail-sss",
+            "status:fail", "status:fail-sss", "misc:clock-frequency",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
