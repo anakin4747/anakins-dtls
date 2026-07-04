@@ -127,6 +127,23 @@ def get_section(name: str) -> str | None:
     return None
 
 
+def get_section_under(parent: str, child: str) -> str | None:
+    for fpath in _rst_files():
+        with open(fpath) as f:
+            text = f.read()
+        headings = _parse_headings(text)
+        for i, (_offset, parent_level, title) in enumerate(headings):
+            if title != parent:
+                continue
+            for j in range(i + 1, len(headings)):
+                _child_offset, child_level, child_title = headings[j]
+                if child_level <= parent_level:
+                    break
+                if child_title == child:
+                    return _section_text(text, headings, j)
+    return None
+
+
 def _source_dir() -> str:
     return os.path.join(
         os.path.dirname(__file__),
