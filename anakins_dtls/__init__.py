@@ -225,6 +225,14 @@ def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
     return False
 
 
+def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
+    if prop == 'clock-frequency':
+        ancestors = _ancestor_node_names_at(text, line)
+        if ancestors[-2:] != ['cpus', 'cpu']:
+            return 'misc:clock-frequency'
+    return prop
+
+
 def handle_notification(method: str, params: dict | None) -> None:
     if method == 'textDocument/didOpen':
         uri = params['textDocument']['uri']
@@ -271,7 +279,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if prop in NEXUS_ONLY_PROPERTIES and not _is_nexus_node_at(text, line, prop):
             return None
 
-        doc = HOVER_DOCS.get(prop)
+        doc_key = _hover_doc_key_for_property(text, line, prop)
+        doc = HOVER_DOCS.get(doc_key)
         if doc is None and ',' in prop:
             doc = HOVER_DOCS.get(prop.split(',', 1)[1])
         if doc is None and prop.startswith('power-isa-'):

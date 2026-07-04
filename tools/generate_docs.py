@@ -870,6 +870,13 @@ STATUS_VALUES = (
     '"fail-sss"',
 )
 
+SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
+    "misc:clock-frequency": (
+        "Miscellaneous Properties",
+        "``clock-frequency`` Property",
+    ),
+}
+
 
 def _status_value_key(value: str) -> str:
     return f"status:{value.strip('\"')}"
@@ -890,6 +897,9 @@ def build_hover_docs() -> dict[str, str]:
         ) or ""
     for prop_name, table_name in TABLE_ROW_DOCS.items():
         docs[prop_name] = format_table_row_hover(table_name, prop_name) or ""
+    for doc_key, (parent, section) in SCOPED_SECTION_DOCS.items():
+        raw = get_section_under(parent, section)
+        docs[doc_key] = _format_section(raw) if raw else ""
     for value in STATUS_VALUES:
         docs[_status_value_key(value)] = format_value_table_row_hover(
             "Values for status property",
