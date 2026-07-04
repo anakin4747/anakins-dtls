@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import pytest
 from pytest_bdd import given, when, then, parsers
@@ -333,6 +334,12 @@ def _hover_text(response):
     return text
 
 
+def _strip_hover_title_source(text):
+    heading, sep, rest = text.partition('\n')
+    heading = re.sub(r' - [^\n]+$', '', heading)
+    return f'{heading}{sep}{rest}' if sep else heading
+
+
 def _get_spec_section(section):
     raw = get_section(section)
     if raw is not None:
@@ -394,7 +401,7 @@ def check_no_hover_in_invalid_placement(lsp, uri, hover_target, placement):
 @then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))
 def check_hover(response, section):
     section = section.replace('\\#', '#')
-    text = _hover_text(response)
+    text = _strip_hover_title_source(_hover_text(response))
     raw = _get_spec_section(section)
     if raw is None:
         pytest.fail(f'Unknown section: {section}')
@@ -410,7 +417,7 @@ def check_hover(response, section):
 
 @then(parsers.parse('the hover returns the contents of the "{section}" section under the "{parent}" section from the devicetree specification'))
 def check_hover_section_under_parent(response, section, parent):
-    text = _hover_text(response)
+    text = _strip_hover_title_source(_hover_text(response))
     expected = _get_spec_section_under(parent, section)
     if text != expected:
         pytest.fail(
@@ -436,7 +443,7 @@ def check_hover_title_includes(response, source):
 
 @then(parsers.parse('the hover returns usage, value type, and definition for "{property}" from the "{table}" table from the devicetree specification'))
 def check_hover_table_row(response, property, table):
-    text = _hover_text(response)
+    text = _strip_hover_title_source(_hover_text(response))
     expected = format_table_row_hover(table, property)
     if expected is None:
         pytest.fail(f'Unknown table row: {table}.{property}')
@@ -482,7 +489,7 @@ def check_hover_excludes_section_under_parent(response, section, parent):
 
 @then(parsers.parse('the hover returns value and description for {value} from the "{table}" table from the devicetree specification'))
 def check_hover_value_table_row(response, value, table):
-    text = _hover_text(response)
+    text = _strip_hover_title_source(_hover_text(response))
     expected = format_value_table_row_hover(table, value)
     if expected is None:
         pytest.fail(f'Unknown table row: {table}.{value}')
