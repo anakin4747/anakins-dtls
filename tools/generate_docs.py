@@ -712,8 +712,6 @@ def _format_section(raw: str) -> str:
         heading, next_i = _format_heading(lines, i)
         if heading is not None:
             _flush_para()
-            if heading == "#### `clock-frequency` Property\n":
-                heading = _append_heading_source(heading, "Miscellaneous Properties")
             out.append(heading)
             i = next_i
             continue
@@ -916,6 +914,11 @@ def build_hover_docs() -> dict[str, str]:
     for doc_key, (parent, section) in SCOPED_SECTION_DOCS.items():
         raw = get_section_under(parent, section)
         docs[doc_key] = _format_section(raw) if raw else ""
+        if doc_key == "misc:clock-frequency":
+            docs[doc_key] = _append_heading_source(
+                docs[doc_key],
+                "Miscellaneous Properties",
+            )
     for value in STATUS_VALUES:
         docs[_status_value_key(value)] = format_value_table_row_hover(
             "Values for status property",

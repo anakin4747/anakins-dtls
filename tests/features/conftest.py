@@ -7,6 +7,7 @@ from tests.lsp_client import LSPClient
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
 from generate_docs import (
+    _append_heading_source,
     _format_section,
     format_table_row_hover,
     format_value_table_row_hover,
@@ -232,7 +233,10 @@ def _get_spec_section_under(parent, section):
     raw = get_section_under(parent, section)
     if raw is None:
         pytest.fail(f'Unknown section: {parent}.{section}')
-    return _format_section(raw)
+    formatted = _format_section(raw)
+    if parent == 'Miscellaneous Properties' and section == '``clock-frequency`` Property':
+        return _append_heading_source(formatted, parent)
+    return formatted
 
 
 @then(parsers.re(r'hovering over an? (?P<hover_target>.+?) outside the root node returns nothing'))
