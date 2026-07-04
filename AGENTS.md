@@ -17,6 +17,8 @@ A Device Tree Language Server.
 git diff-tree --no-commit-id --name-only -r HEAD
 ```
 - If a workflow commit changes files outside its allowed paths, amend it and revalidate the touched files before continuing.
+- Keep imports at the top of each file. Do not add inline imports inside
+  functions, methods, classes, conditionals, or other nested blocks.
 - Pause for user review only when the user explicitly asks.
 - Always run `notify-send DONE` once everything is done and ready for user input again.
 
