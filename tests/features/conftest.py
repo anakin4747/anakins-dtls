@@ -11,6 +11,7 @@ from generate_docs import (
     format_table_row_hover,
     format_value_table_row_hover,
     get_section,
+    get_section_under,
 )
 
 TARGET = {
@@ -228,8 +229,6 @@ def _get_spec_section(section):
 
 
 def _get_spec_section_under(parent, section):
-    from generate_docs import get_section_under
-
     raw = get_section_under(parent, section)
     if raw is None:
         pytest.fail(f'Unknown section: {parent}.{section}')
