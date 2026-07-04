@@ -41,6 +41,12 @@ SPEC_PATH = os.path.join(
 )
 
 
+def _strip_heading_source(doc):
+    heading, sep, rest = doc.partition("\n")
+    heading = re.sub(r" - [^\n]+$", "", heading)
+    return f"{heading}{sep}{rest}" if sep else heading
+
+
 # _convert_inline {{{
 
 def test_convert_inline_unicode_punctuation():
@@ -608,7 +614,7 @@ def test_build_hover_docs_interrupt_properties_from_spec_sections():
     for prop_name in expected:
         raw = get_section(prop_name)
         assert raw is not None
-        assert docs[prop_name] == _format_section(raw)
+        assert _strip_heading_source(docs[prop_name]) == _format_section(raw)
 
 def test_build_hover_docs_nexus_properties_from_spec_sections():
     docs = build_hover_docs()
@@ -622,16 +628,16 @@ def test_build_hover_docs_nexus_properties_from_spec_sections():
     for prop_name, section in expected.items():
         raw = get_section(section)
         assert raw is not None
-        assert docs[prop_name] == _format_section(raw)
+        assert _strip_heading_source(docs[prop_name]) == _format_section(raw)
 
 def test_build_hover_docs_root_node_properties_from_table():
     docs = build_hover_docs()
 
-    assert docs["serial-number"] == format_table_row_hover(
+    assert _strip_heading_source(docs["serial-number"]) == format_table_row_hover(
         "Root Node Properties",
         "serial-number",
     )
-    assert docs["chassis-type"] == format_table_row_hover(
+    assert _strip_heading_source(docs["chassis-type"]) == format_table_row_hover(
         "Root Node Properties",
         "chassis-type",
     )
@@ -653,7 +659,7 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
     docs = build_hover_docs()
 
     assert docs["clock-frequency"].startswith(
-        "### clock-frequency - ``/cpus/cpu*`` Node General Properties\n"
+        "### clock-frequency - /cpus/cpu* nodes\n"
     )
     assert docs["misc:clock-frequency"].startswith(
         "#### `clock-frequency` Property - Miscellaneous Properties\n"
@@ -662,7 +668,7 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
         "#### `clock-frequency` Property - Serial Class Binding\n"
     )
     assert docs["ns16550:clock-frequency"].startswith(
-        "### clock-frequency - ns16550 UART Properties\n"
+        "### clock-frequency - ns16550 UART\n"
     )
 
 def test_build_hover_docs_titles_include_semantic_sources():
@@ -717,7 +723,7 @@ def test_build_hover_docs_remaining_chapter4_sections_from_spec():
     for key, section in expected.items():
         raw = get_section(section)
         assert raw is not None
-        assert docs[key] == _format_section(raw)
+        assert _strip_heading_source(docs[key]) == _format_section(raw)
 
 def test_build_hover_docs_remaining_chapter4_properties_from_scoped_sections():
     docs = build_hover_docs()
@@ -800,23 +806,21 @@ def test_build_hover_docs_remaining_chapter4_properties_from_tables():
 
     for key, (table, row) in expected.items():
         expected_doc = format_table_row_hover(table, row)
-        if key == "ns16550:clock-frequency":
-            expected_doc = _append_heading_source(expected_doc, table)
-        assert docs[key] == expected_doc
+        assert _strip_heading_source(docs[key]) == expected_doc
 
 def test_build_hover_docs_aliases_node_from_spec_section():
     docs = build_hover_docs()
     raw = get_section("``/aliases`` node")
 
     assert raw is not None
-    assert docs["/aliases"] == _format_section(raw)
+    assert _strip_heading_source(docs["/aliases"]) == _format_section(raw)
 
 def test_build_hover_docs_memory_node_from_spec_section():
     docs = build_hover_docs()
     raw = get_section("``/memory`` node")
 
     assert raw is not None
-    assert docs["/memory"] == _format_section(raw)
+    assert _strip_heading_source(docs["/memory"]) == _format_section(raw)
 
 def test_build_hover_docs_each_begins_with_heading():
     docs = build_hover_docs()
@@ -853,7 +857,7 @@ def test_build_hover_docs_standard_node_sections_from_spec():
     for key, section in expected.items():
         raw = get_section(section)
         assert raw is not None
-        assert docs[key] == _format_section(raw)
+        assert _strip_heading_source(docs[key]) == _format_section(raw)
 
 def test_build_hover_docs_standard_node_properties_from_tables():
     docs = build_hover_docs()
@@ -909,9 +913,7 @@ def test_build_hover_docs_standard_node_properties_from_tables():
 
     for prop_name, table in expected.items():
         expected_doc = format_table_row_hover(table, prop_name)
-        if prop_name == "clock-frequency":
-            expected_doc = _append_heading_source(expected_doc, table)
-        assert docs[prop_name] == expected_doc
+        assert _strip_heading_source(docs[prop_name]) == expected_doc
 
 
 def test_build_hover_docs_status_values_from_table():
@@ -925,7 +927,7 @@ def test_build_hover_docs_status_values_from_table():
     }
 
     for key, value in expected.items():
-        assert docs[key].startswith(f'### {value}\n')
+        assert docs[key].startswith(f'### {value} - Standard Properties\n')
         assert f'**Value:** `{value}`' in docs[key]
         assert '**Description:**' in docs[key]
 
