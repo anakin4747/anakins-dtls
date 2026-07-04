@@ -48,3 +48,11 @@ upstream fix for this spelling mistake:
 devicetree-specification/source/chapter4-device-bindings.rst:138
 Note: the table title appears misspelled as clock-frequecy.
 ```
+
+---
+
+notify-send does not have its own systemd service to tail. To log notifications,
+run a small user service that listens for `org.freedesktop.Notifications.Notify`
+on the session bus and writes events to stdout/journald. For only our own
+completion notifications, a simpler wrapper can call `notify-send DONE` and log
+with `systemd-cat`.
