@@ -5,6 +5,7 @@ import re
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 
 from generate_docs import (
+    _append_heading_source,
     _convert_inline,
     _expand_subst,
     _format_section,
@@ -632,7 +633,20 @@ def test_build_hover_docs_miscellaneous_clock_frequency_from_scoped_section():
     )
 
     assert raw is not None
-    assert docs["misc:clock-frequency"] == _format_section(raw)
+    assert docs["misc:clock-frequency"] == _append_heading_source(
+        _format_section(raw),
+        "Miscellaneous Properties",
+    )
+
+def test_build_hover_docs_clock_frequency_titles_include_source():
+    docs = build_hover_docs()
+
+    assert docs["clock-frequency"].startswith(
+        "### clock-frequency - ``/cpus/cpu*`` Node General Properties\n"
+    )
+    assert docs["misc:clock-frequency"].startswith(
+        "#### `clock-frequency` Property - Miscellaneous Properties\n"
+    )
 
 def test_build_hover_docs_aliases_node_from_spec_section():
     docs = build_hover_docs()
@@ -731,7 +745,10 @@ def test_build_hover_docs_standard_node_properties_from_tables():
     }
 
     for prop_name, table in expected.items():
-        assert docs[prop_name] == format_table_row_hover(table, prop_name)
+        expected_doc = format_table_row_hover(table, prop_name)
+        if prop_name == "clock-frequency":
+            expected_doc = _append_heading_source(expected_doc, table)
+        assert docs[prop_name] == expected_doc
 
 
 def test_build_hover_docs_status_values_from_table():
