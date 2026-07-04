@@ -556,6 +556,16 @@ def test_build_hover_docs_all_keys_present():
         "alloc-ranges", "no-map", "reusable", "memory-region",
         "memory-region-names", "bootargs", "bootsource", "stdout-path",
         "stdin-path", "clock-frequency", "misc:clock-frequency",
+        "misc:reg-shift", "misc:label", "serial:current-speed",
+        "/ns16550", "ns16550:compatible", "ns16550:clock-frequency",
+        "ns16550:current-speed", "ns16550:reg-shift",
+        "ns16550:virtual-reg", "/network", "network:address-bits",
+        "network:local-mac-address", "network:mac-address",
+        "network:max-frame-size", "/ethernet", "ethernet:max-speed",
+        "ethernet:phy-connection-type", "ethernet:phy-handle",
+        "/open-pic", "open-pic:compatible", "open-pic:#interrupt-cells",
+        "open-pic:#address-cells", "open-pic:interrupt-controller",
+        "/simple-bus", "simple-bus:ranges", "simple-bus:nonposted-mmio",
         "timebase-frequency", "enable-method", "cpu-release-addr",
         "power-isa-version", "power-isa-*", "cache-op-block-size",
         "reservation-granule-size", "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
@@ -648,6 +658,99 @@ def test_build_hover_docs_clock_frequency_titles_include_source():
         "#### `clock-frequency` Property - Miscellaneous Properties\n"
     )
 
+def test_build_hover_docs_remaining_chapter4_sections_from_spec():
+    docs = build_hover_docs()
+    expected = {
+        "/ns16550": "National Semiconductor 16450/16550 Compatible UART Requirements",
+        "/network": "Network Class Binding",
+        "/ethernet": "Ethernet specific considerations",
+        "/open-pic": "Power ISA Open PIC Interrupt Controllers",
+        "/simple-bus": "``simple-bus`` Compatible Value",
+    }
+
+    for key, section in expected.items():
+        raw = get_section(section)
+        assert raw is not None
+        assert docs[key] == _format_section(raw)
+
+def test_build_hover_docs_remaining_chapter4_properties_from_scoped_sections():
+    docs = build_hover_docs()
+    expected = {
+        "misc:reg-shift": (
+            "Miscellaneous Properties",
+            "``reg-shift`` Property",
+        ),
+        "misc:label": (
+            "Miscellaneous Properties",
+            "``label`` Property",
+        ),
+        "serial:current-speed": (
+            "Serial Class Binding",
+            "``current-speed`` Property",
+        ),
+        "network:address-bits": (
+            "Network Class Binding",
+            "``address-bits`` Property",
+        ),
+        "network:local-mac-address": (
+            "Network Class Binding",
+            "``local-mac-address`` Property",
+        ),
+        "network:mac-address": (
+            "Network Class Binding",
+            "``mac-address`` Property",
+        ),
+        "network:max-frame-size": (
+            "Network Class Binding",
+            "``max-frame-size`` Property",
+        ),
+        "ethernet:max-speed": (
+            "Ethernet specific considerations",
+            "``max-speed`` Property",
+        ),
+        "ethernet:phy-connection-type": (
+            "Ethernet specific considerations",
+            "``phy-connection-type`` Property",
+        ),
+        "ethernet:phy-handle": (
+            "Ethernet specific considerations",
+            "``phy-handle`` Property",
+        ),
+    }
+
+    for key, (parent, child) in expected.items():
+        raw = get_section_under(parent, child)
+        assert raw is not None
+        assert docs[key] == _append_heading_source(_format_section(raw), parent)
+
+def test_build_hover_docs_remaining_chapter4_properties_from_tables():
+    docs = build_hover_docs()
+    expected = {
+        "ns16550:compatible": ("ns16550 UART Properties", "compatible"),
+        "ns16550:clock-frequency": ("ns16550 UART Properties", "clock-frequency"),
+        "ns16550:current-speed": ("ns16550 UART Properties", "current-speed"),
+        "ns16550:reg-shift": ("ns16550 UART Properties", "reg-shift"),
+        "ns16550:virtual-reg": ("ns16550 UART Properties", "virtual-reg"),
+        "open-pic:compatible": ("Open-PIC properties", "compatible"),
+        "open-pic:#interrupt-cells": ("Open-PIC properties", "#interrupt-cells"),
+        "open-pic:#address-cells": ("Open-PIC properties", "#address-cells"),
+        "open-pic:interrupt-controller": (
+            "Open-PIC properties",
+            "interrupt-controller",
+        ),
+        "simple-bus:ranges": (
+            "``simple-bus`` Compatible Node Properties",
+            "ranges",
+        ),
+        "simple-bus:nonposted-mmio": (
+            "``simple-bus`` Compatible Node Properties",
+            "nonposted-mmio",
+        ),
+    }
+
+    for key, (table, row) in expected.items():
+        assert docs[key] == format_table_row_hover(table, row)
+
 def test_build_hover_docs_aliases_node_from_spec_section():
     docs = build_hover_docs()
     raw = get_section("``/aliases`` node")
@@ -669,8 +772,14 @@ def test_build_hover_docs_each_begins_with_heading():
         if key in {
             "__root__", "/aliases", "/memory", "/reserved-memory",
             "/chosen", "/cpus", "/cpus/cpu*", "/cpus/cpu*/l?-cache",
+            "/ns16550", "/network", "/ethernet", "/open-pic", "/simple-bus",
             "status:okay", "status:disabled", "status:reserved",
             "status:fail", "status:fail-sss", "misc:clock-frequency",
+            "misc:reg-shift", "misc:label", "serial:current-speed",
+            "network:address-bits", "network:local-mac-address",
+            "network:mac-address", "network:max-frame-size",
+            "ethernet:max-speed", "ethernet:phy-connection-type",
+            "ethernet:phy-handle",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
