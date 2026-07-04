@@ -760,7 +760,10 @@ def test_build_hover_docs_remaining_chapter4_properties_from_tables():
     }
 
     for key, (table, row) in expected.items():
-        assert docs[key] == format_table_row_hover(table, row)
+        expected_doc = format_table_row_hover(table, row)
+        if key == "ns16550:clock-frequency":
+            expected_doc = _append_heading_source(expected_doc, table)
+        assert docs[key] == expected_doc
 
 def test_build_hover_docs_aliases_node_from_spec_section():
     docs = build_hover_docs()
