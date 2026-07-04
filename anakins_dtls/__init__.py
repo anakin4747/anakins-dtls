@@ -92,20 +92,6 @@ SIMPLE_BUS_PROPERTIES = {
     'nonposted-mmio',
 }
 
-RAW_SECTION_HOVER_KEYS = {
-    'misc:reg-shift',
-    'misc:label',
-    'serial:current-speed',
-    'network:address-bits',
-    'network:local-mac-address',
-    'network:mac-address',
-    'network:max-frame-size',
-    'ethernet:max-speed',
-    'ethernet:phy-connection-type',
-    'ethernet:phy-handle',
-}
-
-
 def _send(msg: dict) -> None:
     data = json.dumps(msg, separators=(',', ':')).encode('utf-8')
     header = f'Content-Length: {len(data)}\r\n\r\n'.encode('ascii')
@@ -414,9 +400,6 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             doc = HOVER_DOCS.get(prop.split(',', 1)[1])
         if doc is None and prop.startswith('power-isa-'):
             doc = HOVER_DOCS.get('power-isa-*')
-        if doc is not None and doc_key in RAW_SECTION_HOVER_KEYS:
-            doc = _strip_heading_source(doc)
-
         return {
             'contents': {
                 'kind': 'markdown',

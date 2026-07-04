@@ -372,8 +372,6 @@ def format_table_row_hover(table: str, row: str) -> str | None:
     definition = entry.get("Definition")
 
     heading = f"### {property_name}"
-    if table == "``/cpus/cpu*`` Node General Properties" and row == "clock-frequency":
-        heading = _append_heading_source(heading, table)
 
     parts = [
         heading,
@@ -817,6 +815,47 @@ SECTION_DOCS: dict[str, str] = {
     "device_type": "device_type (deprecated)",
 }
 
+SECTION_DOC_SOURCES: dict[str, str] = {
+    "__root__": "Root node",
+    "/aliases": "/aliases node",
+    "/memory": "/memory node",
+    "/reserved-memory": "/reserved-memory node",
+    "/chosen": "/chosen node",
+    "/cpus": "/cpus node",
+    "/cpus/cpu*": "/cpus/cpu* nodes",
+    "/cpus/cpu*/l?-cache": "/cpus/cpu*/l?-cache nodes",
+    "/ns16550": "ns16550 UART",
+    "/network": "Network Class Binding",
+    "/ethernet": "Ethernet specific considerations",
+    "/open-pic": "Open PIC interrupt controllers",
+    "/simple-bus": "simple-bus",
+    "compatible": "Standard Properties",
+    "model": "Standard Properties",
+    "phandle": "Standard Properties",
+    "status": "Standard Properties",
+    "interrupts": "Interrupts and Interrupt Mapping",
+    "interrupt-parent": "Interrupts and Interrupt Mapping",
+    "interrupts-extended": "Interrupts and Interrupt Mapping",
+    "interrupt-controller": "Interrupts and Interrupt Mapping",
+    "#interrupt-cells": "Interrupts and Interrupt Mapping",
+    "interrupt-map": "Interrupts and Interrupt Mapping",
+    "interrupt-map-mask": "Interrupts and Interrupt Mapping",
+    "gpio-map": "Specifier Mapping",
+    "gpio-map-mask": "Specifier Mapping",
+    "gpio-map-pass-thru": "Specifier Mapping",
+    "#gpio-cells": "Specifier Mapping",
+    "#address-cells": "Standard Properties",
+    "#size-cells": "Standard Properties",
+    "reg": "Standard Properties",
+    "virtual-reg": "Standard Properties",
+    "ranges": "Standard Properties",
+    "dma-ranges": "Standard Properties",
+    "dma-coherent": "Standard Properties",
+    "dma-noncoherent": "Standard Properties",
+    "name": "Standard Properties",
+    "device_type": "Standard Properties",
+}
+
 ROOT_NODE_PROPERTIES = {
     "serial-number",
     "chassis-type",
@@ -881,6 +920,64 @@ TABLE_ROW_DOCS: dict[str, str] = {
     "open-pic:interrupt-controller": "Open-PIC properties",
     "simple-bus:ranges": "``simple-bus`` Compatible Node Properties",
     "simple-bus:nonposted-mmio": "``simple-bus`` Compatible Node Properties",
+}
+
+TABLE_ROW_DOC_SOURCES: dict[str, str] = {
+    "initial-mapped-area": "/memory node",
+    "hotpluggable": "/memory node",
+    "size": "/reserved-memory/ child nodes",
+    "alignment": "/reserved-memory/ child nodes",
+    "alloc-ranges": "/reserved-memory/ child nodes",
+    "no-map": "/reserved-memory/ child nodes",
+    "reusable": "/reserved-memory/ child nodes",
+    "memory-region": "reserved-memory references",
+    "memory-region-names": "reserved-memory references",
+    "bootargs": "/chosen node",
+    "bootsource": "/chosen node",
+    "stdout-path": "/chosen node",
+    "stdin-path": "/chosen node",
+    "clock-frequency": "/cpus/cpu* nodes",
+    "timebase-frequency": "/cpus/cpu* nodes",
+    "enable-method": "/cpus/cpu* nodes",
+    "cpu-release-addr": "/cpus/cpu* nodes",
+    "power-isa-version": "/cpus/cpu* Power ISA",
+    "power-isa-*": "/cpus/cpu* Power ISA",
+    "cache-op-block-size": "/cpus/cpu* Power ISA",
+    "reservation-granule-size": "/cpus/cpu* Power ISA",
+    "mmu-type": "/cpus/cpu* Power ISA",
+    "tlb-split": "/cpus/cpu* Power ISA TLB",
+    "tlb-size": "/cpus/cpu* Power ISA TLB",
+    "tlb-sets": "/cpus/cpu* Power ISA TLB",
+    "d-tlb-size": "/cpus/cpu* Power ISA TLB",
+    "d-tlb-sets": "/cpus/cpu* Power ISA TLB",
+    "i-tlb-size": "/cpus/cpu* Power ISA TLB",
+    "i-tlb-sets": "/cpus/cpu* Power ISA TLB",
+    "cache-unified": "/cpus/cpu* Power ISA cache",
+    "cache-size": "/cpus/cpu* Power ISA cache",
+    "cache-sets": "/cpus/cpu* Power ISA cache",
+    "cache-block-size": "/cpus/cpu* Power ISA cache",
+    "cache-line-size": "/cpus/cpu* Power ISA cache",
+    "i-cache-size": "/cpus/cpu* Power ISA cache",
+    "i-cache-sets": "/cpus/cpu* Power ISA cache",
+    "i-cache-block-size": "/cpus/cpu* Power ISA cache",
+    "i-cache-line-size": "/cpus/cpu* Power ISA cache",
+    "d-cache-size": "/cpus/cpu* Power ISA cache",
+    "d-cache-sets": "/cpus/cpu* Power ISA cache",
+    "d-cache-block-size": "/cpus/cpu* Power ISA cache",
+    "d-cache-line-size": "/cpus/cpu* Power ISA cache",
+    "next-level-cache": "/cpus/cpu* Power ISA cache",
+    "cache-level": "/cpus/cpu*/l?-cache nodes",
+    "ns16550:compatible": "ns16550 UART",
+    "ns16550:clock-frequency": "ns16550 UART",
+    "ns16550:current-speed": "ns16550 UART",
+    "ns16550:reg-shift": "ns16550 UART",
+    "ns16550:virtual-reg": "ns16550 UART",
+    "open-pic:compatible": "Open PIC interrupt controllers",
+    "open-pic:#interrupt-cells": "Open PIC interrupt controllers",
+    "open-pic:#address-cells": "Open PIC interrupt controllers",
+    "open-pic:interrupt-controller": "Open PIC interrupt controllers",
+    "simple-bus:ranges": "simple-bus",
+    "simple-bus:nonposted-mmio": "simple-bus",
 }
 
 STATUS_VALUES = (
@@ -962,6 +1059,10 @@ def build_hover_docs() -> dict[str, str]:
         raw = get_section(section_name)
         if raw:
             docs[prop_name] = _format_section(raw)
+            docs[prop_name] = _append_heading_source(
+                docs[prop_name],
+                SECTION_DOC_SOURCES[prop_name],
+            )
         else:
             docs[prop_name] = ""
     for prop_name in ROOT_NODE_PROPERTIES:
@@ -969,11 +1070,14 @@ def build_hover_docs() -> dict[str, str]:
             "Root Node Properties",
             prop_name,
         ) or ""
+        docs[prop_name] = _append_heading_source(docs[prop_name], "Root node")
     for prop_name, table_name in TABLE_ROW_DOCS.items():
         row_name = prop_name.split(":", 1)[-1]
         docs[prop_name] = format_table_row_hover(table_name, row_name) or ""
-        if prop_name == "ns16550:clock-frequency":
-            docs[prop_name] = _append_heading_source(docs[prop_name], table_name)
+        docs[prop_name] = _append_heading_source(
+            docs[prop_name],
+            TABLE_ROW_DOC_SOURCES[prop_name],
+        )
     for doc_key, (parent, section) in SCOPED_SECTION_DOCS.items():
         raw = get_section_under(parent, section)
         docs[doc_key] = _format_section(raw) if raw else ""
@@ -983,6 +1087,10 @@ def build_hover_docs() -> dict[str, str]:
             "Values for status property",
             value,
         ) or ""
+        docs[_status_value_key(value)] = _append_heading_source(
+            docs[_status_value_key(value)],
+            "Standard Properties",
+        )
     return docs
 
 
