@@ -18,6 +18,7 @@ git diff-tree --no-commit-id --name-only -r HEAD
 ```
 - If a workflow commit changes files outside its allowed paths, amend it and revalidate the touched files before continuing.
 - Pause for user review only when the user explicitly asks.
+- Always run `notify-send DONE` once everything is done and ready for user input again.
 
 ## Mandatory Workflow Gate
 
