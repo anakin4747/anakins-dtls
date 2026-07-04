@@ -54,15 +54,27 @@ satisfied.
 
 Before every workflow commit, review the staged diff. This review is mandatory
 for all phases, including tests, fixtures, step definitions, tools, application
-code, and docs. Ask:
-- Does every changed file belong to the current workflow phase?
-- Does any changed file contain logic that belongs in a different layer?
-- Did this change duplicate existing helpers, parser behavior, formatter
-  behavior, fixtures, or application behavior?
-- Are step definitions still thin glue over existing helpers?
-- Are tests asserting behavior without reimplementing the behavior under test?
-- Is this commit limited to one workflow phase and one concern?
-- Are there unrelated changes staged?
+code, and docs.
+
+A valid staged diff:
+- Contains only files allowed by the current workflow phase.
+- Contains only changes for one concern.
+- Keeps logic in the layer that owns it.
+- Reuses existing helpers, parser behavior, formatter behavior, fixtures, and
+  application behavior where possible.
+- Keeps step definitions thin.
+- Makes tests assert behavior without reimplementing the behavior under test.
+- Contains no unrelated staged files.
+
+An invalid staged diff:
+- Contains files from another workflow phase.
+- Mixes tests and implementation.
+- Adds parsing, formatting, documentation-generation, or application behavior to
+  tests, fixtures, or step definitions.
+- Duplicates existing helpers, parser behavior, formatter behavior, fixtures, or
+  application behavior.
+- Reimplements the behavior under test inside tests.
+- Includes unrelated changes.
 
 The Review Refactor Commit is an additional end-to-end review, not the first
 time workflow changes are reviewed.
@@ -236,25 +248,31 @@ valid.
 Purpose:
 After the passing feature commit, review the complete workflow diff since the
 first commit of the feature, including BDD tests, fixtures, step definitions,
-unit tests, tools, application code, and docs. Ask the following questions to see
-how the code can be made cleaner:
-- Did your change create any dead code?
-- Did your change invalidate some comments?
-- Is your change in the style of the codebase?
-- Can guard clauses be used to avoid indented code?
-- Can this code be refactored into a function to improve readability?
-- Is this commit atomic and only focused on one topic?
-- Did anything unrelated get included in the commit by accident?
-- Does this code reuse functionality already present in the codebase?
-- Did the commit duplicate any functionality already present in the codebase?
-- Is there a simpler way to implement this solution?
-- Did you add any extra functionality that doesn't have a corresponding test?
-- Did any test, fixture, or step-definition code duplicate parser, formatter,
-  application, or tool behavior?
-- Did any changed file take ownership of logic that belongs in another layer?
-- Are BDD step definitions still thin after all workflow phases?
-- Are expected values produced by shared helpers instead of reimplemented in
-  tests?
+unit tests, tools, application code, and docs.
+
+Good review outcomes:
+- No refactor is made because the workflow diff is already simple, focused, and
+  correctly layered.
+- A small refactor removes duplication, dead code, stale comments, unused
+  helpers, or unclear control flow without changing behavior.
+- Shared helpers are used instead of duplicating parser, formatter, application,
+  fixture, or test behavior.
+- Guard clauses are used where they make control flow clearer.
+- Changed code matches the style of the surrounding code.
+- BDD step definitions remain thin after all workflow phases.
+- Expected values are produced by shared helpers instead of reimplemented in
+  tests.
+
+Bad review outcomes:
+- The review only examines implementation code and ignores tests, fixtures, step
+  definitions, tooling, or docs.
+- The refactor changes behavior or adds untested functionality.
+- The refactor mixes unrelated cleanup with the feature workflow.
+- Test code or step definitions keep duplicated parser, formatter, application,
+  fixture, or tool behavior.
+- A changed file takes ownership of logic that belongs in another layer.
+- Dead code, stale comments, unused helpers, or unclear control flow remain when
+  a small behavior-preserving cleanup would remove them.
 
 Refactor only if it improves the code without changing behavior. Skip this
 commit when no useful refactor is found.
