@@ -1,21 +1,18 @@
-# TODO: This was put off because I want to learn more about BDD before getting
-# pedantic about clock-frequency of misc vs clock-frequency of serial devices
-# and similar overlaps
-#
-#
-# Feature: Chapter 4 Device Bindings Hover Documentation
-#
-#   Background:
-#     Given the language server is running
-#     And a devicetree source file is open
-#
-#   # --- Miscellaneous Properties ---
-#
-#   Scenario: Hover on "clock-frequency" shows clock frequency property
-#     Given a node with clock-frequency = <1000000>
-#     When hovering over a "clock-frequency" property
-#     Then the hover returns the contents of the "clock-frequency Property" subsection of the "Miscellaneous Properties" section from the devicetree specification
-#
+Feature: Chapter 4 Device Bindings Hover Documentation
+
+  Background:
+    Given the language server is running
+    And a devicetree source file is open
+
+  # --- Miscellaneous Properties ---
+
+  Scenario: Hover on a "clock-frequency" property name on a miscellaneous device node returns the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
+    When hovering over a "clock-frequency" property name on a miscellaneous device node
+    Then the hover returns the contents of the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
+    And the hover does not return usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
+    And the hover does not return usage, value type, and definition for "clock-frequency" from the "ns16550 UART Properties" table from the devicetree specification
+
 #   Scenario: Hover on "reg-shift" shows register shift property
 #     Given a node with reg-shift = <2>
 #     When hovering over a "reg-shift" property

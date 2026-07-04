@@ -147,4 +147,8 @@
         gpio-map-mask = <0xf 0x0>; // should not return hover since the node name alone does not make this a nexus
         gpio-map-pass-thru = <0x0 0x1>; // should not return hover since the node name alone does not make this a nexus
     };
+
+    miscellaneous-device {
+        clock-frequency = <1000000>;
+    };
 };

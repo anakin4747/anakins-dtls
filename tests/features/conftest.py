@@ -106,6 +106,10 @@ CPU_NODE_TARGET = {
     'cpu-release-addr': (63, 13),
 }
 
+MISCELLANEOUS_TARGET = {
+    'clock-frequency': (152, 9),
+}
+
 STATUS_VALUE_TARGET = {
     'okay': (104, 19),
     'disabled': (105, 19),
@@ -189,6 +193,11 @@ def hover_over_cpu_node_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, CPU_NODE_TARGET, hover_target)
 
 
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a miscellaneous device node$'), target_fixture='response')
+def hover_over_miscellaneous_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, MISCELLANEOUS_TARGET, hover_target)
+
+
 @when(parsers.parse('the "status" property value is hovered for {value}'), target_fixture='response')
 def hover_over_status_value(lsp, uri, value):
     return _hover_at(lsp, uri, STATUS_VALUE_TARGET, value)
@@ -267,6 +276,25 @@ def check_hover(response, section):
     if text != expected:
         pytest.fail(
             f'Hover response did not match spec section\n'
+            f'  Section: {section}\n'
+            f'  Expected: {expected[:500]}...\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.parse('the hover returns the contents of the "{section}" section under the "{parent}" section from the devicetree specification'))
+def check_hover_section_under_parent(response, section, parent):
+    from generate_docs import get_section_under
+
+    text = _hover_text(response)
+    raw = get_section_under(parent, section)
+    if raw is None:
+        pytest.fail(f'Unknown section: {parent}.{section}')
+    expected = _format_section(raw)
+    if text != expected:
+        pytest.fail(
+            f'Hover response did not match spec section\n'
+            f'  Parent section: {parent}\n'
             f'  Section: {section}\n'
             f'  Expected: {expected[:500]}...\n'
             f'  Got: {text[:500]}...'
