@@ -972,6 +972,8 @@ def build_hover_docs() -> dict[str, str]:
     for prop_name, table_name in TABLE_ROW_DOCS.items():
         row_name = prop_name.split(":", 1)[-1]
         docs[prop_name] = format_table_row_hover(table_name, row_name) or ""
+        if prop_name == "ns16550:clock-frequency":
+            docs[prop_name] = _append_heading_source(docs[prop_name], table_name)
     for doc_key, (parent, section) in SCOPED_SECTION_DOCS.items():
         raw = get_section_under(parent, section)
         docs[doc_key] = _format_section(raw) if raw else ""
