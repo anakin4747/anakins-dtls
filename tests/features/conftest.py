@@ -120,6 +120,7 @@ MISCELLANEOUS_TARGET = {
 }
 
 SERIAL_TARGET = {
+    'clock-frequency': (158, 9),
     'current-speed': (159, 9),
 }
 
@@ -338,7 +339,7 @@ def _get_spec_section_under(parent, section):
     if raw is None:
         pytest.fail(f'Unknown section: {parent}.{section}')
     formatted = _format_section(raw)
-    if parent == 'Miscellaneous Properties' and section == '``clock-frequency`` Property':
+    if parent in {'Miscellaneous Properties', 'Serial Class Binding'} and section == '``clock-frequency`` Property':
         return _append_heading_source(formatted, parent)
     return formatted
 

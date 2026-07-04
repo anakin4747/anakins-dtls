@@ -25,6 +25,14 @@ Feature: Chapter 4 Device Bindings Hover Documentation
 
   # --- Serial devices ---
 
+  Scenario: Hover on a "clock-frequency" property name on a serial device node returns the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
+    When hovering over a "clock-frequency" property name on a serial device node
+    Then the hover returns the contents of the "``clock-frequency`` Property" section under the "Serial Class Binding" section from the devicetree specification
+    And the hover title includes "Serial Class Binding"
+    And the hover does not return usage, value type, and definition for "clock-frequency" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    And the hover does not return the contents of the "``clock-frequency`` Property" section under the "Miscellaneous Properties" section from the devicetree specification
+    And the hover does not return usage, value type, and definition for "clock-frequency" from the "ns16550 UART Properties" table from the devicetree specification
+
   Scenario: Hover on a "current-speed" property name on a serial device node returns the "``current-speed`` Property" section under the "Serial Class Binding" section from the devicetree specification
     When hovering over a "current-speed" property name on a serial device node
     Then the hover returns the contents of the "``current-speed`` Property" section under the "Serial Class Binding" section from the devicetree specification
