@@ -38,7 +38,50 @@ align devicetree spec submodule with the nix flake input
 
 ---
 
-serial-number doesn't show value type like other hovers do
-chassis-type doesn't show value type like other hovers do
-
 chassis-type's list of possible values formatting is lost
+
+---
+
+upstream fix for this spelling mistake:
+
+```
+devicetree-specification/source/chapter4-device-bindings.rst:138
+Note: the table title appears misspelled as clock-frequecy.
+```
+---
+
+Add `And` clauses for properties with several standard definitions from the
+devicetree specification
+
+For example there are 4 definitions of clock-frequency depending on the
+compatible string or node
+
+```
+1. devicetree-specification/source/chapter3-devicenodes.rst:616
+   Table: ```/cpus/cpu*`` Node General Properties
+   Defines clock-frequency for CPU nodes.
+   Usage: optional.
+   Value type: array`.
+   Meaning: CPU clock speed in Hertz, if constant.
+
+2. devicetree-specification/source/chapter4-device-bindings.rst:64
+   Section/table: ```clock-frequency`` Property
+   Under: Miscellaneous Properties.
+   Value type: <prop-encoded-array>`.
+   Meaning: frequency of a clock in Hz.
+
+3. devicetree-specification/source/chapter4-device-bindings.rst:138
+   Section/table: ```clock-frequecy`` Property
+   Under: Serial Class Binding.
+   Note: the table title appears misspelled as clock-frequecy.
+   Value type: <u32>`.
+   Meaning: baud rate generator input clock frequency.
+
+4. devicetree-specification/source/chapter4-device-bindings.rst:183
+   Table: ns16550 UART Properties
+   Defines clock-frequency for NS16550-compatible UARTs.
+   Usage: required.
+   Value type: <u32>.
+   Meaning: baud rate generator input clock frequency.
+```
+
