@@ -341,6 +341,8 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
         return f'network:{prop}'
     if prop in ETHERNET_PROPERTIES and node_name == 'ethernet-device':
         return f'ethernet:{prop}'
+    if prop == 'clock-frequency' and node_name == 'serial-device':
+        return 'serial:clock-frequency'
     if prop == 'current-speed' and node_name == 'serial-device':
         return 'serial:current-speed'
     if prop in {'reg-shift', 'label'}:

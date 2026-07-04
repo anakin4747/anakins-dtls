@@ -908,6 +908,10 @@ SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
         "Serial Class Binding",
         "``current-speed`` Property",
     ),
+    "serial:clock-frequency": (
+        "Serial Class Binding",
+        "``clock-frequency`` Property",
+    ),
     "network:address-bits": (
         "Network Class Binding",
         "``address-bits`` Property",
