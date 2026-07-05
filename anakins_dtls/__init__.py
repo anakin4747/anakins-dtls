@@ -63,6 +63,8 @@ NS16550_PROPERTIES = {
     'compatible',
     'clock-frequency',
     'current-speed',
+    'interrupts',
+    'reg',
     'reg-shift',
     'virtual-reg',
 }
@@ -82,14 +84,37 @@ ETHERNET_PROPERTIES = {
 
 OPEN_PIC_PROPERTIES = {
     'compatible',
+    'reg',
     '#interrupt-cells',
     '#address-cells',
     'interrupt-controller',
 }
 
 SIMPLE_BUS_PROPERTIES = {
+    'compatible',
     'ranges',
     'nonposted-mmio',
+}
+
+RESERVED_MEMORY_NODE_PROPERTIES = {
+    '#address-cells',
+    '#size-cells',
+    'ranges',
+}
+
+RESERVED_MEMORY_CHILD_PROPERTIES = {
+    'compatible',
+    'reg',
+}
+
+CPUS_NODE_PROPERTIES = {
+    '#address-cells',
+    '#size-cells',
+}
+
+CPU_NODE_PROPERTIES = {
+    'device_type',
+    'reg',
 }
 
 def _send(msg: dict) -> None:
@@ -316,9 +341,18 @@ def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
 
 
 def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
-    if prop == 'model' and _node_depth_at(text, line) == 1:
-        return 'root:model'
+    if prop in {'#address-cells', '#size-cells', 'compatible', 'model'} and _node_depth_at(text, line) == 1:
+        return f'root:{prop}'
     node_name = _current_node_name_at(text, line)
+    ancestors = _ancestor_node_names_at(text, line)
+    if prop in RESERVED_MEMORY_NODE_PROPERTIES and node_name == 'reserved-memory':
+        return f'reserved-memory:{prop}'
+    if prop in RESERVED_MEMORY_CHILD_PROPERTIES and 'reserved-memory' in ancestors:
+        return f'reserved-memory:{prop}'
+    if prop in CPUS_NODE_PROPERTIES and node_name == 'cpus':
+        return f'cpus:{prop}'
+    if prop in CPU_NODE_PROPERTIES and ancestors[-2:] == ['cpus', 'cpu']:
+        return f'cpu:{prop}'
     if prop in OPEN_PIC_PROPERTIES and node_name == 'open-pic':
         return f'open-pic:{prop}'
     if prop in NS16550_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'ns16550'):
@@ -336,7 +370,6 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
     if prop in {'reg-shift', 'label'}:
         return f'misc:{prop}'
     if prop == 'clock-frequency':
-        ancestors = _ancestor_node_names_at(text, line)
         if ancestors[-2:] != ['cpus', 'cpu']:
             return 'misc:clock-frequency'
     return prop
