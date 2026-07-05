@@ -819,6 +819,10 @@ SECTION_DOCS: dict[str, str] = {
     "dma-noncoherent": "dma-noncoherent",
     "name": "name (deprecated)",
     "device_type": "device_type (deprecated)",
+    "dts:file-layout": "File layout",
+    "dts:compiler-directives": "Compiler directives",
+    "dts:labels": "Labels",
+    "dts:node-property-definitions": "Node and property definitions",
 }
 
 SECTION_DOC_SOURCES: dict[str, str] = {
@@ -860,6 +864,10 @@ SECTION_DOC_SOURCES: dict[str, str] = {
     "dma-noncoherent": "Standard Properties",
     "name": "Standard Properties",
     "device_type": "Standard Properties",
+    "dts:file-layout": "DTS source language",
+    "dts:compiler-directives": "DTS source language",
+    "dts:labels": "DTS source language",
+    "dts:node-property-definitions": "DTS source language",
 }
 
 ROOT_NODE_PROPERTIES = {

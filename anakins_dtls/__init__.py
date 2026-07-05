@@ -58,6 +58,39 @@ COMPATIBLE_VALUE_DOCS = {
     'simple-bus': 'simple-bus',
 }
 
+DTS_DIRECTIVE_DOCS = {
+    '/dts-v1/': 'dts:file-layout',
+    '/include/': 'dts:compiler-directives',
+    '/memreserve/': 'dts:file-layout',
+    '/delete-node/': 'dts:node-property-definitions',
+    '/delete-property/': 'dts:node-property-definitions',
+}
+
+DTS_OPERATORS = (
+    '<<',
+    '>>',
+    '&&',
+    '||',
+    '<=',
+    '>=',
+    '==',
+    '!=',
+    '+',
+    '-',
+    '*',
+    '/',
+    '%',
+    '&',
+    '|',
+    '^',
+    '~',
+    '!',
+    '<',
+    '>',
+    '?',
+    ':',
+)
+
 CHAPTER4_NODE_NAMES = {
     'network-device': 'network-class',
     'ethernet-device': 'ethernet',
@@ -352,6 +385,61 @@ def _compatible_value_at(text: str, line: int, character: int) -> str | None:
     return None
 
 
+def _dts_directive_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    for directive, doc_key in DTS_DIRECTIVE_DOCS.items():
+        idx = line_text.find(directive)
+        if idx != -1 and idx <= character <= idx + len(directive):
+            return doc_key
+    return None
+
+
+def _dts_label_or_reference_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    for m in re.finditer(r'&\{[^}]+\}|&[A-Za-z_][\w]*', line_text):
+        if m.start() <= character <= m.end():
+            return 'dts:labels'
+    for m in re.finditer(r'\b[A-Za-z_][\w]*:', line_text):
+        if m.start() <= character <= m.end():
+            return 'dts:labels'
+    return None
+
+
+def _dts_value_syntax_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    for pattern in (r'<[^>]*>', r'\[[^\]]*\]', r'"[^"]*"'):
+        for m in re.finditer(pattern, line_text):
+            if m.start() <= character <= m.end():
+                return 'dts:node-property-definitions'
+    return None
+
+
+def _dts_operator_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    for operator in DTS_OPERATORS:
+        start = 0
+        while True:
+            idx = line_text.find(operator, start)
+            if idx == -1:
+                break
+            if idx <= character <= idx + len(operator):
+                return 'dts:node-property-definitions'
+            start = idx + len(operator)
+    return None
+
+
 def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
     if prop in INTERRUPT_NEXUS_PROPERTIES:
         return _node_has_property_at(text, line, '#interrupt-cells')
@@ -440,6 +528,14 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             prop = _status_value_at(text, line, character)
         if prop is None:
             prop = _compatible_value_at(text, line, character)
+        if prop is None:
+            prop = _dts_directive_at(text, line, character)
+        if prop is None:
+            prop = _dts_label_or_reference_at(text, line, character)
+        if prop is None:
+            prop = _dts_value_syntax_at(text, line, character)
+        if prop is None:
+            prop = _dts_operator_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:
