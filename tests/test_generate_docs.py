@@ -1074,6 +1074,26 @@ def test_get_table_row_resolves_usage_legend():
         "Specifies a string that identifies the form-factor"
     )
 
+def test_get_table_row_resolves_pipe_delimited_usage_legend():
+    entry = get_table_row(
+        "``/cpus/cpu*`` Node Power ISA Properties",
+        "power-isa-version",
+    )
+
+    assert entry is not None
+    assert entry["Usage"] == "Optional"
+    assert entry["Value Type"] == "`<string>`"
+
+def test_get_table_row_resolves_pipe_delimited_see_definition_usage():
+    entry = get_table_row(
+        "``/cpus/cpu*`` Node Power ISA Properties",
+        "cache-op-block-size",
+    )
+
+    assert entry is not None
+    assert entry["Usage"] == "See Definition"
+    assert entry["Value Type"] == "`<u32>`"
+
 def test_format_table_row_hover_includes_title_and_all_row_details():
     hover = format_table_row_hover("Root Node Properties", "chassis-type")
 
