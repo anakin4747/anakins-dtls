@@ -1133,7 +1133,7 @@ def build_hover_docs() -> dict[str, str]:
 def write_hover_docs(output_path: str | None = None) -> None:
     if output_path is None:
         repo_root = os.path.dirname(os.path.dirname(__file__))
-        output_path = os.path.join(repo_root, "anakins_dtls", "_hover_docs.py")
+        output_path = os.path.join(repo_root, "anakins_dtls", "_generated_hover_docs.py")
     docs = build_hover_docs()
     with open(output_path, "w") as f:
         f.write("HOVER_DOCS = ")

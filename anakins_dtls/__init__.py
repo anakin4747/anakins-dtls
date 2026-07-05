@@ -3,7 +3,7 @@ import re
 import sys
 
 
-from anakins_dtls._hover_docs import HOVER_DOCS
+from anakins_dtls._generated_hover_docs import HOVER_DOCS
 
 
 documents: dict[str, str] = {}
