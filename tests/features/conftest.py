@@ -554,6 +554,18 @@ def check_hover_title_includes(response, source):
         )
 
 
+@then(parsers.re(r'the hover text is exactly:\n(?P<expected>.*)', flags=re.DOTALL))
+def check_hover_text_exact(response, expected):
+    text = _hover_text(response).strip()
+    expected = expected.strip()
+    if text != expected:
+        pytest.fail(
+            f'Hover response did not match expected text\n'
+            f'  Expected: {expected[:500]}...\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
 @then(parsers.parse('the hover returns usage, value type, and definition for "{property}" from the "{table}" table from the devicetree specification'))
 def check_hover_table_row(response, property, table):
     text = _strip_hover_title_source(_hover_text(response))
