@@ -552,12 +552,17 @@ def test_format_section_just_a_heading():
 def test_build_hover_docs_all_keys_present():
     docs = build_hover_docs()
     expected = {
-        "compatible", "model", "root:model", "phandle", "status",
+        "compatible", "root:compatible", "model", "root:model", "phandle", "status",
         "#address-cells", "#size-cells", "reg", "virtual-reg",
         "ranges", "dma-ranges", "dma-coherent", "dma-noncoherent",
         "name", "device_type", "__root__", "/aliases", "/memory",
         "/reserved-memory", "/chosen", "/cpus", "/cpus/cpu*",
-        "/cpus/cpu*/l?-cache", "serial-number", "chassis-type",
+        "/cpus/cpu*/l?-cache", "root:#address-cells", "root:#size-cells",
+        "reserved-memory:#address-cells", "reserved-memory:#size-cells",
+        "reserved-memory:ranges", "reserved-memory:reg",
+        "reserved-memory:compatible", "cpus:#address-cells",
+        "cpus:#size-cells", "cpu:device_type", "cpu:reg",
+        "serial-number", "chassis-type",
         "initial-mapped-area", "hotpluggable", "size", "alignment",
         "alloc-ranges", "no-map", "reusable", "memory-region",
         "memory-region-names", "bootargs", "bootsource", "stdout-path",
@@ -565,14 +570,14 @@ def test_build_hover_docs_all_keys_present():
         "misc:reg-shift", "misc:label", "serial:clock-frequency",
         "serial:current-speed",
         "/ns16550", "ns16550:compatible", "ns16550:clock-frequency",
-        "ns16550:current-speed", "ns16550:reg-shift",
+        "ns16550:current-speed", "ns16550:reg", "ns16550:interrupts", "ns16550:reg-shift",
         "ns16550:virtual-reg", "/network", "network:address-bits",
         "network:local-mac-address", "network:mac-address",
         "network:max-frame-size", "/ethernet", "ethernet:max-speed",
         "ethernet:phy-connection-type", "ethernet:phy-handle",
-        "/open-pic", "open-pic:compatible", "open-pic:#interrupt-cells",
+        "/open-pic", "open-pic:compatible", "open-pic:reg", "open-pic:#interrupt-cells",
         "open-pic:#address-cells", "open-pic:interrupt-controller",
-        "/simple-bus", "simple-bus:ranges", "simple-bus:nonposted-mmio",
+        "/simple-bus", "simple-bus:compatible", "simple-bus:ranges", "simple-bus:nonposted-mmio",
         "timebase-frequency", "enable-method", "cpu-release-addr",
         "power-isa-version", "power-isa-*", "cache-op-block-size",
         "reservation-granule-size", "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
@@ -636,6 +641,18 @@ def test_build_hover_docs_root_node_properties_from_table():
     assert _strip_heading_source(docs["root:model"]) == format_table_row_hover(
         "Root Node Properties",
         "model",
+    )
+    assert _strip_heading_source(docs["root:#address-cells"]) == format_table_row_hover(
+        "Root Node Properties",
+        "#address-cells",
+    )
+    assert _strip_heading_source(docs["root:#size-cells"]) == format_table_row_hover(
+        "Root Node Properties",
+        "#size-cells",
+    )
+    assert _strip_heading_source(docs["root:compatible"]) == format_table_row_hover(
+        "Root Node Properties",
+        "compatible",
     )
     assert _strip_heading_source(docs["serial-number"]) == format_table_row_hover(
         "Root Node Properties",
@@ -792,14 +809,21 @@ def test_build_hover_docs_remaining_chapter4_properties_from_tables():
         "ns16550:compatible": ("ns16550 UART Properties", "compatible"),
         "ns16550:clock-frequency": ("ns16550 UART Properties", "clock-frequency"),
         "ns16550:current-speed": ("ns16550 UART Properties", "current-speed"),
+        "ns16550:reg": ("ns16550 UART Properties", "reg"),
+        "ns16550:interrupts": ("ns16550 UART Properties", "interrupts"),
         "ns16550:reg-shift": ("ns16550 UART Properties", "reg-shift"),
         "ns16550:virtual-reg": ("ns16550 UART Properties", "virtual-reg"),
         "open-pic:compatible": ("Open-PIC properties", "compatible"),
+        "open-pic:reg": ("Open-PIC properties", "reg"),
         "open-pic:#interrupt-cells": ("Open-PIC properties", "#interrupt-cells"),
         "open-pic:#address-cells": ("Open-PIC properties", "#address-cells"),
         "open-pic:interrupt-controller": (
             "Open-PIC properties",
             "interrupt-controller",
+        ),
+        "simple-bus:compatible": (
+            "``simple-bus`` Compatible Node Properties",
+            "compatible",
         ),
         "simple-bus:ranges": (
             "``simple-bus`` Compatible Node Properties",
@@ -869,6 +893,15 @@ def test_build_hover_docs_standard_node_sections_from_spec():
 def test_build_hover_docs_standard_node_properties_from_tables():
     docs = build_hover_docs()
     expected = {
+        "reserved-memory:#address-cells": "/reserved-memory Parent Node Properties",
+        "reserved-memory:#size-cells": "/reserved-memory Parent Node Properties",
+        "reserved-memory:ranges": "/reserved-memory Parent Node Properties",
+        "reserved-memory:reg": "``/reserved-memory/`` Child Node Properties",
+        "reserved-memory:compatible": "``/reserved-memory/`` Child Node Properties",
+        "cpus:#address-cells": "``/cpus`` Node Properties",
+        "cpus:#size-cells": "``/cpus`` Node Properties",
+        "cpu:device_type": "``/cpus/cpu*`` Node General Properties",
+        "cpu:reg": "``/cpus/cpu*`` Node General Properties",
         "initial-mapped-area": "``/memory`` Node Properties",
         "hotpluggable": "``/memory`` Node Properties",
         "size": "``/reserved-memory/`` Child Node Properties",
@@ -919,7 +952,8 @@ def test_build_hover_docs_standard_node_properties_from_tables():
     }
 
     for prop_name, table in expected.items():
-        expected_doc = format_table_row_hover(table, prop_name)
+        row_name = prop_name.split(":", 1)[-1]
+        expected_doc = format_table_row_hover(table, row_name)
         assert _strip_heading_source(docs[prop_name]) == expected_doc
 
 
