@@ -59,37 +59,37 @@ COMPATIBLE_VALUE_DOCS = {
 }
 
 DTS_DIRECTIVE_DOCS = {
-    '/dts-v1/': 'dts:file-layout',
-    '/include/': 'dts:compiler-directives',
-    '/memreserve/': 'dts:file-layout',
-    '/delete-node/': 'dts:node-property-definitions',
-    '/delete-property/': 'dts:node-property-definitions',
+    '/dts-v1/': 'dts:version-directive',
+    '/include/': 'dts:include-directive',
+    '/memreserve/': 'dts:memory-reservation',
+    '/delete-node/': 'dts:delete-node',
+    '/delete-property/': 'dts:delete-property',
 }
 
-DTS_OPERATORS = (
-    '<<',
-    '>>',
-    '&&',
-    '||',
-    '<=',
-    '>=',
-    '==',
-    '!=',
-    '+',
-    '-',
-    '*',
-    '/',
-    '%',
-    '&',
-    '|',
-    '^',
-    '~',
-    '!',
-    '<',
-    '>',
-    '?',
-    ':',
-)
+DTS_OPERATOR_DOCS = {
+    '<<': 'dts:operator:left-shift',
+    '>>': 'dts:operator:right-shift',
+    '&&': 'dts:operator:logical-and',
+    '||': 'dts:operator:logical-or',
+    '<=': 'dts:operator:less-than-or-equal',
+    '>=': 'dts:operator:greater-than-or-equal',
+    '==': 'dts:operator:equal',
+    '!=': 'dts:operator:not-equal',
+    '+': 'dts:operator:add',
+    '-': 'dts:operator:subtract',
+    '*': 'dts:operator:multiply',
+    '/': 'dts:operator:divide',
+    '%': 'dts:operator:modulo',
+    '&': 'dts:operator:bitwise-and',
+    '|': 'dts:operator:bitwise-or',
+    '^': 'dts:operator:exclusive-or',
+    '~': 'dts:operator:bitwise-not',
+    '!': 'dts:operator:logical-not',
+    '<': 'dts:operator:less-than',
+    '>': 'dts:operator:greater-than',
+    '?': 'dts:operator:ternary-condition',
+    ':': 'dts:operator:ternary-separator',
+}
 
 CHAPTER4_NODE_NAMES = {
     'network-device': 'network-class',
@@ -402,12 +402,15 @@ def _dts_label_or_reference_at(text: str, line: int, character: int) -> str | No
     if line >= len(lines):
         return None
     line_text = lines[line]
-    for m in re.finditer(r'&\{[^}]+\}|&[A-Za-z_][\w]*', line_text):
+    for m in re.finditer(r'&\{[^}]+\}', line_text):
         if m.start() <= character <= m.end():
-            return 'dts:labels'
+            return 'dts:path-reference'
+    for m in re.finditer(r'&[A-Za-z_][\w]*', line_text):
+        if m.start() <= character <= m.end():
+            return 'dts:label-reference'
     for m in re.finditer(r'\b[A-Za-z_][\w]*:', line_text):
         if m.start() <= character <= m.end():
-            return 'dts:labels'
+            return 'dts:label-definition'
     return None
 
 
@@ -416,11 +419,26 @@ def _dts_value_syntax_at(text: str, line: int, character: int) -> str | None:
     if line >= len(lines):
         return None
     line_text = lines[line]
-    for pattern in (r'<[^>]*>', r'\[[^\]]*\]', r'"[^"]*"'):
+    cell_start = line_text.find('<')
+    cell_end = line_text.rfind('>')
+    if cell_start != -1 and cell_end != -1 and cell_start <= character <= cell_end:
+        return 'dts:cell-array'
+    for pattern, doc_key in (
+        (r'\[[^\]]*\]', 'dts:bytestring'),
+        (r'"[^"]*"', 'dts:string-value'),
+    ):
         for m in re.finditer(pattern, line_text):
             if m.start() <= character <= m.end():
-                return 'dts:node-property-definitions'
+                return doc_key
     return None
+
+
+def _dts_cell_array_delimiter_at(text: str, line: int, character: int) -> bool:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return False
+    line_text = lines[line]
+    return character in {line_text.find('<'), line_text.rfind('>')}
 
 
 def _dts_operator_at(text: str, line: int, character: int) -> str | None:
@@ -428,14 +446,17 @@ def _dts_operator_at(text: str, line: int, character: int) -> str | None:
     if line >= len(lines):
         return None
     line_text = lines[line]
-    for operator in DTS_OPERATORS:
+    for operator, doc_key in DTS_OPERATOR_DOCS.items():
         start = 0
         while True:
             idx = line_text.find(operator, start)
             if idx == -1:
                 break
-            if idx <= character <= idx + len(operator):
-                return 'dts:node-property-definitions'
+            if idx <= character < idx + len(operator):
+                if operator in {'<', '>'} and _dts_cell_array_delimiter_at(text, line, character):
+                    start = idx + len(operator)
+                    continue
+                return doc_key
             start = idx + len(operator)
     return None
 
@@ -533,9 +554,9 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if prop is None:
             prop = _dts_label_or_reference_at(text, line, character)
         if prop is None:
-            prop = _dts_value_syntax_at(text, line, character)
-        if prop is None:
             prop = _dts_operator_at(text, line, character)
+        if prop is None:
+            prop = _dts_value_syntax_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:
