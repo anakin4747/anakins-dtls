@@ -9,8 +9,8 @@ Feature: Standard Property Hover Documentation
     Then the hover returns the contents of the "compatible" section from the devicetree specification
     And the hover title includes "Standard Properties"
 
-  Scenario: Hover on a "model" property name returns the "model" section from the devicetree specification
-    When hovering over a "model" property name
+  Scenario: Hover on a "model" property name outside the root node returns the "model" section from the devicetree specification
+    When hovering over a "model" property name on a miscellaneous device node
     Then the hover returns the contents of the "model" section from the devicetree specification
     And the hover title includes "Standard Properties"
 

@@ -11,6 +11,11 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns the contents of the "Root node" section from the devicetree specification
     And the hover title includes "Root node"
 
+  Scenario: Hover on a "model" property name on the root node returns the full "model" row from the "Root Node Properties" table from the devicetree specification
+    When hovering over a "model" property name on the root node
+    Then the hover returns usage, value type, and definition for "model" from the "Root Node Properties" table from the devicetree specification
+    And the hover title includes "Root node"
+
   Scenario: Hover on a "serial-number" property name on the root node returns the full "serial-number" row from the "Root Node Properties" table from the devicetree specification
     When hovering over a "serial-number" property name on the root node
     Then the hover returns usage, value type, and definition for "serial-number" from the "Root Node Properties" table from the devicetree specification
