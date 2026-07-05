@@ -586,7 +586,7 @@ def test_build_hover_docs_all_keys_present():
         "cache-line-size", "i-cache-size", "i-cache-sets",
         "i-cache-block-size", "i-cache-line-size", "d-cache-size",
         "d-cache-sets", "d-cache-block-size", "d-cache-line-size",
-        "next-level-cache", "cache-level", "status:okay",
+        "next-level-cache", "cache:compatible", "cache-level", "status:okay",
         "status:disabled", "status:reserved", "status:fail",
         "status:fail-sss", "interrupts", "interrupt-parent",
         "interrupts-extended", "interrupt-controller", "#interrupt-cells",
@@ -945,6 +945,10 @@ def test_build_hover_docs_standard_node_properties_from_tables():
         "d-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
         "d-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
         "next-level-cache": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+        "cache:compatible": (
+            "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
+            "Shared Cache Properties"
+        ),
         "cache-level": (
             "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
             "Shared Cache Properties"
