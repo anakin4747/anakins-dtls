@@ -215,6 +215,10 @@ def _strip_literal_markup(text: str) -> str:
     return _convert_inline(text).replace("`", "")
 
 
+def _clean_table_cell(text: str) -> str:
+    return text.strip().strip("|").strip()
+
+
 def _column_starts(separator: str) -> list[int]:
     starts: list[int] = []
     in_column = False
@@ -293,7 +297,7 @@ def get_table_entry(table: str, row: str, column: str) -> str | None:
             if not rows:
                 continue
 
-            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            header = [_strip_literal_markup(_clean_table_cell(cell)) for cell in rows[0]]
             try:
                 row_idx = header.index("Property Name")
                 col_idx = header.index(column)
@@ -301,8 +305,8 @@ def get_table_entry(table: str, row: str, column: str) -> str | None:
                 return None
 
             for cells in rows[1:]:
-                if _strip_literal_markup(cells[row_idx]) == row:
-                    return _strip_literal_markup(cells[col_idx])
+                if _strip_literal_markup(_clean_table_cell(cells[row_idx])) == row:
+                    return _strip_literal_markup(_clean_table_cell(cells[col_idx]))
     return None
 
 
@@ -338,7 +342,7 @@ def get_table_row(table: str, row: str) -> dict[str, str] | None:
             if not rows:
                 continue
 
-            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            header = [_strip_literal_markup(_clean_table_cell(cell)) for cell in rows[0]]
             try:
                 row_idx = header.index("Property Name")
             except ValueError:
@@ -346,16 +350,18 @@ def get_table_row(table: str, row: str) -> dict[str, str] | None:
 
             legend = _usage_legend(block)
             for cells in rows[1:]:
-                if _strip_literal_markup(cells[row_idx]) != row:
+                if _strip_literal_markup(_clean_table_cell(cells[row_idx])) != row:
                     continue
 
-                result = dict(zip(header, (_convert_inline(cell) for cell in cells)))
+                result = dict(zip(header, (_convert_inline(_clean_table_cell(cell)) for cell in cells)))
                 if "Usage" in result:
-                    usage = _strip_literal_markup(cells[header.index("Usage")])
+                    usage = _strip_literal_markup(
+                        _clean_table_cell(cells[header.index("Usage")])
+                    )
                     result["Usage"] = legend.get(usage, usage)
                 if "Property Name" in result:
                     result["Property Name"] = _strip_literal_markup(
-                        cells[header.index("Property Name")]
+                        _clean_table_cell(cells[header.index("Property Name")])
                     )
                 return result
     return None
@@ -401,18 +407,18 @@ def get_value_table_row(table: str, row: str) -> dict[str, str] | None:
             if not rows:
                 continue
 
-            header = [_strip_literal_markup(cell) for cell in rows[0]]
+            header = [_strip_literal_markup(_clean_table_cell(cell)) for cell in rows[0]]
             try:
                 row_idx = header.index("Value")
             except ValueError:
                 return None
 
             for cells in rows[1:]:
-                if _strip_literal_markup(cells[row_idx]) != row:
+                if _strip_literal_markup(_clean_table_cell(cells[row_idx])) != row:
                     continue
 
-                result = dict(zip(header, (_convert_inline(cell) for cell in cells)))
-                result["Value"] = _strip_literal_markup(cells[row_idx])
+                result = dict(zip(header, (_convert_inline(_clean_table_cell(cell)) for cell in cells)))
+                result["Value"] = _strip_literal_markup(_clean_table_cell(cells[row_idx]))
                 return result
     return None
 
