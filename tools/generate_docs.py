@@ -857,6 +857,7 @@ SECTION_DOC_SOURCES: dict[str, str] = {
 }
 
 ROOT_NODE_PROPERTIES = {
+    "root:model",
     "serial-number",
     "chassis-type",
 }
@@ -1066,9 +1067,10 @@ def build_hover_docs() -> dict[str, str]:
         else:
             docs[prop_name] = ""
     for prop_name in ROOT_NODE_PROPERTIES:
+        row_name = prop_name.split(":", 1)[-1]
         docs[prop_name] = format_table_row_hover(
             "Root Node Properties",
-            prop_name,
+            row_name,
         ) or ""
         docs[prop_name] = _append_heading_source(docs[prop_name], "Root node")
     for prop_name, table_name in TABLE_ROW_DOCS.items():

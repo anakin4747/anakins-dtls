@@ -316,6 +316,8 @@ def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
 
 
 def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
+    if prop == 'model' and _node_depth_at(text, line) == 1:
+        return 'root:model'
     node_name = _current_node_name_at(text, line)
     if prop in OPEN_PIC_PROPERTIES and node_name == 'open-pic':
         return f'open-pic:{prop}'
