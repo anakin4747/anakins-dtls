@@ -354,8 +354,8 @@ Feature: Standard Top-Level Node Hover Documentation
 
   # Multi-level cache nodes
 
-  Scenario: Hover on a cache node declaration returns the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
-    When hovering over a cache node declaration
+  Scenario: Hover on a node declaration with a "cache" compatible property value returns the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
+    When hovering over a node declaration with a "cache" compatible property value
     Then the hover returns the contents of the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
     And the hover title includes "/cpus/cpu*/l?-cache nodes"
 

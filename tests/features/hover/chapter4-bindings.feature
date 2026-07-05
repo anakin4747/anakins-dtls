@@ -50,8 +50,8 @@ Feature: Chapter 4 Device Bindings Hover Documentation
 
   # --- ns16550 UART ---
 
-  Scenario: Hover on an ns16550 UART node declaration returns the "National Semiconductor 16450/16550 Compatible UART Requirements" section from the devicetree specification
-    When hovering over an ns16550 UART node declaration
+  Scenario: Hover on a UART node declaration with an "ns16550" compatible property value returns the "National Semiconductor 16450/16550 Compatible UART Requirements" section from the devicetree specification
+    When hovering over a UART node declaration with an "ns16550" compatible property value
     Then the hover returns the contents of the "National Semiconductor 16450/16550 Compatible UART Requirements" section from the devicetree specification
     And the hover title includes "ns16550 UART"
 
@@ -116,8 +116,8 @@ Feature: Chapter 4 Device Bindings Hover Documentation
 
   # --- Power ISA Open PIC Interrupt Controllers ---
 
-  Scenario: Hover on an Open PIC interrupt controller node declaration returns the "Power ISA Open PIC Interrupt Controllers" section from the devicetree specification
-    When hovering over an Open PIC interrupt controller node declaration
+  Scenario: Hover on an interrupt controller node declaration with an "open-pic" compatible property value returns the "Power ISA Open PIC Interrupt Controllers" section from the devicetree specification
+    When hovering over an interrupt controller node declaration with an "open-pic" compatible property value
     Then the hover returns the contents of the "Power ISA Open PIC Interrupt Controllers" section from the devicetree specification
     And the hover title includes "Open PIC interrupt controllers"
 
@@ -136,8 +136,8 @@ Feature: Chapter 4 Device Bindings Hover Documentation
 
   # --- simple-bus ---
 
-  Scenario: Hover on a simple-bus node declaration returns the "``simple-bus`` Compatible Value" section from the devicetree specification
-    When hovering over a simple-bus node declaration
+  Scenario: Hover on a node declaration with a "simple-bus" compatible property value returns the "``simple-bus`` Compatible Value" section from the devicetree specification
+    When hovering over a node declaration with a "simple-bus" compatible property value
     Then the hover returns the contents of the "``simple-bus`` Compatible Value" section from the devicetree specification
     And the hover title includes "simple-bus"
 

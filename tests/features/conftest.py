@@ -82,7 +82,7 @@ TARGET = {
     'd-cache-block-size': (93, 13),
     'd-cache-line-size': (94, 13),
     'next-level-cache': (95, 13),
-    'cache node declaration': (97, 19),
+    'node declaration with a "cache" compatible property value': (97, 19),
     'cache-level': (99, 17),
     'memory-region': (108, 9),
     'memory-region-names': (109, 9),
@@ -91,10 +91,13 @@ TARGET = {
     'interrupts-extended': (117, 9),
     'interrupt-controller': (118, 9),
     '#interrupt-cells': (119, 9),
+    'UART node declaration with an "ns16550" compatible property value': (176, 6),
     'ns16550 UART node declaration': (176, 6),
     'network class device node declaration': (186, 5),
     'Ethernet device node declaration': (193, 5),
+    'interrupt controller node declaration with an "open-pic" compatible property value': (199, 5),
     'Open PIC interrupt controller node declaration': (199, 5),
+    'node declaration with a "simple-bus" compatible property value': (207, 5),
     'simple-bus node declaration': (207, 5),
 }
 
@@ -320,7 +323,7 @@ def hover_over_ns16550_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, NS16550_TARGET, hover_target)
 
 
-@when('hovering over an ns16550 UART node declaration', target_fixture='response')
+@when('hovering over a UART node declaration with an "ns16550" compatible property value', target_fixture='response')
 def hover_over_ns16550_node(lsp, uri):
     return _hover_at(lsp, uri, NS16550_TARGET, 'ns16550 UART node declaration')
 
@@ -350,7 +353,7 @@ def hover_over_open_pic_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, OPEN_PIC_TARGET, hover_target)
 
 
-@when(parsers.parse('hovering over an Open PIC interrupt controller node declaration'), target_fixture='response')
+@when(parsers.parse('hovering over an interrupt controller node declaration with an "open-pic" compatible property value'), target_fixture='response')
 def hover_over_open_pic_node(lsp, uri):
     return _hover_at(lsp, uri, OPEN_PIC_TARGET, 'Open PIC interrupt controller node declaration')
 
@@ -360,7 +363,7 @@ def hover_over_simple_bus_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, SIMPLE_BUS_TARGET, hover_target)
 
 
-@when(parsers.parse('hovering over a simple-bus node declaration'), target_fixture='response')
+@when(parsers.parse('hovering over a node declaration with a "simple-bus" compatible property value'), target_fixture='response')
 def hover_over_simple_bus_node(lsp, uri):
     return _hover_at(lsp, uri, SIMPLE_BUS_TARGET, 'simple-bus node declaration')
 

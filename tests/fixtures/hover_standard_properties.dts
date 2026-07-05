@@ -94,7 +94,7 @@
             d-cache-line-size = <32>;
             next-level-cache = <&L2_0>;
 
-            L2_0: l2-cache {
+            L2_0: cache-controller {
                 compatible = "cache";
                 cache-level = <2>;
             };
@@ -173,7 +173,7 @@
         current-speed = <115200>;
     };
 
-    serial@4600 {
+    uart@4600 {
         compatible = "ns16550";
         reg = <0x4600 0x100>;
         interrupts = <0xA 8>;
@@ -196,7 +196,7 @@
         phy-handle = <&PHY0>;
     };
 
-    open-pic {
+    interrupt-controller@10000000 {
         compatible = "open-pic";
         reg = <0x10000000 0x100>;
         interrupt-controller;
@@ -204,7 +204,7 @@
         #address-cells = <0>;
     };
 
-    simple-bus {
+    soc {
         compatible = "simple-bus";
         ranges;
         nonposted-mmio;
