@@ -64,6 +64,8 @@ Feature: Chapter 4 Device Bindings Hover Documentation
       | property        | row             |
       | compatible      | compatible      |
       | current-speed   | current-speed   |
+      | reg             | reg             |
+      | interrupts      | interrupts      |
       | reg-shift       | reg-shift       |
       | virtual-reg     | virtual-reg     |
 
@@ -127,6 +129,7 @@ Feature: Chapter 4 Device Bindings Hover Documentation
     Examples:
       | property             |
       | compatible           |
+      | reg                  |
       | #interrupt-cells     |
       | #address-cells       |
       | interrupt-controller |
@@ -145,5 +148,6 @@ Feature: Chapter 4 Device Bindings Hover Documentation
 
     Examples:
       | property       |
+      | compatible     |
       | ranges         |
       | nonposted-mmio |

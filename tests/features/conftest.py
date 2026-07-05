@@ -40,145 +40,167 @@ TARGET = {
     'initial-mapped-area': (29, 9),
     'hotpluggable': (30, 9),
     'reserved-memory node declaration': (33, 5),
-    'size': (35, 13),
-    'alignment': (36, 13),
-    'alloc-ranges': (37, 13),
-    'no-map': (38, 13),
-    'reusable': (39, 13),
-    'chosen node declaration': (45, 5),
-    'bootargs': (46, 9),
-    'bootsource': (47, 9),
-    'stdout-path': (48, 9),
-    'stdin-path': (49, 9),
-    'cpus node declaration': (52, 5),
-    'cpu node declaration under the cpus node': (56, 9),
-    'clock-frequency': (59, 13),
-    'timebase-frequency': (60, 13),
-    'enable-method': (62, 13),
-    'cpu-release-addr': (63, 13),
-    'power-isa-version': (64, 13),
-    'power-isa-e-hv': (65, 13),
-    'cache-op-block-size': (66, 13),
-    'reservation-granule-size': (67, 13),
-    'mmu-type': (68, 13),
-    'tlb-split': (69, 13),
-    'tlb-size': (70, 13),
-    'tlb-sets': (71, 13),
-    'd-tlb-size': (72, 13),
-    'd-tlb-sets': (73, 13),
-    'i-tlb-size': (74, 13),
-    'i-tlb-sets': (75, 13),
-    'cache-unified': (76, 13),
-    'cache-size': (77, 13),
-    'cache-sets': (78, 13),
-    'cache-block-size': (79, 13),
-    'cache-line-size': (80, 13),
-    'i-cache-size': (81, 13),
-    'i-cache-sets': (82, 13),
-    'i-cache-block-size': (83, 13),
-    'i-cache-line-size': (84, 13),
-    'd-cache-size': (85, 13),
-    'd-cache-sets': (86, 13),
-    'd-cache-block-size': (87, 13),
-    'd-cache-line-size': (88, 13),
-    'next-level-cache': (89, 13),
-    'cache node declaration': (91, 19),
-    'cache-level': (93, 17),
-    'memory-region': (102, 9),
-    'memory-region-names': (103, 9),
-    'interrupts': (109, 9),
-    'interrupt-parent': (110, 9),
-    'interrupts-extended': (111, 9),
-    'interrupt-controller': (112, 9),
-    '#interrupt-cells': (113, 9),
-    'ns16550 UART node declaration': (167, 5),
-    'network class device node declaration': (175, 5),
-    'Ethernet device node declaration': (182, 5),
-    'Open PIC interrupt controller node declaration': (188, 5),
-    'simple-bus node declaration': (195, 5),
+    'size': (41, 13),
+    'alignment': (42, 13),
+    'alloc-ranges': (43, 13),
+    'no-map': (44, 13),
+    'reusable': (45, 13),
+    'chosen node declaration': (51, 5),
+    'bootargs': (52, 9),
+    'bootsource': (53, 9),
+    'stdout-path': (54, 9),
+    'stdin-path': (55, 9),
+    'cpus node declaration': (58, 5),
+    'cpu node declaration under the cpus node': (62, 9),
+    'clock-frequency': (65, 13),
+    'timebase-frequency': (66, 13),
+    'enable-method': (68, 13),
+    'cpu-release-addr': (69, 13),
+    'power-isa-version': (70, 13),
+    'power-isa-e-hv': (71, 13),
+    'cache-op-block-size': (72, 13),
+    'reservation-granule-size': (73, 13),
+    'mmu-type': (74, 13),
+    'tlb-split': (75, 13),
+    'tlb-size': (76, 13),
+    'tlb-sets': (77, 13),
+    'd-tlb-size': (78, 13),
+    'd-tlb-sets': (79, 13),
+    'i-tlb-size': (80, 13),
+    'i-tlb-sets': (81, 13),
+    'cache-unified': (82, 13),
+    'cache-size': (83, 13),
+    'cache-sets': (84, 13),
+    'cache-block-size': (85, 13),
+    'cache-line-size': (86, 13),
+    'i-cache-size': (87, 13),
+    'i-cache-sets': (88, 13),
+    'i-cache-block-size': (89, 13),
+    'i-cache-line-size': (90, 13),
+    'd-cache-size': (91, 13),
+    'd-cache-sets': (92, 13),
+    'd-cache-block-size': (93, 13),
+    'd-cache-line-size': (94, 13),
+    'next-level-cache': (95, 13),
+    'cache node declaration': (97, 19),
+    'cache-level': (99, 17),
+    'memory-region': (108, 9),
+    'memory-region-names': (109, 9),
+    'interrupts': (115, 9),
+    'interrupt-parent': (116, 9),
+    'interrupts-extended': (117, 9),
+    'interrupt-controller': (118, 9),
+    '#interrupt-cells': (119, 9),
+    'ns16550 UART node declaration': (173, 5),
+    'network class device node declaration': (183, 5),
+    'Ethernet device node declaration': (190, 5),
+    'Open PIC interrupt controller node declaration': (196, 5),
+    'simple-bus node declaration': (204, 5),
 }
 
 NEXUS_TARGET = {
-    ('interrupt-map', 'pci nexus node'): (132, 9),
-    ('interrupt-map-mask', 'pci nexus node'): (133, 9),
-    ('gpio-map', 'connector nexus node'): (138, 9),
-    ('gpio-map-mask', 'connector nexus node'): (139, 9),
-    ('gpio-map-pass-thru', 'connector nexus node'): (140, 9),
-    ('#gpio-cells', 'connector nexus node'): (137, 9),
+    ('interrupt-map', 'pci nexus node'): (138, 9),
+    ('interrupt-map-mask', 'pci nexus node'): (139, 9),
+    ('gpio-map', 'connector nexus node'): (144, 9),
+    ('gpio-map-mask', 'connector nexus node'): (145, 9),
+    ('gpio-map-pass-thru', 'connector nexus node'): (146, 9),
+    ('#gpio-cells', 'connector nexus node'): (143, 9),
 }
 
 CPU_NODE_TARGET = {
-    'clock-frequency': (59, 13),
-    'timebase-frequency': (60, 13),
-    'enable-method': (62, 13),
-    'cpu-release-addr': (63, 13),
+    'device_type': (63, 13),
+    'reg': (64, 13),
+    'clock-frequency': (65, 13),
+    'timebase-frequency': (66, 13),
+    'enable-method': (68, 13),
+    'cpu-release-addr': (69, 13),
+}
+
+RESERVED_MEMORY_NODE_TARGET = {
+    '#address-cells': (34, 9),
+    '#size-cells': (35, 9),
+    'ranges': (36, 9),
+}
+
+RESERVED_MEMORY_CHILD_TARGET = {
+    'reg': (39, 13),
+    'compatible': (40, 13),
+}
+
+CPUS_NODE_TARGET = {
+    '#address-cells': (59, 9),
+    '#size-cells': (60, 9),
 }
 
 MISCELLANEOUS_TARGET = {
-    'model': (152, 9),
-    'clock-frequency': (153, 9),
-    'reg-shift': (154, 9),
-    'label': (155, 9),
+    'model': (158, 9),
+    'clock-frequency': (159, 9),
+    'reg-shift': (160, 9),
+    'label': (161, 9),
 }
 
 SERIAL_TARGET = {
-    'clock-frequency': (163, 9),
-    'current-speed': (164, 9),
+    'clock-frequency': (169, 9),
+    'current-speed': (170, 9),
 }
 
 NODE_NAMED_SERIAL_DEVICE_TARGET = {
-    'clock-frequency': (159, 9),
+    'clock-frequency': (165, 9),
 }
 
 NS16550_TARGET = {
-    'ns16550 UART node declaration': (167, 6),
-    'compatible': (168, 9),
-    'clock-frequency': (169, 9),
-    'current-speed': (170, 9),
-    'reg-shift': (171, 9),
-    'virtual-reg': (172, 9),
+    'ns16550 UART node declaration': (173, 6),
+    'compatible': (174, 9),
+    'reg': (175, 9),
+    'interrupts': (176, 9),
+    'clock-frequency': (177, 9),
+    'current-speed': (178, 9),
+    'reg-shift': (179, 9),
+    'virtual-reg': (180, 9),
 }
 
 NETWORK_TARGET = {
-    'network class device node declaration': (175, 6),
-    'address-bits': (176, 9),
-    'local-mac-address': (177, 9),
-    'mac-address': (178, 9),
-    'max-frame-size': (179, 9),
+    'network class device node declaration': (183, 6),
+    'address-bits': (184, 9),
+    'local-mac-address': (185, 9),
+    'mac-address': (186, 9),
+    'max-frame-size': (187, 9),
 }
 
 ETHERNET_TARGET = {
-    'Ethernet device node declaration': (182, 6),
-    'max-speed': (183, 9),
-    'phy-connection-type': (184, 9),
-    'phy-handle': (185, 9),
+    'Ethernet device node declaration': (190, 6),
+    'max-speed': (191, 9),
+    'phy-connection-type': (192, 9),
+    'phy-handle': (193, 9),
 }
 
 OPEN_PIC_TARGET = {
-    'Open PIC interrupt controller node declaration': (188, 6),
-    'compatible': (189, 9),
-    'interrupt-controller': (190, 9),
-    '#interrupt-cells': (191, 9),
-    '#address-cells': (192, 9),
+    'Open PIC interrupt controller node declaration': (196, 6),
+    'compatible': (197, 9),
+    'reg': (198, 9),
+    'interrupt-controller': (199, 9),
+    '#interrupt-cells': (200, 9),
+    '#address-cells': (201, 9),
 }
 
 SIMPLE_BUS_TARGET = {
-    'simple-bus node declaration': (195, 6),
-    'ranges': (197, 9),
-    'nonposted-mmio': (198, 9),
+    'simple-bus node declaration': (204, 6),
+    'compatible': (205, 9),
+    'ranges': (206, 9),
+    'nonposted-mmio': (207, 9),
 }
 
 STATUS_VALUE_TARGET = {
-    'okay': (104, 19),
-    'disabled': (105, 19),
-    'reserved': (106, 19),
-    'fail': (107, 19),
-    'fail-sss': (108, 19),
+    'okay': (110, 19),
+    'disabled': (111, 19),
+    'reserved': (112, 19),
+    'fail': (113, 19),
+    'fail-sss': (114, 19),
 }
 
 NON_ROOT_TARGET = {
-    'serial-number': (99, 9),
-    'chassis-type': (100, 9),
+    'serial-number': (105, 9),
+    'chassis-type': (106, 9),
     'aliases node declaration': (121, 13),
     'memory node declaration': (124, 13),
 }
@@ -186,18 +208,18 @@ NON_ROOT_TARGET = {
 INVALID_PLACEMENT_TARGET = {
     ('memory-region', 'root node'): (22, 5),
     ('memory-region-names', 'root node'): (23, 5),
-    ('memory-region', 'reserved-memory node'): (40, 13),
-    ('memory-region-names', 'reserved-memory node'): (41, 13),
-    ('interrupt-map', 'non-nexus device node'): (123, 9),
-    ('interrupt-map-mask', 'non-nexus device node'): (124, 9),
-    ('gpio-map', 'non-nexus device node'): (125, 9),
-    ('gpio-map-mask', 'non-nexus device node'): (126, 9),
-    ('gpio-map-pass-thru', 'non-nexus device node'): (127, 9),
-    ('interrupt-map', 'node named nexus without nexus properties'): (144, 9),
-    ('interrupt-map-mask', 'node named nexus without nexus properties'): (145, 9),
-    ('gpio-map', 'node named nexus without nexus properties'): (146, 9),
-    ('gpio-map-mask', 'node named nexus without nexus properties'): (147, 9),
-    ('gpio-map-pass-thru', 'node named nexus without nexus properties'): (148, 9),
+    ('memory-region', 'reserved-memory node'): (46, 13),
+    ('memory-region-names', 'reserved-memory node'): (47, 13),
+    ('interrupt-map', 'non-nexus device node'): (129, 9),
+    ('interrupt-map-mask', 'non-nexus device node'): (130, 9),
+    ('gpio-map', 'non-nexus device node'): (131, 9),
+    ('gpio-map-mask', 'non-nexus device node'): (132, 9),
+    ('gpio-map-pass-thru', 'non-nexus device node'): (133, 9),
+    ('interrupt-map', 'node named nexus without nexus properties'): (150, 9),
+    ('interrupt-map-mask', 'node named nexus without nexus properties'): (151, 9),
+    ('gpio-map', 'node named nexus without nexus properties'): (152, 9),
+    ('gpio-map-mask', 'node named nexus without nexus properties'): (153, 9),
+    ('gpio-map-pass-thru', 'node named nexus without nexus properties'): (154, 9),
 }
 
 
@@ -249,6 +271,21 @@ def hover_over_nexus_property(lsp, uri, hover_target, placement):
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a cpu node$'), target_fixture='response')
 def hover_over_cpu_node_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, CPU_NODE_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) in the reserved-memory node$'), target_fixture='response')
+def hover_over_reserved_memory_node_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, RESERVED_MEMORY_NODE_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a reserved-memory child node$'), target_fixture='response')
+def hover_over_reserved_memory_child_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, RESERVED_MEMORY_CHILD_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on the cpus node$'), target_fixture='response')
+def hover_over_cpus_node_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, CPUS_NODE_TARGET, hover_target)
 
 
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a miscellaneous device node$'), target_fixture='response')

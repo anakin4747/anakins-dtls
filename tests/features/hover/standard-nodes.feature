@@ -16,6 +16,17 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns usage, value type, and definition for "model" from the "Root Node Properties" table from the devicetree specification
     And the hover title includes "Root node"
 
+  Scenario Outline: Hover on a "<property>" property name on the root node returns the "<property>" row from the "Root Node Properties" table from the devicetree specification
+    When hovering over a "<property>" property name on the root node
+    Then the hover returns usage, value type, and definition for "<property>" from the "Root Node Properties" table from the devicetree specification
+    And the hover title includes "Root node"
+
+    Examples:
+      | property       |
+      | #address-cells |
+      | #size-cells    |
+      | compatible     |
+
   Scenario: Hover on a "serial-number" property name on the root node returns the full "serial-number" row from the "Root Node Properties" table from the devicetree specification
     When hovering over a "serial-number" property name on the root node
     Then the hover returns usage, value type, and definition for "serial-number" from the "Root Node Properties" table from the devicetree specification
@@ -60,6 +71,27 @@ Feature: Standard Top-Level Node Hover Documentation
     When hovering over a reserved-memory node declaration on the root node
     Then the hover returns the contents of the "/reserved-memory Node" section from the devicetree specification
     And the hover title includes "Root node"
+
+  Scenario Outline: Hover on a "<property>" property name in the reserved-memory node returns the "<property>" row from the "/reserved-memory Parent Node Properties" table from the devicetree specification
+    When hovering over a "<property>" property name in the reserved-memory node
+    Then the hover returns usage, value type, and definition for "<property>" from the "/reserved-memory Parent Node Properties" table from the devicetree specification
+    And the hover title includes "/reserved-memory node"
+
+    Examples:
+      | property       |
+      | #address-cells |
+      | #size-cells    |
+      | ranges         |
+
+  Scenario Outline: Hover on a "<property>" property name on a reserved-memory child node returns the "<property>" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    When hovering over a "<property>" property name on a reserved-memory child node
+    Then the hover returns usage, value type, and definition for "<property>" from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
+    And the hover title includes "/reserved-memory/ child nodes"
+
+    Examples:
+      | property   |
+      | reg        |
+      | compatible |
 
   Scenario: Hover on a "size" property name on a reserved-memory child node returns the full "size" row from the "``/reserved-memory/`` Child Node Properties" table from the devicetree specification
     When hovering over a "size" property name
@@ -134,12 +166,32 @@ Feature: Standard Top-Level Node Hover Documentation
     Then the hover returns the contents of the "/cpus Node Properties" section from the devicetree specification
     And the hover title includes "Root node"
 
+  Scenario Outline: Hover on a "<property>" property name on the cpus node returns the "<property>" row from the "``/cpus`` Node Properties" table from the devicetree specification
+    When hovering over a "<property>" property name on the cpus node
+    Then the hover returns usage, value type, and definition for "<property>" from the "``/cpus`` Node Properties" table from the devicetree specification
+    And the hover title includes "/cpus node"
+
+    Examples:
+      | property       |
+      | #address-cells |
+      | #size-cells    |
+
   # /cpus/cpu* nodes
 
   Scenario: Hover on a cpu node declaration under the cpus node returns the "``/cpus/cpu*`` Node Properties" section from the devicetree specification
     When hovering over a cpu node declaration under the cpus node
     Then the hover returns the contents of the "/cpus/cpu* Node Properties" section from the devicetree specification
     And the hover title includes "/cpus/cpu* nodes"
+
+  Scenario Outline: Hover on a "<property>" property name on a cpu node returns the full "<property>" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    When hovering over a "<property>" property name on a cpu node
+    Then the hover returns usage, value type, and definition for "<property>" from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
+    And the hover title includes "/cpus/cpu* nodes"
+
+    Examples:
+      | property    |
+      | device_type |
+      | reg         |
 
   Scenario: Hover on a "clock-frequency" property name on a cpu node returns the full "clock-frequency" row from the "``/cpus/cpu*`` Node General Properties" table from the devicetree specification
     When hovering over a "clock-frequency" property name on a cpu node
