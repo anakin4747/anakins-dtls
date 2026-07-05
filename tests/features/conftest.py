@@ -104,22 +104,22 @@ TARGET = {
     'node declaration with a "simple-bus" compatible property value': (207, 5),
     'simple-bus node declaration': (207, 5),
     'DTS version directive': (1, 2),
-    'include directive': (3, 2),
-    'memory reservation directive': (5, 2),
-    'delete-node directive': (16, 6),
-    'delete-property directive': (17, 6),
-    'label definition': (8, 7),
-    'label reference': (12, 24),
-    'full path reference': (13, 28),
-    'cell array': (9, 23),
-    'bytestring': (10, 19),
-    'string property value': (11, 20),
-    '+': (9, 26),
-    '<<': (9, 35),
-    '&&': (9, 44),
-    '>=': (9, 53),
-    '?': (9, 62),
-    ':': (9, 66),
+    'include directive': (214, 2),
+    'memory reservation directive': (216, 2),
+    'delete-node directive': (227, 6),
+    'delete-property directive': (228, 6),
+    'label definition': (219, 7),
+    'label reference': (223, 24),
+    'full path reference': (224, 28),
+    'cell array': (220, 23),
+    'bytestring': (221, 19),
+    'string property value': (222, 20),
+    '+': (220, 26),
+    '<<': (220, 35),
+    '&&': (220, 44),
+    '>=': (220, 53),
+    '?': (220, 62),
+    ':': (220, 66),
 }
 
 NEXUS_TARGET = {
@@ -282,13 +282,13 @@ def server_running(request):
 
 @given('a devicetree source file is open', target_fixture='uri')
 def file_open(lsp):
-    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover_standard_properties.dts')
+    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover.dts')
     return lsp.open(fixture)
 
 
 @given('a DTS source language file is open', target_fixture='uri')
 def dts_source_language_file_open(lsp):
-    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover_dts_source_language.dts')
+    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover.dts')
     return lsp.open(fixture)
 
 

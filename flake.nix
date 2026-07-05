@@ -109,7 +109,7 @@ MEOF
           text = ''
             set +e +u +o pipefail
             workspace_root="$(pwd)"
-            repo_fixture="$workspace_root/tests/fixtures/hover_standard_properties.dts"
+            repo_fixture="$workspace_root/tests/fixtures/hover.dts"
 
             if [[ -f "$repo_fixture" ]]; then
               dts_files="$repo_fixture"
