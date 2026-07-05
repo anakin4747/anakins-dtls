@@ -1088,6 +1088,31 @@ SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
     ),
 }
 
+DTS_OPERATOR_DOCS = (
+    ("add", "+", "Arithmetic operator: add."),
+    ("subtract", "-", "Arithmetic operator: subtract."),
+    ("multiply", "*", "Arithmetic operator: multiply."),
+    ("divide", "/", "Arithmetic operator: divide."),
+    ("modulo", "%", "Arithmetic operator: modulo."),
+    ("bitwise-and", "&", "Bitwise operator: and."),
+    ("bitwise-or", "|", "Bitwise operator: or."),
+    ("exclusive-or", "^", "Bitwise operator: exclusive or."),
+    ("bitwise-not", "~", "Bitwise operator: not."),
+    ("left-shift", "<<", "Bitwise operator: left shift."),
+    ("right-shift", ">>", "Bitwise operator: right shift."),
+    ("logical-and", "&&", "Logical operator: and."),
+    ("logical-or", "||", "Logical operator: or."),
+    ("logical-not", "!", "Logical operator: not."),
+    ("less-than", "<", "Relational operator: less than."),
+    ("greater-than", ">", "Relational operator: greater than."),
+    ("less-than-or-equal", "<=", "Relational operator: less than or equal."),
+    ("greater-than-or-equal", ">=", "Relational operator: greater than or equal."),
+    ("equal", "==", "Relational operator: equal."),
+    ("not-equal", "!=", "Relational operator: not equal."),
+    ("ternary-condition", "?", "Ternary operator: condition ? value_if_true : value_if_false."),
+    ("ternary-separator", ":", "Ternary operator: condition ? value_if_true : value_if_false."),
+)
+
 DTS_FOCUSED_DOCS = {
     "dts:version-directive": (
         "## /dts-v1/; - DTS source language\n\n"
@@ -1156,29 +1181,12 @@ DTS_FOCUSED_DOCS = {
         "(the property value is considered to include the terminating NULL character).\n\n"
         "```\ncompatible = \"simple-bus\";\n```"
     ),
-    "dts:operator:add": "## + operator - DTS source language\n\nArithmetic operator: add.",
-    "dts:operator:subtract": "## - operator - DTS source language\n\nArithmetic operator: subtract.",
-    "dts:operator:multiply": "## * operator - DTS source language\n\nArithmetic operator: multiply.",
-    "dts:operator:divide": "## / operator - DTS source language\n\nArithmetic operator: divide.",
-    "dts:operator:modulo": "## % operator - DTS source language\n\nArithmetic operator: modulo.",
-    "dts:operator:bitwise-and": "## & operator - DTS source language\n\nBitwise operator: and.",
-    "dts:operator:bitwise-or": "## | operator - DTS source language\n\nBitwise operator: or.",
-    "dts:operator:exclusive-or": "## ^ operator - DTS source language\n\nBitwise operator: exclusive or.",
-    "dts:operator:bitwise-not": "## ~ operator - DTS source language\n\nBitwise operator: not.",
-    "dts:operator:left-shift": "## << operator - DTS source language\n\nBitwise operator: left shift.",
-    "dts:operator:right-shift": "## >> operator - DTS source language\n\nBitwise operator: right shift.",
-    "dts:operator:logical-and": "## && operator - DTS source language\n\nLogical operator: and.",
-    "dts:operator:logical-or": "## || operator - DTS source language\n\nLogical operator: or.",
-    "dts:operator:logical-not": "## ! operator - DTS source language\n\nLogical operator: not.",
-    "dts:operator:less-than": "## < operator - DTS source language\n\nRelational operator: less than.",
-    "dts:operator:greater-than": "## > operator - DTS source language\n\nRelational operator: greater than.",
-    "dts:operator:less-than-or-equal": "## <= operator - DTS source language\n\nRelational operator: less than or equal.",
-    "dts:operator:greater-than-or-equal": "## >= operator - DTS source language\n\nRelational operator: greater than or equal.",
-    "dts:operator:equal": "## == operator - DTS source language\n\nRelational operator: equal.",
-    "dts:operator:not-equal": "## != operator - DTS source language\n\nRelational operator: not equal.",
-    "dts:operator:ternary-condition": "## ? operator - DTS source language\n\nTernary operator: condition ? value_if_true : value_if_false.",
-    "dts:operator:ternary-separator": "## : operator - DTS source language\n\nTernary operator: condition ? value_if_true : value_if_false.",
 }
+
+for operator_key, operator, operator_doc in DTS_OPERATOR_DOCS:
+    DTS_FOCUSED_DOCS[f"dts:operator:{operator_key}"] = (
+        f"## {operator} operator - DTS source language\n\n{operator_doc}"
+    )
 
 
 def _status_value_key(value: str) -> str:
