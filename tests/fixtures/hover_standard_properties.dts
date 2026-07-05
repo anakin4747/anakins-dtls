@@ -155,7 +155,10 @@
     };
 
     miscellaneous-device {
+        compatible = "example,miscellaneous-device";
         model = "example,miscellaneous-device";
+        #address-cells = <1>;
+        #size-cells = <1>;
         clock-frequency = <1000000>;
         reg-shift = <2>;
         label = "misc-device";

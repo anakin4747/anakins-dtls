@@ -91,11 +91,11 @@ TARGET = {
     'interrupts-extended': (117, 9),
     'interrupt-controller': (118, 9),
     '#interrupt-cells': (119, 9),
-    'ns16550 UART node declaration': (173, 5),
-    'network class device node declaration': (183, 5),
-    'Ethernet device node declaration': (190, 5),
-    'Open PIC interrupt controller node declaration': (196, 5),
-    'simple-bus node declaration': (204, 5),
+    'ns16550 UART node declaration': (176, 6),
+    'network class device node declaration': (186, 5),
+    'Ethernet device node declaration': (193, 5),
+    'Open PIC interrupt controller node declaration': (199, 5),
+    'simple-bus node declaration': (207, 5),
 }
 
 NEXUS_TARGET = {
@@ -133,61 +133,64 @@ CPUS_NODE_TARGET = {
 }
 
 MISCELLANEOUS_TARGET = {
-    'model': (158, 9),
-    'clock-frequency': (159, 9),
-    'reg-shift': (160, 9),
-    'label': (161, 9),
+    'compatible': (158, 9),
+    'model': (159, 9),
+    '#address-cells': (160, 9),
+    '#size-cells': (161, 9),
+    'clock-frequency': (162, 9),
+    'reg-shift': (163, 9),
+    'label': (164, 9),
 }
 
 SERIAL_TARGET = {
-    'clock-frequency': (169, 9),
-    'current-speed': (170, 9),
+    'clock-frequency': (172, 9),
+    'current-speed': (173, 9),
 }
 
 NODE_NAMED_SERIAL_DEVICE_TARGET = {
-    'clock-frequency': (165, 9),
+    'clock-frequency': (168, 9),
 }
 
 NS16550_TARGET = {
-    'ns16550 UART node declaration': (173, 6),
-    'compatible': (174, 9),
-    'reg': (175, 9),
-    'interrupts': (176, 9),
-    'clock-frequency': (177, 9),
-    'current-speed': (178, 9),
-    'reg-shift': (179, 9),
-    'virtual-reg': (180, 9),
+    'ns16550 UART node declaration': (176, 6),
+    'compatible': (177, 9),
+    'reg': (178, 9),
+    'interrupts': (179, 9),
+    'clock-frequency': (180, 9),
+    'current-speed': (181, 9),
+    'reg-shift': (182, 9),
+    'virtual-reg': (183, 9),
 }
 
 NETWORK_TARGET = {
-    'network class device node declaration': (183, 6),
-    'address-bits': (184, 9),
-    'local-mac-address': (185, 9),
-    'mac-address': (186, 9),
-    'max-frame-size': (187, 9),
+    'network class device node declaration': (186, 6),
+    'address-bits': (187, 9),
+    'local-mac-address': (188, 9),
+    'mac-address': (189, 9),
+    'max-frame-size': (190, 9),
 }
 
 ETHERNET_TARGET = {
-    'Ethernet device node declaration': (190, 6),
-    'max-speed': (191, 9),
-    'phy-connection-type': (192, 9),
-    'phy-handle': (193, 9),
+    'Ethernet device node declaration': (193, 6),
+    'max-speed': (194, 9),
+    'phy-connection-type': (195, 9),
+    'phy-handle': (196, 9),
 }
 
 OPEN_PIC_TARGET = {
-    'Open PIC interrupt controller node declaration': (196, 6),
-    'compatible': (197, 9),
-    'reg': (198, 9),
-    'interrupt-controller': (199, 9),
-    '#interrupt-cells': (200, 9),
-    '#address-cells': (201, 9),
+    'Open PIC interrupt controller node declaration': (199, 6),
+    'compatible': (200, 9),
+    'reg': (201, 9),
+    'interrupt-controller': (202, 9),
+    '#interrupt-cells': (203, 9),
+    '#address-cells': (204, 9),
 }
 
 SIMPLE_BUS_TARGET = {
-    'simple-bus node declaration': (204, 6),
-    'compatible': (205, 9),
-    'ranges': (206, 9),
-    'nonposted-mmio': (207, 9),
+    'simple-bus node declaration': (207, 6),
+    'compatible': (208, 9),
+    'ranges': (209, 9),
+    'nonposted-mmio': (210, 9),
 }
 
 STATUS_VALUE_TARGET = {

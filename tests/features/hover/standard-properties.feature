@@ -5,7 +5,7 @@ Feature: Standard Property Hover Documentation
     And a devicetree source file is open
 
   Scenario: Hover on a "compatible" property name returns the "compatible" section from the devicetree specification
-    When hovering over a "compatible" property name
+    When hovering over a "compatible" property name on a miscellaneous device node
     Then the hover returns the contents of the "compatible" section from the devicetree specification
     And the hover title includes "Standard Properties"
 
@@ -43,12 +43,12 @@ Feature: Standard Property Hover Documentation
       | "fail-sss"  |
 
   Scenario: Hover on a "#address-cells" property name returns the "\#address-cells and \#size-cells" section from the devicetree specification
-    When hovering over a "#address-cells" property name
+    When hovering over a "#address-cells" property name on a miscellaneous device node
     Then the hover returns the contents of the "\#address-cells and \#size-cells" section from the devicetree specification
     And the hover title includes "Standard Properties"
 
   Scenario: Hover on a "#size-cells" property name returns the "\#address-cells and \#size-cells" section from the devicetree specification
-    When hovering over a "#size-cells" property name
+    When hovering over a "#size-cells" property name on a miscellaneous device node
     Then the hover returns the contents of the "\#address-cells and \#size-cells" section from the devicetree specification
     And the hover title includes "Standard Properties"
 
