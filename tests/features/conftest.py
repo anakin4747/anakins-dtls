@@ -82,6 +82,7 @@ TARGET = {
     'd-cache-block-size': (93, 13),
     'd-cache-line-size': (94, 13),
     'next-level-cache': (95, 13),
+    'cache': (98, 32),
     'node declaration with a "cache" compatible property value': (97, 19),
     'cache-level': (99, 17),
     'memory-region': (108, 9),
@@ -91,12 +92,15 @@ TARGET = {
     'interrupts-extended': (117, 9),
     'interrupt-controller': (118, 9),
     '#interrupt-cells': (119, 9),
+    'ns16550': (177, 24),
     'UART node declaration with an "ns16550" compatible property value': (176, 6),
     'ns16550 UART node declaration': (176, 6),
     'network class device node declaration': (186, 5),
     'Ethernet device node declaration': (193, 5),
+    'open-pic': (200, 24),
     'interrupt controller node declaration with an "open-pic" compatible property value': (199, 5),
     'Open PIC interrupt controller node declaration': (199, 5),
+    'simple-bus': (208, 24),
     'node declaration with a "simple-bus" compatible property value': (207, 5),
     'simple-bus node declaration': (207, 5),
 }
@@ -424,6 +428,23 @@ def check_no_hover_outside_root_node(lsp, uri, hover_target):
             text = contents or ''
         pytest.fail(
             f'Expected no hover outside root node for target: {hover_target}\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then(parsers.re(r'hovering over an? (?P<hover_target>.+? compatible property value) returns nothing'))
+def check_no_hover(lsp, uri, hover_target):
+    hover_target = _normalize_hover_target(hover_target)
+    response = _hover_at(lsp, uri, TARGET, hover_target)
+    result = response.get('result')
+    if result is not None:
+        contents = result.get('contents', '')
+        if isinstance(contents, dict):
+            text = contents.get('value', '')
+        else:
+            text = contents or ''
+        pytest.fail(
+            f'Expected no hover for target: {hover_target}\n'
             f'  Got: {text[:500]}...'
         )
 

@@ -354,10 +354,11 @@ Feature: Standard Top-Level Node Hover Documentation
 
   # Multi-level cache nodes
 
-  Scenario: Hover on a node declaration with a "cache" compatible property value returns the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
-    When hovering over a node declaration with a "cache" compatible property value
+  Scenario: Hover on a "cache" compatible property value returns the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
+    When hovering over a "cache" compatible property value
     Then the hover returns the contents of the "Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)" section from the devicetree specification
     And the hover title includes "/cpus/cpu*/l?-cache nodes"
+    And hovering over a node declaration with a "cache" compatible property value returns nothing
 
   Scenario: Hover on a "compatible" property name in a cache node returns the full "compatible" row from the "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and Shared Cache Properties" table from the devicetree specification
     When hovering over a "compatible" property name in a cache node
