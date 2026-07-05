@@ -594,6 +594,22 @@ def test_build_hover_docs_all_keys_present():
         "gpio-map-mask", "gpio-map-pass-thru", "#gpio-cells",
         "dts:file-layout", "dts:compiler-directives", "dts:labels",
         "dts:node-property-definitions",
+        "dts:version-directive", "dts:include-directive",
+        "dts:memory-reservation", "dts:delete-node",
+        "dts:delete-property", "dts:label-definition",
+        "dts:label-reference", "dts:path-reference", "dts:cell-array",
+        "dts:bytestring", "dts:string-value", "dts:operator:add",
+        "dts:operator:subtract", "dts:operator:multiply",
+        "dts:operator:divide", "dts:operator:modulo",
+        "dts:operator:bitwise-and", "dts:operator:bitwise-or",
+        "dts:operator:exclusive-or", "dts:operator:bitwise-not",
+        "dts:operator:left-shift", "dts:operator:right-shift",
+        "dts:operator:logical-and", "dts:operator:logical-or",
+        "dts:operator:logical-not", "dts:operator:less-than",
+        "dts:operator:greater-than", "dts:operator:less-than-or-equal",
+        "dts:operator:greater-than-or-equal", "dts:operator:equal",
+        "dts:operator:not-equal", "dts:operator:ternary-condition",
+        "dts:operator:ternary-separator",
     }
     assert set(docs.keys()) == expected
 
@@ -873,6 +889,22 @@ def test_build_hover_docs_each_begins_with_heading():
             "ethernet:phy-handle",
             "dts:file-layout", "dts:compiler-directives", "dts:labels",
             "dts:node-property-definitions",
+            "dts:version-directive", "dts:include-directive",
+            "dts:memory-reservation", "dts:delete-node",
+            "dts:delete-property", "dts:label-definition",
+            "dts:label-reference", "dts:path-reference", "dts:cell-array",
+            "dts:bytestring", "dts:string-value", "dts:operator:add",
+            "dts:operator:subtract", "dts:operator:multiply",
+            "dts:operator:divide", "dts:operator:modulo",
+            "dts:operator:bitwise-and", "dts:operator:bitwise-or",
+            "dts:operator:exclusive-or", "dts:operator:bitwise-not",
+            "dts:operator:left-shift", "dts:operator:right-shift",
+            "dts:operator:logical-and", "dts:operator:logical-or",
+            "dts:operator:logical-not", "dts:operator:less-than",
+            "dts:operator:greater-than", "dts:operator:less-than-or-equal",
+            "dts:operator:greater-than-or-equal", "dts:operator:equal",
+            "dts:operator:not-equal", "dts:operator:ternary-condition",
+            "dts:operator:ternary-separator",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
@@ -1021,6 +1053,30 @@ def test_build_hover_docs_includes_dts_source_language_sections():
     assert "/include/" in docs["dts:compiler-directives"]
     assert "Labels are created" in docs["dts:labels"]
     assert "/delete-node/" in docs["dts:node-property-definitions"]
+
+def test_build_hover_docs_includes_focused_dts_source_language_docs():
+    docs = build_hover_docs()
+
+    assert docs["dts:version-directive"] == (
+        "## /dts-v1/; - DTS source language\n\n"
+        "`/dts-v1/;` shall be present to identify the file as a version 1 DTS "
+        "(dts files without this tag will be treated by dtc as being in the "
+        "obsolete version 0, which uses a different format for integers in "
+        "addition to other small but incompatible changes)."
+    )
+    assert docs["dts:include-directive"].startswith(
+        "## /include/ - DTS source language\n\n"
+    )
+    assert docs["dts:label-definition"].startswith(
+        "## Label definition - DTS source language\n\n"
+    )
+    assert docs["dts:cell-array"].startswith(
+        "## Cell array - DTS source language\n\n"
+    )
+    assert docs["dts:operator:left-shift"] == (
+        "## << operator - DTS source language\n\n"
+        "Bitwise operator: left shift."
+    )
 
 # }}}
 
