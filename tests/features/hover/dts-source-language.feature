@@ -67,8 +67,24 @@ Feature: DTS source language hover documentation
     Examples:
       | operator | operator_type |
       | +        | arithmetic    |
+      | -        | arithmetic    |
+      | *        | arithmetic    |
+      | /        | arithmetic    |
+      | %        | arithmetic    |
+      | &        | bitwise       |
+      | \|       | bitwise       |
+      | ^        | bitwise       |
+      | ~        | bitwise       |
       | <<       | bitwise       |
+      | >>       | bitwise       |
       | &&       | logical       |
+      | \|\|     | logical       |
+      | !        | logical       |
+      | <        | relational    |
+      | >        | relational    |
+      | <=       | relational    |
       | >=       | relational    |
+      | ==       | relational    |
+      | !=       | relational    |
       | ?        | ternary       |
       | :        | ternary       |
