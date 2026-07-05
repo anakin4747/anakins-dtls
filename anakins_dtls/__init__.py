@@ -51,6 +51,13 @@ STANDARD_CHILD_NODE_NAMES = {
     ('cpus', 'cpu'): '/cpus/cpu*',
 }
 
+COMPATIBLE_VALUE_DOCS = {
+    'cache': '/cpus/cpu*/l?-cache',
+    'ns16550': 'ns16550',
+    'open-pic': 'open-pic',
+    'simple-bus': 'simple-bus',
+}
+
 CHAPTER4_NODE_NAMES = {
     'network-device': 'network-class',
     'ethernet-device': 'ethernet',
@@ -220,9 +227,6 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     else:
         parent = _parent_node_name_at(text, line)
         doc_key = STANDARD_CHILD_NODE_NAMES.get((parent, node_name))
-        if doc_key is None and parent == 'cpu':
-            if _current_node_property_value_contains(text, line + 1, 'compatible', 'cache'):
-                doc_key = '/cpus/cpu*/l?-cache'
     if doc_key is None:
         return None
 
@@ -244,13 +248,6 @@ def _chapter4_node_at(text: str, line: int, character: int) -> str | None:
     start, end = m.span(2)
     if not start <= character <= end:
         return None
-
-    if _current_node_property_value_contains(text, line + 1, 'compatible', 'ns16550'):
-        return 'ns16550'
-    if _current_node_property_value_contains(text, line + 1, 'compatible', 'open-pic'):
-        return 'open-pic'
-    if _current_node_property_value_contains(text, line + 1, 'compatible', 'simple-bus'):
-        return 'simple-bus'
 
     node_name = m.group(2)
     return CHAPTER4_NODE_NAMES.get(node_name)
@@ -341,6 +338,20 @@ def _current_node_property_value_contains(text: str, line: int, prop: str, value
     return False
 
 
+def _compatible_value_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    if not re.match(r'\s*compatible\s*=', line_text):
+        return None
+
+    for m in re.finditer(r'"([^"]+)"', line_text):
+        if m.start(1) <= character <= m.end(1):
+            return COMPATIBLE_VALUE_DOCS.get(m.group(1))
+    return None
+
+
 def _is_nexus_node_at(text: str, line: int, prop: str) -> bool:
     if prop in INTERRUPT_NEXUS_PROPERTIES:
         return _node_has_property_at(text, line, '#interrupt-cells')
@@ -427,6 +438,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             prop = _chapter4_node_at(text, line, character)
         if prop is None:
             prop = _status_value_at(text, line, character)
+        if prop is None:
+            prop = _compatible_value_at(text, line, character)
         if prop is None:
             prop = _property_at(text, line, character)
         if prop is None:
