@@ -117,6 +117,10 @@ CPU_NODE_PROPERTIES = {
     'reg',
 }
 
+CACHE_NODE_PROPERTIES = {
+    'compatible',
+}
+
 def _send(msg: dict) -> None:
     data = json.dumps(msg, separators=(',', ':')).encode('utf-8')
     header = f'Content-Length: {len(data)}\r\n\r\n'.encode('ascii')
@@ -353,6 +357,8 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
         return f'cpus:{prop}'
     if prop in CPU_NODE_PROPERTIES and ancestors[-2:] == ['cpus', 'cpu']:
         return f'cpu:{prop}'
+    if prop in CACHE_NODE_PROPERTIES and ancestors[-2:] == ['cpu', 'l2-cache']:
+        return f'cache:{prop}'
     if prop in OPEN_PIC_PROPERTIES and node_name == 'open-pic':
         return f'open-pic:{prop}'
     if prop in NS16550_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'ns16550'):

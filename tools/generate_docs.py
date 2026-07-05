@@ -918,6 +918,10 @@ TABLE_ROW_DOCS: dict[str, str] = {
     "d-cache-block-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
     "d-cache-line-size": "``/cpu/cpu*`` Node Power ISA Cache Properties",
     "next-level-cache": "``/cpu/cpu*`` Node Power ISA Cache Properties",
+    "cache:compatible": (
+        "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
+        "Shared Cache Properties"
+    ),
     "cache-level": (
         "``/cpu/cpu*/l?-cache`` Node Power ISA Multiple-level and "
         "Shared Cache Properties"
@@ -992,6 +996,7 @@ TABLE_ROW_DOC_SOURCES: dict[str, str] = {
     "d-cache-block-size": "/cpus/cpu* Power ISA cache",
     "d-cache-line-size": "/cpus/cpu* Power ISA cache",
     "next-level-cache": "/cpus/cpu* Power ISA cache",
+    "cache:compatible": "/cpus/cpu*/l?-cache nodes",
     "cache-level": "/cpus/cpu*/l?-cache nodes",
     "ns16550:compatible": "ns16550 UART",
     "ns16550:clock-frequency": "ns16550 UART",
