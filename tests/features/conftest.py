@@ -132,6 +132,10 @@ CPUS_NODE_TARGET = {
     '#size-cells': (60, 9),
 }
 
+CACHE_NODE_TARGET = {
+    'compatible': (98, 17),
+}
+
 MISCELLANEOUS_TARGET = {
     'compatible': (158, 9),
     'model': (159, 9),
@@ -289,6 +293,11 @@ def hover_over_reserved_memory_child_property(lsp, uri, hover_target):
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on the cpus node$'), target_fixture='response')
 def hover_over_cpus_node_property(lsp, uri, hover_target):
     return _hover_at(lsp, uri, CPUS_NODE_TARGET, hover_target)
+
+
+@when(parsers.re(r'hovering over an? (?P<hover_target>.+?) in a cache node$'), target_fixture='response')
+def hover_over_cache_node_property(lsp, uri, hover_target):
+    return _hover_at(lsp, uri, CACHE_NODE_TARGET, hover_target)
 
 
 @when(parsers.re(r'hovering over an? (?P<hover_target>.+?) on a miscellaneous device node$'), target_fixture='response')
