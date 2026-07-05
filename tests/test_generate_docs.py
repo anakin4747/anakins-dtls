@@ -552,7 +552,7 @@ def test_format_section_just_a_heading():
 def test_build_hover_docs_all_keys_present():
     docs = build_hover_docs()
     expected = {
-        "compatible", "model", "phandle", "status",
+        "compatible", "model", "root:model", "phandle", "status",
         "#address-cells", "#size-cells", "reg", "virtual-reg",
         "ranges", "dma-ranges", "dma-coherent", "dma-noncoherent",
         "name", "device_type", "__root__", "/aliases", "/memory",
@@ -633,6 +633,10 @@ def test_build_hover_docs_nexus_properties_from_spec_sections():
 def test_build_hover_docs_root_node_properties_from_table():
     docs = build_hover_docs()
 
+    assert _strip_heading_source(docs["root:model"]) == format_table_row_hover(
+        "Root Node Properties",
+        "model",
+    )
     assert _strip_heading_source(docs["serial-number"]) == format_table_row_hover(
         "Root Node Properties",
         "serial-number",
