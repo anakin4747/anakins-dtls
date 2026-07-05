@@ -66,31 +66,6 @@ DTS_DIRECTIVE_DOCS = {
     '/delete-property/': 'dts:delete-property',
 }
 
-DTS_OPERATOR_DOCS = {
-    '<<': 'dts:operator:left-shift',
-    '>>': 'dts:operator:right-shift',
-    '&&': 'dts:operator:logical-and',
-    '||': 'dts:operator:logical-or',
-    '<=': 'dts:operator:less-than-or-equal',
-    '>=': 'dts:operator:greater-than-or-equal',
-    '==': 'dts:operator:equal',
-    '!=': 'dts:operator:not-equal',
-    '+': 'dts:operator:add',
-    '-': 'dts:operator:subtract',
-    '*': 'dts:operator:multiply',
-    '/': 'dts:operator:divide',
-    '%': 'dts:operator:modulo',
-    '&': 'dts:operator:bitwise-and',
-    '|': 'dts:operator:bitwise-or',
-    '^': 'dts:operator:exclusive-or',
-    '~': 'dts:operator:bitwise-not',
-    '!': 'dts:operator:logical-not',
-    '<': 'dts:operator:less-than',
-    '>': 'dts:operator:greater-than',
-    '?': 'dts:operator:ternary-condition',
-    ':': 'dts:operator:ternary-separator',
-}
-
 CHAPTER4_NODE_NAMES = {
     'network-device': 'network-class',
     'ethernet-device': 'ethernet',
@@ -421,7 +396,7 @@ def _dts_value_syntax_at(text: str, line: int, character: int) -> str | None:
     line_text = lines[line]
     cell_start = line_text.find('<')
     cell_end = line_text.rfind('>')
-    if cell_start != -1 and cell_end != -1 and cell_start <= character <= cell_end:
+    if cell_start != -1 and cell_end != -1 and character in {cell_start, cell_start + 1, cell_end}:
         return 'dts:cell-array'
     for pattern, doc_key in (
         (r'\[[^\]]*\]', 'dts:bytestring'),
@@ -430,34 +405,6 @@ def _dts_value_syntax_at(text: str, line: int, character: int) -> str | None:
         for m in re.finditer(pattern, line_text):
             if m.start() <= character <= m.end():
                 return doc_key
-    return None
-
-
-def _dts_cell_array_delimiter_at(text: str, line: int, character: int) -> bool:
-    lines = text.split('\n')
-    if line >= len(lines):
-        return False
-    line_text = lines[line]
-    return character in {line_text.find('<'), line_text.rfind('>')}
-
-
-def _dts_operator_at(text: str, line: int, character: int) -> str | None:
-    lines = text.split('\n')
-    if line >= len(lines):
-        return None
-    line_text = lines[line]
-    for operator, doc_key in DTS_OPERATOR_DOCS.items():
-        start = 0
-        while True:
-            idx = line_text.find(operator, start)
-            if idx == -1:
-                break
-            if idx <= character < idx + len(operator):
-                if operator in {'<', '>'} and _dts_cell_array_delimiter_at(text, line, character):
-                    start = idx + len(operator)
-                    continue
-                return doc_key
-            start = idx + len(operator)
     return None
 
 
@@ -553,8 +500,6 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             prop = _dts_directive_at(text, line, character)
         if prop is None:
             prop = _dts_label_or_reference_at(text, line, character)
-        if prop is None:
-            prop = _dts_operator_at(text, line, character)
         if prop is None:
             prop = _dts_value_syntax_at(text, line, character)
         if prop is None:
