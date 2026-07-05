@@ -53,10 +53,10 @@ STANDARD_CHILD_NODE_NAMES = {
 }
 
 CHAPTER4_NODE_NAMES = {
-    'network-device': '/network',
-    'ethernet-device': '/ethernet',
-    'open-pic': '/open-pic',
-    'simple-bus': '/simple-bus',
+    'network-device': 'network-class',
+    'ethernet-device': 'ethernet',
+    'open-pic': 'open-pic',
+    'simple-bus': 'simple-bus',
 }
 
 NS16550_PROPERTIES = {
@@ -247,7 +247,7 @@ def _chapter4_node_at(text: str, line: int, character: int) -> str | None:
 
     node_name = m.group(2)
     if node_name == 'serial' and _node_has_property_at(text, line + 1, 'compatible'):
-        return '/ns16550'
+        return 'ns16550'
     return CHAPTER4_NODE_NAMES.get(node_name)
 
 

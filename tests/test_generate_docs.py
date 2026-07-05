@@ -569,15 +569,15 @@ def test_build_hover_docs_all_keys_present():
         "stdin-path", "clock-frequency", "misc:clock-frequency",
         "misc:reg-shift", "misc:label", "serial:clock-frequency",
         "serial:current-speed",
-        "/ns16550", "ns16550:compatible", "ns16550:clock-frequency",
+        "ns16550", "ns16550:compatible", "ns16550:clock-frequency",
         "ns16550:current-speed", "ns16550:reg", "ns16550:interrupts", "ns16550:reg-shift",
-        "ns16550:virtual-reg", "/network", "network:address-bits",
+        "ns16550:virtual-reg", "network-class", "network:address-bits",
         "network:local-mac-address", "network:mac-address",
-        "network:max-frame-size", "/ethernet", "ethernet:max-speed",
+        "network:max-frame-size", "ethernet", "ethernet:max-speed",
         "ethernet:phy-connection-type", "ethernet:phy-handle",
-        "/open-pic", "open-pic:compatible", "open-pic:reg", "open-pic:#interrupt-cells",
+        "open-pic", "open-pic:compatible", "open-pic:reg", "open-pic:#interrupt-cells",
         "open-pic:#address-cells", "open-pic:interrupt-controller",
-        "/simple-bus", "simple-bus:compatible", "simple-bus:ranges", "simple-bus:nonposted-mmio",
+        "simple-bus", "simple-bus:compatible", "simple-bus:ranges", "simple-bus:nonposted-mmio",
         "timebase-frequency", "enable-method", "cpu-release-addr",
         "power-isa-version", "power-isa-*", "cache-op-block-size",
         "reservation-granule-size", "mmu-type", "tlb-split", "tlb-size", "tlb-sets",
@@ -720,14 +720,14 @@ def test_build_hover_docs_titles_include_semantic_sources():
         "cache-level": "### cache-level - /cpus/cpu*/l?-cache nodes\n",
         "interrupts": "#### interrupts - Interrupts and Interrupt Mapping\n",
         "gpio-map": "#### <specifier>-map - Specifier Mapping\n",
-        "/ns16550": (
+        "ns16550": (
             "### National Semiconductor 16450/16550 Compatible UART Requirements"
             " - ns16550 UART\n"
         ),
         "ns16550:compatible": "### compatible - ns16550 UART\n",
-        "/open-pic": "## Power ISA Open PIC Interrupt Controllers - Open PIC interrupt controllers\n",
+        "open-pic": "## Power ISA Open PIC Interrupt Controllers - Open PIC interrupt controllers\n",
         "open-pic:compatible": "### compatible - Open PIC interrupt controllers\n",
-        "/simple-bus": "## `simple-bus` Compatible Value - simple-bus\n",
+        "simple-bus": "## `simple-bus` Compatible Value - simple-bus\n",
         "simple-bus:ranges": "### ranges - simple-bus\n",
     }
 
@@ -737,11 +737,11 @@ def test_build_hover_docs_titles_include_semantic_sources():
 def test_build_hover_docs_remaining_chapter4_sections_from_spec():
     docs = build_hover_docs()
     expected = {
-        "/ns16550": "National Semiconductor 16450/16550 Compatible UART Requirements",
-        "/network": "Network Class Binding",
-        "/ethernet": "Ethernet specific considerations",
-        "/open-pic": "Power ISA Open PIC Interrupt Controllers",
-        "/simple-bus": "``simple-bus`` Compatible Value",
+        "ns16550": "National Semiconductor 16450/16550 Compatible UART Requirements",
+        "network-class": "Network Class Binding",
+        "ethernet": "Ethernet specific considerations",
+        "open-pic": "Power ISA Open PIC Interrupt Controllers",
+        "simple-bus": "``simple-bus`` Compatible Value",
     }
 
     for key, section in expected.items():
@@ -860,7 +860,7 @@ def test_build_hover_docs_each_begins_with_heading():
         if key in {
             "__root__", "/aliases", "/memory", "/reserved-memory",
             "/chosen", "/cpus", "/cpus/cpu*", "/cpus/cpu*/l?-cache",
-            "/ns16550", "/network", "/ethernet", "/open-pic", "/simple-bus",
+            "ns16550", "network-class", "ethernet", "open-pic", "simple-bus",
             "status:okay", "status:disabled", "status:reserved",
             "status:fail", "status:fail-sss", "misc:clock-frequency",
             "misc:reg-shift", "misc:label", "serial:clock-frequency",
