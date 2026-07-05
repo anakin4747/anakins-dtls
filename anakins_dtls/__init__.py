@@ -49,14 +49,11 @@ STANDARD_NODE_NAMES = {
 
 STANDARD_CHILD_NODE_NAMES = {
     ('cpus', 'cpu'): '/cpus/cpu*',
-    ('cpu', 'l2-cache'): '/cpus/cpu*/l?-cache',
 }
 
 CHAPTER4_NODE_NAMES = {
     'network-device': 'network-class',
     'ethernet-device': 'ethernet',
-    'open-pic': 'open-pic',
-    'simple-bus': 'simple-bus',
 }
 
 NS16550_PROPERTIES = {
@@ -223,6 +220,9 @@ def _standard_node_at(text: str, line: int, character: int) -> str | None:
     else:
         parent = _parent_node_name_at(text, line)
         doc_key = STANDARD_CHILD_NODE_NAMES.get((parent, node_name))
+        if doc_key is None and parent == 'cpu':
+            if _current_node_property_value_contains(text, line + 1, 'compatible', 'cache'):
+                doc_key = '/cpus/cpu*/l?-cache'
     if doc_key is None:
         return None
 
@@ -245,9 +245,14 @@ def _chapter4_node_at(text: str, line: int, character: int) -> str | None:
     if not start <= character <= end:
         return None
 
-    node_name = m.group(2)
-    if node_name == 'serial' and _node_has_property_at(text, line + 1, 'compatible'):
+    if _current_node_property_value_contains(text, line + 1, 'compatible', 'ns16550'):
         return 'ns16550'
+    if _current_node_property_value_contains(text, line + 1, 'compatible', 'open-pic'):
+        return 'open-pic'
+    if _current_node_property_value_contains(text, line + 1, 'compatible', 'simple-bus'):
+        return 'simple-bus'
+
+    node_name = m.group(2)
     return CHAPTER4_NODE_NAMES.get(node_name)
 
 
@@ -357,13 +362,13 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
         return f'cpus:{prop}'
     if prop in CPU_NODE_PROPERTIES and ancestors[-2:] == ['cpus', 'cpu']:
         return f'cpu:{prop}'
-    if prop in CACHE_NODE_PROPERTIES and ancestors[-2:] == ['cpu', 'l2-cache']:
+    if prop in CACHE_NODE_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'cache'):
         return f'cache:{prop}'
-    if prop in OPEN_PIC_PROPERTIES and node_name == 'open-pic':
+    if prop in OPEN_PIC_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'open-pic'):
         return f'open-pic:{prop}'
     if prop in NS16550_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'ns16550'):
         return f'ns16550:{prop}'
-    if prop in SIMPLE_BUS_PROPERTIES and node_name == 'simple-bus':
+    if prop in SIMPLE_BUS_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'simple-bus'):
         return f'simple-bus:{prop}'
     if prop in NETWORK_PROPERTIES and node_name == 'network-device':
         return f'network:{prop}'
