@@ -511,6 +511,18 @@ def check_no_hover_in_invalid_placement(lsp, uri, hover_target, placement):
         )
 
 
+@then('no hover is returned')
+def check_response_has_no_hover(response):
+    result = response.get('result')
+    if result is not None:
+        contents = result.get('contents', '')
+        if isinstance(contents, dict):
+            text = contents.get('value', '')
+        else:
+            text = contents or ''
+        pytest.fail(f'Expected no hover\n  Got: {text[:500]}...')
+
+
 @then(parsers.parse('the hover returns the contents of the "{section}" section from the devicetree specification'))
 def check_hover(response, section):
     section = section.replace('\\#', '#')

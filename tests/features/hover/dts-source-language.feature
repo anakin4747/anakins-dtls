@@ -153,37 +153,31 @@ Feature: DTS source language hover documentation
       """
     And the hover title includes "DTS source language"
 
-  Scenario Outline: Hover on a "<operator>" <operator_type> operator returns focused documentation
+  Scenario Outline: Hover on a "<operator>" <operator_type> operator returns nothing
     When hovering over a "<operator>" <operator_type> operator
-    Then the hover text is exactly:
-      """
-      ## <operator> operator - DTS source language
-
-      <operator_doc>
-      """
-    And the hover title includes "DTS source language"
+    Then no hover is returned
 
     Examples:
-      | operator | operator_type | operator_doc                                           |
-      | +        | arithmetic    | Arithmetic operator: add.                              |
-      | -        | arithmetic    | Arithmetic operator: subtract.                         |
-      | *        | arithmetic    | Arithmetic operator: multiply.                         |
-      | /        | arithmetic    | Arithmetic operator: divide.                           |
-      | %        | arithmetic    | Arithmetic operator: modulo.                           |
-      | &        | bitwise       | Bitwise operator: and.                                 |
-      | \|       | bitwise       | Bitwise operator: or.                                  |
-      | ^        | bitwise       | Bitwise operator: exclusive or.                        |
-      | ~        | bitwise       | Bitwise operator: not.                                 |
-      | <<       | bitwise       | Bitwise operator: left shift.                          |
-      | >>       | bitwise       | Bitwise operator: right shift.                         |
-      | &&       | logical       | Logical operator: and.                                 |
-      | \|\|     | logical       | Logical operator: or.                                  |
-      | !        | logical       | Logical operator: not.                                 |
-      | <        | relational    | Relational operator: less than.                        |
-      | >        | relational    | Relational operator: greater than.                     |
-      | <=       | relational    | Relational operator: less than or equal.               |
-      | >=       | relational    | Relational operator: greater than or equal.            |
-      | ==       | relational    | Relational operator: equal.                            |
-      | !=       | relational    | Relational operator: not equal.                        |
-      | ?        | ternary       | Ternary operator: condition ? value_if_true : value_if_false. |
-      | :        | ternary       | Ternary operator: condition ? value_if_true : value_if_false. |
+      | operator | operator_type |
+      | +        | arithmetic    |
+      | -        | arithmetic    |
+      | *        | arithmetic    |
+      | /        | arithmetic    |
+      | %        | arithmetic    |
+      | &        | bitwise       |
+      | \|       | bitwise       |
+      | ^        | bitwise       |
+      | ~        | bitwise       |
+      | <<       | bitwise       |
+      | >>       | bitwise       |
+      | &&       | logical       |
+      | \|\|     | logical       |
+      | !        | logical       |
+      | <        | relational    |
+      | >        | relational    |
+      | <=       | relational    |
+      | >=       | relational    |
+      | ==       | relational    |
+      | !=       | relational    |
+      | ?        | ternary       |
+      | :        | ternary       |
