@@ -103,6 +103,23 @@ TARGET = {
     'simple-bus': (208, 24),
     'node declaration with a "simple-bus" compatible property value': (207, 5),
     'simple-bus node declaration': (207, 5),
+    'DTS version directive': (1, 2),
+    'include directive': (3, 2),
+    'memory reservation directive': (5, 2),
+    'delete-node directive': (16, 6),
+    'delete-property directive': (17, 6),
+    'label definition': (8, 7),
+    'label reference': (12, 24),
+    'full path reference': (13, 28),
+    'cell array': (9, 23),
+    'bytestring': (10, 19),
+    'string property value': (11, 20),
+    '+': (9, 26),
+    '<<': (9, 35),
+    '&&': (9, 44),
+    '>=': (9, 53),
+    '?': (9, 62),
+    ':': (9, 66),
 }
 
 NEXUS_TARGET = {
@@ -236,9 +253,11 @@ INVALID_PLACEMENT_TARGET = {
     ('gpio-map-pass-thru', 'node named nexus without nexus properties'): (154, 9),
 }
 
-
 def _normalize_hover_target(hover_target):
     hover_target = hover_target.strip()
+    m = re.fullmatch(r'"(.+?)" (?:arithmetic|bitwise|logical|relational|ternary) operator', hover_target)
+    if m:
+        return m.group(1)
     if hover_target.startswith('"') and '"' in hover_target[1:]:
         hover_target = hover_target[1:hover_target.index('"', 1)]
     return hover_target
@@ -267,7 +286,13 @@ def file_open(lsp):
     return lsp.open(fixture)
 
 
-@when(parsers.re(r'hovering over an? (?P<hover_target>(?!.* in a ).+?)(?: on the root node)?$'), target_fixture='response')
+@given('a DTS source language file is open', target_fixture='uri')
+def dts_source_language_file_open(lsp):
+    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'hover_dts_source_language.dts')
+    return lsp.open(fixture)
+
+
+@when(parsers.re(r'hovering over (?:an? |the )(?P<hover_target>(?!.* in a ).+?)(?: on the root node)?$'), target_fixture='response')
 def hover_over(lsp, uri, hover_target):
     return _hover_at(lsp, uri, TARGET, hover_target)
 
