@@ -592,6 +592,8 @@ def test_build_hover_docs_all_keys_present():
         "interrupts-extended", "interrupt-controller", "#interrupt-cells",
         "interrupt-map", "interrupt-map-mask", "gpio-map",
         "gpio-map-mask", "gpio-map-pass-thru", "#gpio-cells",
+        "dts:file-layout", "dts:compiler-directives", "dts:labels",
+        "dts:node-property-definitions",
     }
     assert set(docs.keys()) == expected
 
@@ -869,6 +871,8 @@ def test_build_hover_docs_each_begins_with_heading():
             "network:mac-address", "network:max-frame-size",
             "ethernet:max-speed", "ethernet:phy-connection-type",
             "ethernet:phy-handle",
+            "dts:file-layout", "dts:compiler-directives", "dts:labels",
+            "dts:node-property-definitions",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
@@ -1004,6 +1008,19 @@ def test_build_hover_docs_dma_ranges_bullets_keep_wrapped_text_together():
         "- The *length* specifies the size of the range in the child's address "
         "space."
     ) in doc
+
+def test_build_hover_docs_includes_dts_source_language_sections():
+    docs = build_hover_docs()
+
+    assert "dts:file-layout" in docs
+    assert "dts:compiler-directives" in docs
+    assert "dts:labels" in docs
+    assert "dts:node-property-definitions" in docs
+    assert "DTS source language" in docs["dts:file-layout"].split("\n", 1)[0]
+    assert "/dts-v1/;" in docs["dts:file-layout"]
+    assert "/include/" in docs["dts:compiler-directives"]
+    assert "Labels are created" in docs["dts:labels"]
+    assert "/delete-node/" in docs["dts:node-property-definitions"]
 
 # }}}
 
