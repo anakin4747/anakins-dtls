@@ -183,14 +183,14 @@
         virtual-reg;
     };
 
-    network-device {
+    ethernet@0 {
         address-bits = <48>;
         local-mac-address = [ 00 00 12 34 56 78 ];
         mac-address = [ 02 03 04 05 06 07 ];
         max-frame-size = <1518>;
     };
 
-    ethernet-device {
+    ethernet@1 {
         max-speed = <1000>;
         phy-connection-type = "rgmii";
         phy-handle = <&PHY0>;
