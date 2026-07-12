@@ -7,7 +7,7 @@ endif
 .PHONY: test
 test: generate-docs
 	$(SHELL_PREFIX) cog check
-	$(SHELL_PREFIX) python3 -m pytest tests/
+	$(SHELL_PREFIX) python3 -m pytest -n auto tests/
 
 .PHONY: generate-docs
 generate-docs:

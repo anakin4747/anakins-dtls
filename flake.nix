@@ -168,6 +168,7 @@ MEOF
             python3
             python3Packages.pytest
             python3Packages.pytest-bdd
+            python3Packages.pytest-xdist
             python3Packages.setuptools
           ];
         };
