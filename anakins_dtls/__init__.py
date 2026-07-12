@@ -4,9 +4,11 @@ import sys
 
 
 from anakins_dtls._generated_hover_docs import HOVER_DOCS
+from anakins_dtls import kernel_bindings
 
 
 documents: dict[str, str] = {}
+document_paths: dict[str, str] = {}
 
 ROOT_NODE_PROPERTIES = {
     'serial-number',
@@ -362,7 +364,7 @@ def _node_declares_any_property_at(text: str, line: int, props: set[str]) -> boo
     return False
 
 
-def _compatible_value_at(text: str, line: int, character: int) -> str | None:
+def _compatible_string_at(text: str, line: int, character: int) -> str | None:
     lines = text.split('\n')
     if line >= len(lines):
         return None
@@ -372,8 +374,15 @@ def _compatible_value_at(text: str, line: int, character: int) -> str | None:
 
     for m in re.finditer(r'"([^"]+)"', line_text):
         if m.start(1) <= character <= m.end(1):
-            return COMPATIBLE_VALUE_DOCS.get(m.group(1))
+            return m.group(1)
     return None
+
+
+def _uri_to_path(uri: str) -> str | None:
+    prefix = 'file://'
+    if not uri.startswith(prefix):
+        return None
+    return uri[len(prefix):]
 
 
 def _dts_directive_at(text: str, line: int, character: int) -> str | None:
@@ -474,6 +483,9 @@ def handle_notification(method: str, params: dict | None) -> None:
         uri = params['textDocument']['uri']
         text = params['textDocument']['text']
         documents[uri] = text
+        path = _uri_to_path(uri)
+        if path is not None:
+            document_paths[uri] = path
     elif method == 'textDocument/didChange':
         uri = params['textDocument']['uri']
         changes = params.get('contentChanges', [])
@@ -497,6 +509,19 @@ def handle_request(method: str, params: dict | None) -> dict | None:
         if not text:
             return None
 
+        compatible = _compatible_string_at(text, line, character)
+        if compatible is not None:
+            file_path = document_paths.get(uri)
+            if file_path is not None:
+                binding_doc = kernel_bindings.hover_for_compatible(file_path, compatible)
+                if binding_doc is not None:
+                    return {
+                        'contents': {
+                            'kind': 'markdown',
+                            'value': binding_doc,
+                        },
+                    }
+
         prop = _root_node_at(text, line, character)
         if prop is None:
             prop = _standard_node_at(text, line, character)
@@ -504,8 +529,8 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             prop = _chapter4_node_at(text, line, character)
         if prop is None:
             prop = _status_value_at(text, line, character)
-        if prop is None:
-            prop = _compatible_value_at(text, line, character)
+        if prop is None and compatible is not None:
+            prop = COMPATIBLE_VALUE_DOCS.get(compatible, 'compatible')
         if prop is None:
             prop = _dts_directive_at(text, line, character)
         if prop is None:
