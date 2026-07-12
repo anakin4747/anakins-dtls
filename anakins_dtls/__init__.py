@@ -453,12 +453,6 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
     return prop
 
 
-def _strip_heading_source(doc: str) -> str:
-    heading, sep, rest = doc.partition('\n')
-    heading = re.sub(r' - [^\n]+$', '', heading)
-    return f'{heading}{sep}{rest}' if sep else heading
-
-
 def handle_notification(method: str, params: dict | None) -> None:
     if method == 'textDocument/didOpen':
         uri = params['textDocument']['uri']
