@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          submodules: true
 
       - uses: cachix/install-nix-action@v30
 
