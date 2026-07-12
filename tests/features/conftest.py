@@ -770,6 +770,16 @@ def _write_kernel_binding_marker(root, binding_text=None):
         (bindings_dir / 'vendor,widget-a.yaml').write_text(binding_text)
 
 
+DEFAULT_BINDING_RELPATH = os.path.join(KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml').replace(os.sep, '/')
+
+
+def _write_example_dts(directory):
+    directory.mkdir(parents=True, exist_ok=True)
+    dts_path = directory / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    return dts_path
+
+
 @given(
     parsers.parse('a devicetree source file nested {depth:d} directories below an in-tree kernel checkout is open'),
     target_fixture='uri',
@@ -781,10 +791,7 @@ def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
     nested_dir = checkout_root
     for level in range(depth):
         nested_dir = nested_dir / f'level{level}'
-    nested_dir.mkdir(parents=True, exist_ok=True)
-
-    dts_path = nested_dir / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(nested_dir)
 
     kernel_context['kernel_source_root'] = checkout_root
     return lsp.open(str(dts_path))
@@ -807,10 +814,7 @@ def kernel_source_nested_out_of_tree_open(lsp, tmp_path, kernel_context, depth):
     nested_dir = project_root
     for level in range(depth):
         nested_dir = nested_dir / f'level{level}'
-    nested_dir.mkdir(parents=True, exist_ok=True)
-
-    dts_path = nested_dir / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(nested_dir)
 
     kernel_context['kernel_source_root'] = kernel_source_root
     return lsp.open(str(dts_path))
@@ -824,8 +828,7 @@ def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
     _write_kernel_binding_marker(kernel_source_root)
     (project_root / '.anakins-dtls').write_text(f'S={kernel_source_root}\n')
 
-    dts_path = project_root / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(project_root)
 
     kernel_context['kernel_source_root'] = kernel_source_root
     return lsp.open(str(dts_path))
@@ -834,11 +837,10 @@ def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
 @given("the resolved kernel source has a YAML binding for the node's compatible string")
 def kernel_source_resolved_has_yaml_binding(kernel_context):
     kernel_source_root = kernel_context['kernel_source_root']
-    binding_relpath = os.path.join(KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml')
-    binding_path = kernel_source_root / binding_relpath
+    binding_path = kernel_source_root / DEFAULT_BINDING_RELPATH
     binding_path.parent.mkdir(parents=True, exist_ok=True)
     binding_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'bindings', 'vendor,widget-a.yaml')))
-    kernel_context['binding_relpath'] = binding_relpath.replace(os.sep, '/')
+    kernel_context['binding_relpath'] = DEFAULT_BINDING_RELPATH
 
 
 @given(
@@ -861,12 +863,9 @@ def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_
         os.path.join('kernel_source_resolution', 'near-binding.yaml')
     ))
 
-    dts_path = checkout_root / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(checkout_root)
 
-    kernel_context['binding_relpath'] = os.path.join(
-        KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml'
-    ).replace(os.sep, '/')
+    kernel_context['binding_relpath'] = DEFAULT_BINDING_RELPATH
     return lsp.open(str(dts_path))
 
 
@@ -889,12 +888,9 @@ def kernel_source_nearby_out_of_tree_farther_in_tree_open(lsp, tmp_path, kernel_
     ))
     (project_root / '.anakins-dtls').write_text(f'S={near_kernel_source}\n')
 
-    dts_path = project_root / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(project_root)
 
-    kernel_context['binding_relpath'] = os.path.join(
-        KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml'
-    ).replace(os.sep, '/')
+    kernel_context['binding_relpath'] = DEFAULT_BINDING_RELPATH
     return lsp.open(str(dts_path))
 
 
@@ -921,8 +917,7 @@ def kernel_source_config_missing_value_open(lsp, tmp_path):
     project_root.mkdir()
     (project_root / '.anakins-dtls').write_text('# no kernel source value configured\n')
 
-    dts_path = project_root / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(project_root)
 
     return lsp.open(str(dts_path))
 
@@ -933,7 +928,6 @@ def kernel_source_config_blank_value_open(lsp, tmp_path):
     project_root.mkdir()
     (project_root / '.anakins-dtls').write_text('S=\n')
 
-    dts_path = project_root / 'example.dts'
-    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+    dts_path = _write_example_dts(project_root)
 
     return lsp.open(str(dts_path))
