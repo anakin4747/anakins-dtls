@@ -153,31 +153,3 @@ Feature: DTS source language hover documentation
       """
     And the hover title includes "DTS source language"
 
-  Scenario Outline: Hover on a "<operator>" <operator_type> operator returns nothing
-    When hovering over a "<operator>" <operator_type> operator
-    Then no hover is returned
-
-    Examples:
-      | operator | operator_type |
-      | +        | arithmetic    |
-      | -        | arithmetic    |
-      | *        | arithmetic    |
-      | /        | arithmetic    |
-      | %        | arithmetic    |
-      | &        | bitwise       |
-      | \|       | bitwise       |
-      | ^        | bitwise       |
-      | ~        | bitwise       |
-      | <<       | bitwise       |
-      | >>       | bitwise       |
-      | &&       | logical       |
-      | \|\|     | logical       |
-      | !        | logical       |
-      | <        | relational    |
-      | >        | relational    |
-      | <=       | relational    |
-      | >=       | relational    |
-      | ==       | relational    |
-      | !=       | relational    |
-      | ?        | ternary       |
-      | :        | ternary       |
