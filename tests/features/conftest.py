@@ -690,12 +690,12 @@ def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, context):
 
 
 @given(parsers.parse(
-    "the {context} kernel source code has a {format} binding for the node's compatible string"
+    "the {context} kernel source code has a {binding_format} binding for the node's compatible string"
 ))
-def kernel_binding_add_matching_binding(kernel_context, context, format):
-    extension = KERNEL_BINDING_FORMAT_EXTENSIONS.get(format)
+def kernel_binding_add_matching_binding(kernel_context, binding_format):
+    extension = KERNEL_BINDING_FORMAT_EXTENSIONS.get(binding_format)
     if extension is None:
-        pytest.fail(f'Unknown binding format: {format}')
+        pytest.fail(f'Unknown binding format: {binding_format}')
 
     binding_text = _read_fixture_text(
         os.path.join('kernel_binding', 'bindings', f'vendor,widget-a.{extension}')
@@ -710,14 +710,14 @@ def kernel_binding_add_matching_binding(kernel_context, context, format):
 
 
 @given(parsers.parse(
-    "the {context} kernel source code has no {format} binding for the node's compatible string"
+    "the {context} kernel source code has no {binding_format} binding for the node's compatible string"
 ))
-def kernel_binding_omit_matching_binding(kernel_context, context, format):
+def kernel_binding_omit_matching_binding(binding_format):
     # Intentionally do not create a binding file; the kernel bindings
     # directory created when the devicetree source file was opened already
     # establishes kernel context without a matching binding.
-    if format not in KERNEL_BINDING_FORMAT_EXTENSIONS:
-        pytest.fail(f'Unknown binding format: {format}')
+    if binding_format not in KERNEL_BINDING_FORMAT_EXTENSIONS:
+        pytest.fail(f'Unknown binding format: {binding_format}')
 
 
 @then("the hover text includes the binding's title and description")
