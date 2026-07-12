@@ -66,11 +66,6 @@ DTS_DIRECTIVE_DOCS = {
     '/delete-property/': 'dts:delete-property',
 }
 
-CHAPTER4_NODE_NAMES = {
-    'network-device': 'network-class',
-    'ethernet-device': 'ethernet',
-}
-
 NS16550_PROPERTIES = {
     'compatible',
     'clock-frequency',
@@ -257,8 +252,11 @@ def _chapter4_node_at(text: str, line: int, character: int) -> str | None:
     if not start <= character <= end:
         return None
 
-    node_name = m.group(2)
-    return CHAPTER4_NODE_NAMES.get(node_name)
+    if _node_declares_any_property_at(text, line, ETHERNET_PROPERTIES):
+        return 'ethernet'
+    if _node_declares_any_property_at(text, line, NETWORK_PROPERTIES):
+        return 'network-class'
+    return None
 
 
 def _node_depth_at(text: str, line: int) -> int:
@@ -343,6 +341,24 @@ def _current_node_property_value_contains(text: str, line: int, prop: str, value
         depth -= line_text.count('}')
         if depth == 0:
             return False
+    return False
+
+
+def _node_declares_any_property_at(text: str, line: int, props: set[str]) -> bool:
+    lines = text.split('\n')
+    depth = 0
+    entered = False
+    for line_text in lines[line:]:
+        depth += line_text.count('{')
+        depth -= line_text.count('}')
+        if depth >= 1:
+            entered = True
+        if entered and depth == 1:
+            m = re.match(r'\s*([\w,#-]+)\s*[=;]', line_text)
+            if m and m.group(1) in props:
+                return True
+        if entered and depth == 0:
+            break
     return False
 
 
@@ -437,9 +453,9 @@ def _hover_doc_key_for_property(text: str, line: int, prop: str) -> str:
         return f'ns16550:{prop}'
     if prop in SIMPLE_BUS_PROPERTIES and _current_node_property_value_contains(text, line, 'compatible', 'simple-bus'):
         return f'simple-bus:{prop}'
-    if prop in NETWORK_PROPERTIES and node_name == 'network-device':
+    if prop in NETWORK_PROPERTIES:
         return f'network:{prop}'
-    if prop in ETHERNET_PROPERTIES and node_name == 'ethernet-device':
+    if prop in ETHERNET_PROPERTIES:
         return f'ethernet:{prop}'
     if prop == 'clock-frequency' and node_name == 'serial':
         return 'serial:clock-frequency'
