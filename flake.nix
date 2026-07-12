@@ -102,6 +102,8 @@ MEOF
           '';
         };
 
+        tryoutInitLua = ./scripts/tryout-init.lua;
+
         tryout = pkgs.writeShellApplication {
           name = "tryout";
           runtimeInputs = [ pkgs.neovim pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
@@ -122,114 +124,67 @@ MEOF
               fi
             fi
 
-            nvim_config=$(mktemp -d)
-            printf 'vim.lsp.set_log_level("debug")\n' > "$nvim_config/init.lua"
-            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' >> "$nvim_config/init.lua"
-            printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
-            printf '    callback = function()\n' >> "$nvim_config/init.lua"
-            printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
-            printf '            name = "anakins-dtls",\n' >> "$nvim_config/init.lua"
-            printf '            cmd = { "anakins-dtls" },\n' >> "$nvim_config/init.lua"
-            printf '            root_dir = "%s",\n' "$workspace_root" >> "$nvim_config/init.lua"
-            printf '            filetypes = { "dts" },\n' >> "$nvim_config/init.lua"
-            printf '        })\n' >> "$nvim_config/init.lua"
-            printf '    end,\n' >> "$nvim_config/init.lua"
-            printf '})\n' >> "$nvim_config/init.lua"
-
-            exec ${pkgs.neovim}/bin/nvim -u "$nvim_config/init.lua" $dts_files
+            exec ${pkgs.neovim}/bin/nvim -u ${tryoutInitLua} $dts_files
           '';
         };
 
-        tryout-in-tree = pkgs.writeShellApplication {
-          name = "tryout-in-tree";
-          runtimeInputs = [ pkgs.neovim pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
+        tryout-kernel-binding = pkgs.writeShellApplication {
+          name = "tryout-kernel-binding";
+          runtimeInputs = [ pkgs.neovim pkgs.coreutils anakins-dtls ];
           checkPhase = "";
           text = ''
             set +e +u +o pipefail
+            context="''${1:-}"
+            if [[ "$context" != "in-tree" && "$context" != "out-of-tree" ]]; then
+              echo "usage: tryout-kernel-binding <in-tree|out-of-tree>" >&2
+              exit 1
+            fi
+
             workspace_root="$(pwd)"
             fixture_root="$workspace_root/tests/fixtures/kernel_binding"
-
             if [[ ! -f "$fixture_root/example.dts" ]]; then
-              echo "tryout-in-tree: no kernel_binding fixtures found under $fixture_root" >&2
+              echo "tryout-kernel-binding: no kernel_binding fixtures found under $fixture_root" >&2
               echo "Run this from the root of the anakins-dtls repo." >&2
               exit 1
             fi
 
             scratch="$(mktemp -d)"
-            checkout_root="$scratch/checkout"
-            bindings_dir="$checkout_root/Documentation/devicetree/bindings/testclass"
-            mkdir -p "$bindings_dir"
-            cp "$fixture_root/example.dts" "$checkout_root/example.dts"
-            cp "$fixture_root/bindings/vendor,widget-a.yaml" "$bindings_dir/vendor,widget-a.yaml"
+            binding_relpath="Documentation/devicetree/bindings/testclass/vendor,widget-a.yaml"
 
-            echo "tryout-in-tree: kernel checkout at $checkout_root" >&2
-
-            nvim_config=$(mktemp -d)
-            printf 'vim.lsp.set_log_level("debug")\n' > "$nvim_config/init.lua"
-            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' >> "$nvim_config/init.lua"
-            printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
-            printf '    callback = function()\n' >> "$nvim_config/init.lua"
-            printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
-            printf '            name = "anakins-dtls",\n' >> "$nvim_config/init.lua"
-            printf '            cmd = { "anakins-dtls" },\n' >> "$nvim_config/init.lua"
-            printf '            root_dir = "%s",\n' "$checkout_root" >> "$nvim_config/init.lua"
-            printf '            filetypes = { "dts" },\n' >> "$nvim_config/init.lua"
-            printf '        })\n' >> "$nvim_config/init.lua"
-            printf '    end,\n' >> "$nvim_config/init.lua"
-            printf '})\n' >> "$nvim_config/init.lua"
-
-            exec ${pkgs.neovim}/bin/nvim -u "$nvim_config/init.lua" "$checkout_root/example.dts"
-          '';
-        };
-
-        tryout-out-of-tree = pkgs.writeShellApplication {
-          name = "tryout-out-of-tree";
-          runtimeInputs = [ pkgs.neovim pkgs.coreutils pkgs.gnused pkgs.gnugrep anakins-dtls ];
-          checkPhase = "";
-          text = ''
-            set +e +u +o pipefail
-            workspace_root="$(pwd)"
-            fixture_root="$workspace_root/tests/fixtures/kernel_binding"
-
-            if [[ ! -f "$fixture_root/example.dts" ]]; then
-              echo "tryout-out-of-tree: no kernel_binding fixtures found under $fixture_root" >&2
-              echo "Run this from the root of the anakins-dtls repo." >&2
-              exit 1
+            if [[ "$context" == "in-tree" ]]; then
+              root="$scratch/checkout"
+              mkdir -p "$root/$(dirname "$binding_relpath")"
+              cp "$fixture_root/bindings/vendor,widget-a.yaml" "$root/$binding_relpath"
+            else
+              root="$scratch/project"
+              kernel_source="$scratch/kernel_source"
+              mkdir -p "$root" "$kernel_source/$(dirname "$binding_relpath")"
+              cp "$fixture_root/bindings/vendor,widget-a.yaml" "$kernel_source/$binding_relpath"
+              printf 'S=../kernel_source\n' > "$root/.anakins-dtls"
             fi
 
-            scratch="$(mktemp -d)"
-            project_root="$scratch/project"
-            kernel_source_root="$scratch/kernel_source"
-            bindings_dir="$kernel_source_root/Documentation/devicetree/bindings/testclass"
-            mkdir -p "$project_root" "$bindings_dir"
-            cp "$fixture_root/example.dts" "$project_root/example.dts"
-            cp "$fixture_root/bindings/vendor,widget-a.yaml" "$bindings_dir/vendor,widget-a.yaml"
-            printf 'S=../kernel_source\n' > "$project_root/.anakins-dtls"
+            mkdir -p "$root"
+            cp "$fixture_root/example.dts" "$root/example.dts"
 
-            echo "tryout-out-of-tree: project at $project_root" >&2
-            echo "tryout-out-of-tree: kernel sources at $kernel_source_root" >&2
+            echo "tryout-kernel-binding ($context): root at $root" >&2
 
-            nvim_config=$(mktemp -d)
-            printf 'vim.lsp.set_log_level("debug")\n' > "$nvim_config/init.lua"
-            printf 'vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {\n' >> "$nvim_config/init.lua"
-            printf '    pattern = { "*.dts", "*.dtsi" },\n' >> "$nvim_config/init.lua"
-            printf '    callback = function()\n' >> "$nvim_config/init.lua"
-            printf '        vim.lsp.start({\n' >> "$nvim_config/init.lua"
-            printf '            name = "anakins-dtls",\n' >> "$nvim_config/init.lua"
-            printf '            cmd = { "anakins-dtls" },\n' >> "$nvim_config/init.lua"
-            printf '            root_dir = "%s",\n' "$project_root" >> "$nvim_config/init.lua"
-            printf '            filetypes = { "dts" },\n' >> "$nvim_config/init.lua"
-            printf '        })\n' >> "$nvim_config/init.lua"
-            printf '    end,\n' >> "$nvim_config/init.lua"
-            printf '})\n' >> "$nvim_config/init.lua"
-
-            exec ${pkgs.neovim}/bin/nvim -u "$nvim_config/init.lua" "$project_root/example.dts"
+            cd "$root"
+            exec ${pkgs.neovim}/bin/nvim -u ${tryoutInitLua} example.dts
           '';
         };
+
+        tryout-in-tree = pkgs.writeShellScript "tryout-in-tree" ''
+          exec ${tryout-kernel-binding}/bin/tryout-kernel-binding in-tree
+        '';
+
+        tryout-out-of-tree = pkgs.writeShellScript "tryout-out-of-tree" ''
+          exec ${tryout-kernel-binding}/bin/tryout-kernel-binding out-of-tree
+        '';
       in
       {
         packages.default = anakins-dtls;
         packages.tryout = tryout;
+        packages.tryout-kernel-binding = tryout-kernel-binding;
         packages.tryout-in-tree = tryout-in-tree;
         packages.tryout-out-of-tree = tryout-out-of-tree;
         packages.tryout-vscode = tryout-vscode;
@@ -242,12 +197,12 @@ MEOF
 
         apps.tryout-in-tree = {
           type = "app";
-          program = "${tryout-in-tree}/bin/tryout-in-tree";
+          program = "${tryout-in-tree}";
         };
 
         apps.tryout-out-of-tree = {
           type = "app";
-          program = "${tryout-out-of-tree}/bin/tryout-out-of-tree";
+          program = "${tryout-out-of-tree}";
         };
 
         apps.tryout-vscode = {
