@@ -1,0 +1,15 @@
+Example Widget A
+================
+
+This binding describes the example widget A device used for testing kernel binding hover documentation.
+
+Required properties:
+- compatible: must be "vendor,widget-a"
+- reg: standard property, see the devicetree specification
+
+Example:
+
+widget@1000 {
+	compatible = "vendor,widget-a";
+	reg = <0x1000 0x100>;
+};

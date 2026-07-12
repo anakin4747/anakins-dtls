@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    widget@1000 {
+        compatible = "vendor,widget-a";
+        reg = <0x1000 0x100>;
+    };
+};

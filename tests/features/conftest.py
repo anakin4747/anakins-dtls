@@ -17,6 +17,7 @@ from generate_docs import (
 )
 
 TARGET = {
+    'compatible property value': (8, 23),
     'Root node declaration': (3, 1),
     'aliases node declaration': (25, 9),
     'memory node declaration': (28, 9),
@@ -635,4 +636,112 @@ def check_hover_value_table_row(response, value, table):
             f'  Value: {value}\n'
             f'  Expected: {expected[:500]}...\n'
             f'  Got: {text[:500]}...'
+        )
+
+
+def _read_fixture_text(relative_path):
+    path = os.path.join(os.getcwd(), 'tests', 'fixtures', relative_path)
+    with open(path) as f:
+        return f.read()
+
+
+KERNEL_BINDING_TITLE = 'Example Widget A'
+KERNEL_BINDING_DESCRIPTION = (
+    'This binding describes the example widget A device used for testing '
+    'kernel binding hover documentation.'
+)
+KERNEL_BINDING_RELATIVE_DIR = os.path.join(
+    'Documentation', 'devicetree', 'bindings', 'testclass'
+)
+KERNEL_BINDING_FORMAT_EXTENSIONS = {
+    'YAML': 'yaml',
+    'legacy text': 'txt',
+}
+
+
+@pytest.fixture
+def kernel_context():
+    return {}
+
+
+@given(parsers.parse('an {context} devicetree source file is open'), target_fixture='uri')
+def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, context):
+    example_dts = _read_fixture_text(os.path.join('kernel_binding', 'example.dts'))
+
+    if context == 'in-tree':
+        checkout_root = tmp_path / 'checkout'
+        (checkout_root / KERNEL_BINDING_RELATIVE_DIR).mkdir(parents=True)
+        dts_path = checkout_root / 'example.dts'
+        dts_path.write_text(example_dts)
+        kernel_context['kernel_source_root'] = checkout_root
+    elif context == 'out-of-tree':
+        project_root = tmp_path / 'project'
+        project_root.mkdir()
+        kernel_source_root = tmp_path / 'kernel_source'
+        (kernel_source_root / KERNEL_BINDING_RELATIVE_DIR).mkdir(parents=True)
+        (project_root / '.anakins-dtls').write_text('S=../kernel_source\n')
+        dts_path = project_root / 'example.dts'
+        dts_path.write_text(example_dts)
+        kernel_context['kernel_source_root'] = kernel_source_root
+    else:
+        pytest.fail(f'Unknown kernel context: {context}')
+
+    return lsp.open(str(dts_path))
+
+
+@given(parsers.parse(
+    "the {context} kernel source code has a {format} binding for the node's compatible string"
+))
+def kernel_binding_add_matching_binding(kernel_context, context, format):
+    extension = KERNEL_BINDING_FORMAT_EXTENSIONS.get(format)
+    if extension is None:
+        pytest.fail(f'Unknown binding format: {format}')
+
+    binding_text = _read_fixture_text(
+        os.path.join('kernel_binding', 'bindings', f'vendor,widget-a.{extension}')
+    )
+    kernel_source_root = kernel_context['kernel_source_root']
+    binding_relpath = os.path.join(
+        KERNEL_BINDING_RELATIVE_DIR, f'vendor,widget-a.{extension}'
+    )
+    binding_path = kernel_source_root / binding_relpath
+    binding_path.write_text(binding_text)
+    kernel_context['binding_relpath'] = binding_relpath.replace(os.sep, '/')
+
+
+@given(parsers.parse(
+    "the {context} kernel source code has no {format} binding for the node's compatible string"
+))
+def kernel_binding_omit_matching_binding(kernel_context, context, format):
+    # Intentionally do not create a binding file; the kernel bindings
+    # directory created when the devicetree source file was opened already
+    # establishes kernel context without a matching binding.
+    if format not in KERNEL_BINDING_FORMAT_EXTENSIONS:
+        pytest.fail(f'Unknown binding format: {format}')
+
+
+@then("the hover text includes the binding's title and description")
+def check_hover_includes_binding_title_and_description(response):
+    text = _hover_text(response)
+    if KERNEL_BINDING_TITLE not in text or KERNEL_BINDING_DESCRIPTION not in text:
+        pytest.fail(
+            'Hover response did not include the binding title and description\n'
+            f'  Expected title: {KERNEL_BINDING_TITLE}\n'
+            f'  Expected description: {KERNEL_BINDING_DESCRIPTION}\n'
+            f'  Got: {text[:500]}...'
+        )
+
+
+@then('the hover title includes the binding file path relative to the kernel source root')
+def check_hover_title_includes_binding_path(response, kernel_context):
+    text = _hover_text(response)
+    first_line = text.split('\n', 1)[0]
+    binding_relpath = kernel_context.get('binding_relpath')
+    if not binding_relpath:
+        pytest.fail('No binding file path was recorded for this scenario')
+    if binding_relpath not in first_line:
+        pytest.fail(
+            'Hover title did not include the binding file path\n'
+            f'  Expected path: {binding_relpath}\n'
+            f'  Title: {first_line}'
         )

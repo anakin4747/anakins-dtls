@@ -1,0 +1,30 @@
+$id: http://devicetree.org/schemas/testclass/vendor,widget-a.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Example Widget A
+
+maintainers:
+  - Test Maintainer <test@example.com>
+
+description: |
+  This binding describes the example widget A device used for testing kernel binding hover documentation.
+
+properties:
+  compatible:
+    const: vendor,widget-a
+
+  reg:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+
+additionalProperties: false
+
+examples:
+  - |
+    widget@1000 {
+        compatible = "vendor,widget-a";
+        reg = <0x1000 0x100>;
+    };
