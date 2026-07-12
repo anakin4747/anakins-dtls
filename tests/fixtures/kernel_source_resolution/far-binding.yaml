@@ -1,0 +1,8 @@
+title: Farther Widget
+
+description: |
+  Binding used to prove that a farther kernel source is not selected when a nearer one exists.
+
+properties:
+  compatible:
+    const: vendor,widget-a

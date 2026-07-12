@@ -745,3 +745,195 @@ def check_hover_title_includes_binding_path(response, kernel_context):
             f'  Expected path: {binding_relpath}\n'
             f'  Title: {first_line}'
         )
+
+
+@then(parsers.parse('the hover title does not include "{source}"'))
+def check_hover_title_excludes(response, source):
+    text = _hover_text(response)
+    first_line = text.split('\n', 1)[0]
+    if f' - {source}' in first_line:
+        pytest.fail(
+            'Hover title unexpectedly included source\n'
+            f'  Source: {source}\n'
+            f'  Title: {first_line}'
+        )
+
+
+NEAR_BINDING_TITLE = 'Nearby Widget'
+FAR_BINDING_TITLE = 'Farther Widget'
+
+
+def _write_kernel_binding_marker(root, binding_text=None):
+    bindings_dir = root / KERNEL_BINDING_RELATIVE_DIR
+    bindings_dir.mkdir(parents=True, exist_ok=True)
+    if binding_text is not None:
+        (bindings_dir / 'vendor,widget-a.yaml').write_text(binding_text)
+
+
+@given(
+    parsers.parse('a devicetree source file nested {depth:d} directories below an in-tree kernel checkout is open'),
+    target_fixture='uri',
+)
+def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
+    checkout_root = tmp_path / 'checkout'
+    _write_kernel_binding_marker(checkout_root)
+
+    nested_dir = checkout_root
+    for level in range(depth):
+        nested_dir = nested_dir / f'level{level}'
+    nested_dir.mkdir(parents=True, exist_ok=True)
+
+    dts_path = nested_dir / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    kernel_context['kernel_source_root'] = checkout_root
+    return lsp.open(str(dts_path))
+
+
+@given(
+    parsers.parse(
+        'a devicetree source file nested {depth:d} directories below a directory configured with an '
+        'out-of-tree kernel source is open'
+    ),
+    target_fixture='uri',
+)
+def kernel_source_nested_out_of_tree_open(lsp, tmp_path, kernel_context, depth):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+    kernel_source_root = tmp_path / 'kernel_source'
+    _write_kernel_binding_marker(kernel_source_root)
+    (project_root / '.anakins-dtls').write_text('S=../kernel_source\n')
+
+    nested_dir = project_root
+    for level in range(depth):
+        nested_dir = nested_dir / f'level{level}'
+    nested_dir.mkdir(parents=True, exist_ok=True)
+
+    dts_path = nested_dir / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    kernel_context['kernel_source_root'] = kernel_source_root
+    return lsp.open(str(dts_path))
+
+
+@given('a devicetree source file configured with an absolute out-of-tree kernel source path is open', target_fixture='uri')
+def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+    kernel_source_root = tmp_path / 'kernel_source'
+    _write_kernel_binding_marker(kernel_source_root)
+    (project_root / '.anakins-dtls').write_text(f'S={kernel_source_root}\n')
+
+    dts_path = project_root / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    kernel_context['kernel_source_root'] = kernel_source_root
+    return lsp.open(str(dts_path))
+
+
+@given("the resolved kernel source has a YAML binding for the node's compatible string")
+def kernel_source_resolved_has_yaml_binding(kernel_context):
+    kernel_source_root = kernel_context['kernel_source_root']
+    binding_relpath = os.path.join(KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml')
+    binding_path = kernel_source_root / binding_relpath
+    binding_path.parent.mkdir(parents=True, exist_ok=True)
+    binding_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'bindings', 'vendor,widget-a.yaml')))
+    kernel_context['binding_relpath'] = binding_relpath.replace(os.sep, '/')
+
+
+@given(
+    'a devicetree source file below both a nearby in-tree kernel checkout and a farther configured '
+    'out-of-tree kernel source is open',
+    target_fixture='uri',
+)
+def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_context):
+    far_kernel_source = tmp_path / 'far_kernel_source'
+    _write_kernel_binding_marker(far_kernel_source, _read_fixture_text(
+        os.path.join('kernel_source_resolution', 'far-binding.yaml')
+    ))
+
+    outer_root = tmp_path / 'outer'
+    outer_root.mkdir()
+    (outer_root / '.anakins-dtls').write_text('S=../far_kernel_source\n')
+
+    checkout_root = outer_root / 'checkout'
+    _write_kernel_binding_marker(checkout_root, _read_fixture_text(
+        os.path.join('kernel_source_resolution', 'near-binding.yaml')
+    ))
+
+    dts_path = checkout_root / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    kernel_context['binding_relpath'] = os.path.join(
+        KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml'
+    ).replace(os.sep, '/')
+    return lsp.open(str(dts_path))
+
+
+@given(
+    'a devicetree source file below both a nearby configured out-of-tree kernel source and a farther '
+    'in-tree kernel checkout is open',
+    target_fixture='uri',
+)
+def kernel_source_nearby_out_of_tree_farther_in_tree_open(lsp, tmp_path, kernel_context):
+    outer_checkout_root = tmp_path / 'outer_checkout'
+    _write_kernel_binding_marker(outer_checkout_root, _read_fixture_text(
+        os.path.join('kernel_source_resolution', 'far-binding.yaml')
+    ))
+
+    project_root = outer_checkout_root / 'project'
+    project_root.mkdir()
+    near_kernel_source = tmp_path / 'near_kernel_source'
+    _write_kernel_binding_marker(near_kernel_source, _read_fixture_text(
+        os.path.join('kernel_source_resolution', 'near-binding.yaml')
+    ))
+    (project_root / '.anakins-dtls').write_text(f'S={near_kernel_source}\n')
+
+    dts_path = project_root / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    kernel_context['binding_relpath'] = os.path.join(
+        KERNEL_BINDING_RELATIVE_DIR, 'vendor,widget-a.yaml'
+    ).replace(os.sep, '/')
+    return lsp.open(str(dts_path))
+
+
+@then(parsers.re(r'the resolved kernel source is the nearby (?:in-tree checkout|configured out-of-tree kernel source)$'))
+def check_resolved_kernel_source_is_nearby(response):
+    text = _hover_text(response)
+    if NEAR_BINDING_TITLE not in text:
+        pytest.fail(
+            'Expected the nearby binding title in the hover text\n'
+            f'  Expected: {NEAR_BINDING_TITLE}\n'
+            f'  Got: {text[:300]}...'
+        )
+    if FAR_BINDING_TITLE in text:
+        pytest.fail(
+            'Unexpected farther binding title found in the hover text\n'
+            f'  Unexpected: {FAR_BINDING_TITLE}\n'
+            f'  Got: {text[:300]}...'
+        )
+
+
+@given('a devicetree source file below a kernel source configuration file with no kernel source value is open', target_fixture='uri')
+def kernel_source_config_missing_value_open(lsp, tmp_path):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+    (project_root / '.anakins-dtls').write_text('# no kernel source value configured\n')
+
+    dts_path = project_root / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    return lsp.open(str(dts_path))
+
+
+@given('a devicetree source file below a kernel source configuration file with a blank kernel source value is open', target_fixture='uri')
+def kernel_source_config_blank_value_open(lsp, tmp_path):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+    (project_root / '.anakins-dtls').write_text('S=\n')
+
+    dts_path = project_root / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('kernel_binding', 'example.dts')))
+
+    return lsp.open(str(dts_path))
