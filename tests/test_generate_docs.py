@@ -598,18 +598,7 @@ def test_build_hover_docs_all_keys_present():
         "dts:memory-reservation", "dts:delete-node",
         "dts:delete-property", "dts:label-definition",
         "dts:label-reference", "dts:path-reference", "dts:cell-array",
-        "dts:bytestring", "dts:string-value", "dts:operator:add",
-        "dts:operator:subtract", "dts:operator:multiply",
-        "dts:operator:divide", "dts:operator:modulo",
-        "dts:operator:bitwise-and", "dts:operator:bitwise-or",
-        "dts:operator:exclusive-or", "dts:operator:bitwise-not",
-        "dts:operator:left-shift", "dts:operator:right-shift",
-        "dts:operator:logical-and", "dts:operator:logical-or",
-        "dts:operator:logical-not", "dts:operator:less-than",
-        "dts:operator:greater-than", "dts:operator:less-than-or-equal",
-        "dts:operator:greater-than-or-equal", "dts:operator:equal",
-        "dts:operator:not-equal", "dts:operator:ternary-condition",
-        "dts:operator:ternary-separator",
+        "dts:bytestring", "dts:string-value",
     }
     assert set(docs.keys()) == expected
 
@@ -893,18 +882,7 @@ def test_build_hover_docs_each_begins_with_heading():
             "dts:memory-reservation", "dts:delete-node",
             "dts:delete-property", "dts:label-definition",
             "dts:label-reference", "dts:path-reference", "dts:cell-array",
-            "dts:bytestring", "dts:string-value", "dts:operator:add",
-            "dts:operator:subtract", "dts:operator:multiply",
-            "dts:operator:divide", "dts:operator:modulo",
-            "dts:operator:bitwise-and", "dts:operator:bitwise-or",
-            "dts:operator:exclusive-or", "dts:operator:bitwise-not",
-            "dts:operator:left-shift", "dts:operator:right-shift",
-            "dts:operator:logical-and", "dts:operator:logical-or",
-            "dts:operator:logical-not", "dts:operator:less-than",
-            "dts:operator:greater-than", "dts:operator:less-than-or-equal",
-            "dts:operator:greater-than-or-equal", "dts:operator:equal",
-            "dts:operator:not-equal", "dts:operator:ternary-condition",
-            "dts:operator:ternary-separator",
+            "dts:bytestring", "dts:string-value",
         }:
             continue
         assert "**Property name:**" in value, f"{key} missing Property name"
@@ -1072,10 +1050,6 @@ def test_build_hover_docs_includes_focused_dts_source_language_docs():
     )
     assert docs["dts:cell-array"].startswith(
         "## Cell array - DTS source language\n\n"
-    )
-    assert docs["dts:operator:left-shift"] == (
-        "## << operator - DTS source language\n\n"
-        "Bitwise operator: left shift."
     )
 
 # }}}

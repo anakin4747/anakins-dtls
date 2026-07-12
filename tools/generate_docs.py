@@ -1088,31 +1088,6 @@ SCOPED_SECTION_DOCS: dict[str, tuple[str, str]] = {
     ),
 }
 
-DTS_OPERATOR_DOCS = (
-    ("add", "+", "Arithmetic operator: add."),
-    ("subtract", "-", "Arithmetic operator: subtract."),
-    ("multiply", "*", "Arithmetic operator: multiply."),
-    ("divide", "/", "Arithmetic operator: divide."),
-    ("modulo", "%", "Arithmetic operator: modulo."),
-    ("bitwise-and", "&", "Bitwise operator: and."),
-    ("bitwise-or", "|", "Bitwise operator: or."),
-    ("exclusive-or", "^", "Bitwise operator: exclusive or."),
-    ("bitwise-not", "~", "Bitwise operator: not."),
-    ("left-shift", "<<", "Bitwise operator: left shift."),
-    ("right-shift", ">>", "Bitwise operator: right shift."),
-    ("logical-and", "&&", "Logical operator: and."),
-    ("logical-or", "||", "Logical operator: or."),
-    ("logical-not", "!", "Logical operator: not."),
-    ("less-than", "<", "Relational operator: less than."),
-    ("greater-than", ">", "Relational operator: greater than."),
-    ("less-than-or-equal", "<=", "Relational operator: less than or equal."),
-    ("greater-than-or-equal", ">=", "Relational operator: greater than or equal."),
-    ("equal", "==", "Relational operator: equal."),
-    ("not-equal", "!=", "Relational operator: not equal."),
-    ("ternary-condition", "?", "Ternary operator: condition ? value_if_true : value_if_false."),
-    ("ternary-separator", ":", "Ternary operator: condition ? value_if_true : value_if_false."),
-)
-
 DTS_FOCUSED_DOCS = {
     "dts:version-directive": (
         "## /dts-v1/; - DTS source language\n\n"
@@ -1182,11 +1157,6 @@ DTS_FOCUSED_DOCS = {
         "```\ncompatible = \"simple-bus\";\n```"
     ),
 }
-
-for operator_key, operator, operator_doc in DTS_OPERATOR_DOCS:
-    DTS_FOCUSED_DOCS[f"dts:operator:{operator_key}"] = (
-        f"## {operator} operator - DTS source language\n\n{operator_doc}"
-    )
 
 
 def _status_value_key(value: str) -> str:
