@@ -30,6 +30,12 @@ def find_kernel_source_root(file_path: str) -> str | None:
         directory = parent
 
 
+def _unquote(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+        return value[1:-1]
+    return value
+
+
 def _resolve_configured_kernel_source(config_path: str) -> str | None:
     with open(config_path) as f:
         for line in f:
@@ -37,6 +43,7 @@ def _resolve_configured_kernel_source(config_path: str) -> str | None:
             if not line.startswith('S='):
                 continue
             value = line[len('S='):].strip()
+            value = _unquote(value)
             if not value:
                 return None
             if not os.path.isabs(value):
