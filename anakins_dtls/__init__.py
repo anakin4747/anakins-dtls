@@ -5,6 +5,7 @@ import sys
 
 from anakins_dtls._generated_hover_docs import HOVER_DOCS
 from anakins_dtls import kernel_bindings
+from anakins_dtls import label_definitions
 
 
 documents: dict[str, str] = {}
@@ -414,6 +415,17 @@ def _dts_label_or_reference_at(text: str, line: int, character: int) -> str | No
     return None
 
 
+def _label_reference_name_at(text: str, line: int, character: int) -> str | None:
+    lines = text.split('\n')
+    if line >= len(lines):
+        return None
+    line_text = lines[line]
+    for m in re.finditer(r'&([A-Za-z_]\w*)\b', line_text):
+        if m.start() <= character <= m.end():
+            return m.group(1)
+    return None
+
+
 def _dts_value_syntax_at(text: str, line: int, character: int) -> str | None:
     lines = text.split('\n')
     if line >= len(lines):
@@ -499,8 +511,26 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             'capabilities': {
                 'textDocumentSync': 1,
                 'hoverProvider': True,
+                'definitionProvider': True,
             },
         }
+    elif method == 'textDocument/definition':
+        uri = params['textDocument']['uri']
+        line = params['position']['line']
+        character = params['position']['character']
+        text = documents.get(uri, '')
+        if not text:
+            return None
+
+        label = _label_reference_name_at(text, line, character)
+        if label is None:
+            return None
+
+        file_path = document_paths.get(uri)
+        if file_path is None:
+            return None
+
+        return label_definitions.find_label_definition_location(file_path, text, label)
     elif method == 'textDocument/hover':
         uri = params['textDocument']['uri']
         line = params['position']['line']
