@@ -8,7 +8,6 @@ from tests.lsp_client import LSPClient
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 
 from generate_docs import (
-    _append_heading_source,
     _format_section,
     format_table_row_hover,
     format_value_table_row_hover,

@@ -1152,7 +1152,8 @@ DTS_FOCUSED_DOCS = {
 
 
 def _status_value_key(value: str) -> str:
-    return f"status:{value.strip('\"')}"
+    unquoted = value.strip('"')
+    return f"status:{unquoted}"
 
 
 def _append_heading_source(doc: str, source: str) -> str:
