@@ -219,6 +219,7 @@ MEOF
             cocogitto
             jq
             ripgrep
+            ruff
             python3
             python3Packages.pytest
             python3Packages.pytest-bdd
