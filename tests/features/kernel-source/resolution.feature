@@ -4,49 +4,49 @@ Feature: Kernel source resolution
     Given the language server is running
 
   Scenario: A devicetree source file nested several directories below an in-tree kernel checkout resolves to that checkout
-    Given a devicetree source file nested 3 directories below an in-tree kernel checkout is open
+    Given a devicetree source file nested 3 directories below a directory containing Documentation/devicetree/bindings/ is open
     And the resolved kernel source has a YAML binding for the node's compatible string
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
 
-  Scenario: A devicetree source file nested several directories below a configured out-of-tree kernel source resolves to that kernel source
-    Given a devicetree source file nested 3 directories below a directory configured with an out-of-tree kernel source is open
+  Scenario: A devicetree source file nested several directories below a .anakins-dtls file resolves to the configured kernel source
+    Given a devicetree source file nested 3 directories below a directory containing a .anakins-dtls file with S=../kernel_source is open
     And the resolved kernel source has a YAML binding for the node's compatible string
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
 
-  Scenario: An absolute kernel source path in the configuration file resolves correctly
-    Given a devicetree source file configured with an absolute out-of-tree kernel source path is open
+  Scenario: An absolute path in a .anakins-dtls file's S= value resolves correctly
+    Given a devicetree source file below a .anakins-dtls file with an absolute S= value is open
     And the resolved kernel source has a YAML binding for the node's compatible string
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
 
-  Scenario: A double-quoted kernel source path in the configuration file resolves correctly
-    Given a devicetree source file configured with a double-quoted out-of-tree kernel source path is open
+  Scenario: A double-quoted path in a .anakins-dtls file's S= value resolves correctly
+    Given a devicetree source file below a .anakins-dtls file with a double-quoted S= value is open
     And the resolved kernel source has a YAML binding for the node's compatible string
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
 
-  Scenario: A closer in-tree kernel checkout takes precedence over a farther out-of-tree kernel source configuration
-    Given a devicetree source file below both a nearby in-tree kernel checkout and a farther configured out-of-tree kernel source is open
+  Scenario: A closer in-tree kernel checkout takes precedence over a farther .anakins-dtls file
+    Given a devicetree source file below both a nearby directory containing Documentation/devicetree/bindings/ and a farther .anakins-dtls file is open
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
     And the resolved kernel source is the nearby in-tree checkout
 
-  Scenario: A closer out-of-tree kernel source configuration takes precedence over a farther in-tree kernel checkout
-    Given a devicetree source file below both a nearby configured out-of-tree kernel source and a farther in-tree kernel checkout is open
+  Scenario: A closer .anakins-dtls file takes precedence over a farther in-tree kernel checkout
+    Given a devicetree source file below both a nearby .anakins-dtls file and a farther directory containing Documentation/devicetree/bindings/ is open
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
     And the resolved kernel source is the nearby configured out-of-tree kernel source
 
-  Scenario: A configuration file missing the kernel source value is ignored
-    Given a devicetree source file below a kernel source configuration file with no kernel source value is open
+  Scenario: A .anakins-dtls file with no S= line is ignored
+    Given a devicetree source file below a .anakins-dtls file with no S= line is open
     When hovering over the compatible property value
     Then the hover title includes "Standard Properties"
     And the hover title does not include "Documentation/devicetree/bindings"
 
-  Scenario: A configuration file with a blank kernel source value is ignored
-    Given a devicetree source file below a kernel source configuration file with a blank kernel source value is open
+  Scenario: A .anakins-dtls file with a blank S= value is ignored
+    Given a devicetree source file below a .anakins-dtls file with a blank S= value is open
     When hovering over the compatible property value
     Then the hover title includes "Standard Properties"
     And the hover title does not include "Documentation/devicetree/bindings"

@@ -664,17 +664,17 @@ def kernel_context():
     return {}
 
 
-@given(parsers.parse('an {context} devicetree source file is open'), target_fixture='uri')
-def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, context):
+@given(parsers.parse('a devicetree source file is open {location}'), target_fixture='uri')
+def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, location):
     example_dts = _read_fixture_text(os.path.join('kernel_binding', 'example.dts'))
 
-    if context == 'in-tree':
+    if 'Documentation/devicetree/bindings' in location:
         checkout_root = tmp_path / 'checkout'
         (checkout_root / KERNEL_BINDING_RELATIVE_DIR).mkdir(parents=True)
         dts_path = checkout_root / 'example.dts'
         dts_path.write_text(example_dts)
         kernel_context['kernel_source_root'] = checkout_root
-    elif context == 'out-of-tree':
+    elif '.anakins-dtls' in location:
         project_root = tmp_path / 'project'
         project_root.mkdir()
         kernel_source_root = tmp_path / 'kernel_source'
@@ -684,13 +684,13 @@ def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, context):
         dts_path.write_text(example_dts)
         kernel_context['kernel_source_root'] = kernel_source_root
     else:
-        pytest.fail(f'Unknown kernel context: {context}')
+        pytest.fail(f'Unknown devicetree source file location: {location}')
 
     return lsp.open(str(dts_path))
 
 
 @given(parsers.parse(
-    "the {context} kernel source code has a {binding_format} binding for the node's compatible string"
+    "the kernel source has a {binding_format} binding for the node's compatible string"
 ))
 def kernel_binding_add_matching_binding(kernel_context, binding_format):
     extension = KERNEL_BINDING_FORMAT_EXTENSIONS.get(binding_format)
@@ -710,7 +710,7 @@ def kernel_binding_add_matching_binding(kernel_context, binding_format):
 
 
 @given(parsers.parse(
-    "the {context} kernel source code has no {binding_format} binding for the node's compatible string"
+    "the kernel source has no {binding_format} binding for the node's compatible string"
 ))
 def kernel_binding_omit_matching_binding(binding_format):
     # Intentionally do not create a binding file; the kernel bindings
@@ -781,7 +781,10 @@ def _write_example_dts(directory):
 
 
 @given(
-    parsers.parse('a devicetree source file nested {depth:d} directories below an in-tree kernel checkout is open'),
+    parsers.parse(
+        'a devicetree source file nested {depth:d} directories below a directory containing '
+        'Documentation/devicetree/bindings/ is open'
+    ),
     target_fixture='uri',
 )
 def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
@@ -799,8 +802,8 @@ def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
 
 @given(
     parsers.parse(
-        'a devicetree source file nested {depth:d} directories below a directory configured with an '
-        'out-of-tree kernel source is open'
+        'a devicetree source file nested {depth:d} directories below a directory containing a '
+        '.anakins-dtls file with S=../kernel_source is open'
     ),
     target_fixture='uri',
 )
@@ -820,7 +823,7 @@ def kernel_source_nested_out_of_tree_open(lsp, tmp_path, kernel_context, depth):
     return lsp.open(str(dts_path))
 
 
-@given('a devicetree source file configured with an absolute out-of-tree kernel source path is open', target_fixture='uri')
+@given('a devicetree source file below a .anakins-dtls file with an absolute S= value is open', target_fixture='uri')
 def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
     project_root = tmp_path / 'project'
     project_root.mkdir()
@@ -835,7 +838,7 @@ def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
 
 
 @given(
-    'a devicetree source file configured with a double-quoted out-of-tree kernel source path is open',
+    'a devicetree source file below a .anakins-dtls file with a double-quoted S= value is open',
     target_fixture='uri',
 )
 def kernel_source_double_quoted_config_open(lsp, tmp_path, kernel_context):
@@ -861,8 +864,8 @@ def kernel_source_resolved_has_yaml_binding(kernel_context):
 
 
 @given(
-    'a devicetree source file below both a nearby in-tree kernel checkout and a farther configured '
-    'out-of-tree kernel source is open',
+    'a devicetree source file below both a nearby directory containing Documentation/devicetree/bindings/ '
+    'and a farther .anakins-dtls file is open',
     target_fixture='uri',
 )
 def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_context):
@@ -887,8 +890,8 @@ def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_
 
 
 @given(
-    'a devicetree source file below both a nearby configured out-of-tree kernel source and a farther '
-    'in-tree kernel checkout is open',
+    'a devicetree source file below both a nearby .anakins-dtls file and a farther directory containing '
+    'Documentation/devicetree/bindings/ is open',
     target_fixture='uri',
 )
 def kernel_source_nearby_out_of_tree_farther_in_tree_open(lsp, tmp_path, kernel_context):
@@ -928,18 +931,18 @@ def check_resolved_kernel_source_is_nearby(response):
         )
 
 
-@given('a devicetree source file below a kernel source configuration file with no kernel source value is open', target_fixture='uri')
+@given('a devicetree source file below a .anakins-dtls file with no S= line is open', target_fixture='uri')
 def kernel_source_config_missing_value_open(lsp, tmp_path):
     project_root = tmp_path / 'project'
     project_root.mkdir()
-    (project_root / '.anakins-dtls').write_text('# no kernel source value configured\n')
+    (project_root / '.anakins-dtls').write_text('# no S= line here\n')
 
     dts_path = _write_example_dts(project_root)
 
     return lsp.open(str(dts_path))
 
 
-@given('a devicetree source file below a kernel source configuration file with a blank kernel source value is open', target_fixture='uri')
+@given('a devicetree source file below a .anakins-dtls file with a blank S= value is open', target_fixture='uri')
 def kernel_source_config_blank_value_open(lsp, tmp_path):
     project_root = tmp_path / 'project'
     project_root.mkdir()
