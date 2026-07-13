@@ -188,10 +188,9 @@ git commit -m "test(bdd): require <feature behavior>"
 
 Allowed files:
 ```text
-tests/features/**/*.feature
-tests/features/test_features.py
-tests/features/conftest.py
-tests/features/step_definitions/**/*.py
+features/**/*.feature
+tests/test_features.py
+tests/conftest.py
 tests/fixtures/**
 ```
 
@@ -315,13 +314,12 @@ Allowed files:
 ```text
 anakins_dtls/**
 tools/**
-tests/features/conftest.py
-tests/features/step_definitions/**/*.py
+tests/conftest.py
 ```
 
 Forbidden files:
 ```text
-tests/**/*.feature
+features/**/*.feature
 tests/test_*.py
 tests/fixtures/**
 ```
