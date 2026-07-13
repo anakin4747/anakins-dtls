@@ -950,3 +950,99 @@ def kernel_source_config_blank_value_open(lsp, tmp_path):
     dts_path = _write_example_dts(project_root)
 
     return lsp.open(str(dts_path))
+
+
+DEFINITION_REFERENCE_TARGET = {
+    'same-file': (9, 16),
+    'single-include': (7, 16),
+    'two-includes': (8, 16),
+    'no-match': (7, 16),
+}
+
+DEFINITION_EXPECTED_LOCATION = {
+    'single-include': ('included-a.dtsi', 2, 5),
+    'two-includes': ('included-b.dtsi', 2, 5),
+}
+
+
+def _open_definition_fixture(lsp, filename, case):
+    fixture = os.path.join(os.getcwd(), 'tests', 'fixtures', 'definition', filename)
+    uri = lsp.open(fixture)
+    return {'uri': uri, 'case': case}
+
+
+@given(
+    'a devicetree source file that defines a label and references that label in the same file is open',
+    target_fixture='definition_context',
+)
+def definition_same_file_open(lsp):
+    return _open_definition_fixture(lsp, 'same-file.dts', 'same-file')
+
+
+@given(
+    'a devicetree source file that includes a dtsi file defining a label is open',
+    target_fixture='definition_context',
+)
+def definition_single_include_open(lsp):
+    return _open_definition_fixture(lsp, 'single-include.dts', 'single-include')
+
+
+@given(
+    'a devicetree source file includes two dtsi files, and a label reference in the devicetree source file '
+    'matches a label defined in the second included dtsi file',
+    target_fixture='definition_context',
+)
+def definition_two_includes_open(lsp):
+    return _open_definition_fixture(lsp, 'two-includes.dts', 'two-includes')
+
+
+@given(
+    'a devicetree source file has a label reference with no matching label definition in any included dtsi file',
+    target_fixture='definition_context',
+)
+def definition_no_match_open(lsp):
+    return _open_definition_fixture(lsp, 'no-match.dts', 'no-match')
+
+
+@when('going to the definition of that label reference', target_fixture='response')
+def go_to_definition(lsp, definition_context):
+    case = definition_context['case']
+    line, col = DEFINITION_REFERENCE_TARGET[case]
+    return lsp.definition(definition_context['uri'], line - 1, col - 1)
+
+
+@then(parsers.re(r'the definition response points to the location of the label definition in .+$'))
+def check_definition_location(response, definition_context):
+    case = definition_context['case']
+    if case == 'same-file':
+        filename, line, col = 'same-file.dts', 4, 5
+    else:
+        filename, line, col = DEFINITION_EXPECTED_LOCATION[case]
+
+    result = response.get('result')
+    if result is None:
+        pytest.fail('Definition returned null result (no location found)')
+
+    expected_path = os.path.join(os.getcwd(), 'tests', 'fixtures', 'definition', filename)
+    expected_uri = 'file://' + os.path.abspath(expected_path)
+    if result['uri'] != expected_uri:
+        pytest.fail(
+            f'Definition response pointed to the wrong file\n'
+            f'  Expected: {expected_uri}\n'
+            f'  Got: {result["uri"]}'
+        )
+
+    start = result['range']['start']
+    if (start['line'], start['character']) != (line - 1, col - 1):
+        pytest.fail(
+            f'Definition response pointed to the wrong location\n'
+            f'  Expected: line {line}, character {col}\n'
+            f'  Got: line {start["line"] + 1}, character {start["character"] + 1}'
+        )
+
+
+@then('the definition response contains no location')
+def check_no_definition(response):
+    result = response.get('result')
+    if result is not None:
+        pytest.fail(f'Expected no definition location\n  Got: {result}')

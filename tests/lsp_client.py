@@ -173,3 +173,10 @@ class LSPClient:
             'position': {'line': line, 'character': character},
         })
         return resp
+
+    def definition(self, uri, line, character):
+        resp = self.request('textDocument/definition', {
+            'textDocument': {'uri': uri},
+            'position': {'line': line, 'character': character},
+        })
+        return resp

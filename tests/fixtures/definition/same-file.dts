@@ -1,0 +1,11 @@
+/dts-v1/;
+
+/ {
+    label_here: node-with-label {
+        compatible = "vendor,widget-a";
+    };
+
+    node-with-reference {
+        ref = <&label_here>;
+    };
+};

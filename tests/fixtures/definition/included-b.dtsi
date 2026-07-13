@@ -1,0 +1,5 @@
+/ {
+    label_in_b: node-b {
+        compatible = "vendor,widget-b";
+    };
+};

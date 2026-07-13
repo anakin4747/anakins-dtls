@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/include/ "included-a.dtsi"
+
+/ {
+    node-with-reference {
+        ref = <&nonexistent_label>;
+    };
+};
