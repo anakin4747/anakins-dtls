@@ -21,6 +21,12 @@ Feature: Kernel source resolution
     When hovering over the compatible property value
     Then the hover title includes the binding file path relative to the kernel source root
 
+  Scenario: A double-quoted kernel source path in the configuration file resolves correctly
+    Given a devicetree source file configured with a double-quoted out-of-tree kernel source path is open
+    And the resolved kernel source has a YAML binding for the node's compatible string
+    When hovering over the compatible property value
+    Then the hover title includes the binding file path relative to the kernel source root
+
   Scenario: A closer in-tree kernel checkout takes precedence over a farther out-of-tree kernel source configuration
     Given a devicetree source file below both a nearby in-tree kernel checkout and a farther configured out-of-tree kernel source is open
     When hovering over the compatible property value

@@ -834,6 +834,23 @@ def kernel_source_absolute_config_open(lsp, tmp_path, kernel_context):
     return lsp.open(str(dts_path))
 
 
+@given(
+    'a devicetree source file configured with a double-quoted out-of-tree kernel source path is open',
+    target_fixture='uri',
+)
+def kernel_source_double_quoted_config_open(lsp, tmp_path, kernel_context):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+    kernel_source_root = tmp_path / 'kernel_source'
+    _write_kernel_binding_marker(kernel_source_root)
+    (project_root / '.anakins-dtls').write_text(f'S="{kernel_source_root}"\n')
+
+    dts_path = _write_example_dts(project_root)
+
+    kernel_context['kernel_source_root'] = kernel_source_root
+    return lsp.open(str(dts_path))
+
+
 @given("the resolved kernel source has a YAML binding for the node's compatible string")
 def kernel_source_resolved_has_yaml_binding(kernel_context):
     kernel_source_root = kernel_context['kernel_source_root']
