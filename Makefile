@@ -1,7 +1,7 @@
 
 SHELL_PREFIX :=
 ifndef IN_NIX_SHELL
-SHELL_PREFIX := nix develop --command
+SHELL_PREFIX := nix develop --experimental-features 'nix-command flakes' --command
 endif
 
 .PHONY: test
