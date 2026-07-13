@@ -960,6 +960,7 @@ DEFINITION_REFERENCE_TARGET = {
 }
 
 DEFINITION_EXPECTED_LOCATION = {
+    'same-file': ('same-file.dts', 4, 5),
     'single-include': ('included-a.dtsi', 2, 5),
     'two-includes': ('included-b.dtsi', 2, 5),
 }
@@ -1014,10 +1015,7 @@ def go_to_definition(lsp, definition_context):
 @then(parsers.re(r'the definition response points to the location of the label definition in .+$'))
 def check_definition_location(response, definition_context):
     case = definition_context['case']
-    if case == 'same-file':
-        filename, line, col = 'same-file.dts', 4, 5
-    else:
-        filename, line, col = DEFINITION_EXPECTED_LOCATION[case]
+    filename, line, col = DEFINITION_EXPECTED_LOCATION[case]
 
     result = response.get('result')
     if result is None:
