@@ -669,11 +669,11 @@ def kernel_binding_devicetree_open(lsp, tmp_path, kernel_context, location):
     example_dts = _read_fixture_text(os.path.join('kernel_binding', 'example.dts'))
 
     if 'Documentation/devicetree/bindings' in location:
-        checkout_root = tmp_path / 'checkout'
-        (checkout_root / KERNEL_BINDING_RELATIVE_DIR).mkdir(parents=True)
-        dts_path = checkout_root / 'example.dts'
+        source_tree_root = tmp_path / 'source-tree'
+        (source_tree_root / KERNEL_BINDING_RELATIVE_DIR).mkdir(parents=True)
+        dts_path = source_tree_root / 'example.dts'
         dts_path.write_text(example_dts)
-        kernel_context['kernel_source_root'] = checkout_root
+        kernel_context['kernel_source_root'] = source_tree_root
     elif '.anakins-dtls' in location:
         project_root = tmp_path / 'project'
         project_root.mkdir()
@@ -788,15 +788,15 @@ def _write_example_dts(directory):
     target_fixture='uri',
 )
 def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
-    checkout_root = tmp_path / 'checkout'
-    _write_kernel_binding_marker(checkout_root)
+    source_tree_root = tmp_path / 'source-tree'
+    _write_kernel_binding_marker(source_tree_root)
 
-    nested_dir = checkout_root
+    nested_dir = source_tree_root
     for level in range(depth):
         nested_dir = nested_dir / f'level{level}'
     dts_path = _write_example_dts(nested_dir)
 
-    kernel_context['kernel_source_root'] = checkout_root
+    kernel_context['kernel_source_root'] = source_tree_root
     return lsp.open(str(dts_path))
 
 
@@ -878,12 +878,12 @@ def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_
     outer_root.mkdir()
     (outer_root / '.anakins-dtls').write_text('S=../far_kernel_source\n')
 
-    checkout_root = outer_root / 'checkout'
-    _write_kernel_binding_marker(checkout_root, _read_fixture_text(
+    source_tree_root = outer_root / 'source-tree'
+    _write_kernel_binding_marker(source_tree_root, _read_fixture_text(
         os.path.join('kernel_source_resolution', 'near-binding.yaml')
     ))
 
-    dts_path = _write_example_dts(checkout_root)
+    dts_path = _write_example_dts(source_tree_root)
 
     kernel_context['binding_relpath'] = DEFAULT_BINDING_RELPATH
     return lsp.open(str(dts_path))
@@ -895,12 +895,12 @@ def kernel_source_nearby_in_tree_farther_out_of_tree_open(lsp, tmp_path, kernel_
     target_fixture='uri',
 )
 def kernel_source_nearby_out_of_tree_farther_in_tree_open(lsp, tmp_path, kernel_context):
-    outer_checkout_root = tmp_path / 'outer_checkout'
-    _write_kernel_binding_marker(outer_checkout_root, _read_fixture_text(
+    outer_source_tree_root = tmp_path / 'outer-source-tree'
+    _write_kernel_binding_marker(outer_source_tree_root, _read_fixture_text(
         os.path.join('kernel_source_resolution', 'far-binding.yaml')
     ))
 
-    project_root = outer_checkout_root / 'project'
+    project_root = outer_source_tree_root / 'project'
     project_root.mkdir()
     near_kernel_source = tmp_path / 'near_kernel_source'
     _write_kernel_binding_marker(near_kernel_source, _read_fixture_text(
@@ -914,7 +914,7 @@ def kernel_source_nearby_out_of_tree_farther_in_tree_open(lsp, tmp_path, kernel_
     return lsp.open(str(dts_path))
 
 
-@then(parsers.re(r'the resolved kernel source is the nearby (?:in-tree checkout|configured out-of-tree kernel source)$'))
+@then(parsers.re(r'the resolved kernel source is the nearby (?:in-tree kernel source tree|configured out-of-tree kernel source)$'))
 def check_resolved_kernel_source_is_nearby(response):
     text = _hover_text(response)
     if NEAR_BINDING_TITLE not in text:

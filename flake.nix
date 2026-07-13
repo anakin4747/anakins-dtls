@@ -152,7 +152,7 @@ MEOF
             binding_relpath="Documentation/devicetree/bindings/testclass/vendor,widget-a.yaml"
 
             if [[ "$context" == "in-tree" ]]; then
-              root="$scratch/checkout"
+              root="$scratch/kernel-tree"
               mkdir -p "$root/$(dirname "$binding_relpath")"
               cp "$fixture_root/bindings/vendor,widget-a.yaml" "$root/$binding_relpath"
             else

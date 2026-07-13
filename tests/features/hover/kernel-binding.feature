@@ -11,11 +11,11 @@ Feature: Kernel binding hover documentation
     And the hover title includes the binding file path relative to the kernel source root
 
     Examples:
-      | location                                                                                      | format      |
-      | inside a Linux kernel checkout (a directory containing Documentation/devicetree/bindings/)     | YAML        |
-      | outside any kernel checkout, below a .anakins-dtls file containing S=../kernel_source           | YAML        |
-      | inside a Linux kernel checkout (a directory containing Documentation/devicetree/bindings/)     | legacy text |
-      | outside any kernel checkout, below a .anakins-dtls file containing S=../kernel_source           | legacy text |
+      | location                                                                                | format      |
+      | inside a Linux kernel source tree (a directory containing Documentation/devicetree/bindings/) | YAML        |
+      | outside any kernel source tree, below a .anakins-dtls file containing S=../kernel_source       | YAML        |
+      | inside a Linux kernel source tree (a directory containing Documentation/devicetree/bindings/) | legacy text |
+      | outside any kernel source tree, below a .anakins-dtls file containing S=../kernel_source       | legacy text |
 
   Scenario Outline: Hovering over a compatible string with no matching binding falls back to the standard properties documentation
     Given a devicetree source file is open <location>
@@ -24,8 +24,8 @@ Feature: Kernel binding hover documentation
     Then the hover title includes "Standard Properties"
 
     Examples:
-      | location                                                                                      | format      |
-      | inside a Linux kernel checkout (a directory containing Documentation/devicetree/bindings/)     | YAML        |
-      | outside any kernel checkout, below a .anakins-dtls file containing S=../kernel_source           | YAML        |
-      | inside a Linux kernel checkout (a directory containing Documentation/devicetree/bindings/)     | legacy text |
-      | outside any kernel checkout, below a .anakins-dtls file containing S=../kernel_source           | legacy text |
+      | location                                                                                | format      |
+      | inside a Linux kernel source tree (a directory containing Documentation/devicetree/bindings/) | YAML        |
+      | outside any kernel source tree, below a .anakins-dtls file containing S=../kernel_source       | YAML        |
+      | inside a Linux kernel source tree (a directory containing Documentation/devicetree/bindings/) | legacy text |
+      | outside any kernel source tree, below a .anakins-dtls file containing S=../kernel_source       | legacy text |

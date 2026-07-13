@@ -10,7 +10,7 @@ def find_kernel_source_root(file_path: str) -> str | None:
 
     Crawls upward from the file's directory. A directory containing
     ``Documentation/devicetree/bindings`` is treated as an in-tree kernel
-    checkout. Failing that, a ``.anakins-dtls`` config file naming an
+    source tree. Failing that, a ``.anakins-dtls`` config file naming an
     out-of-tree kernel source directory (via ``S=<path>``) is honored.
     """
     directory = os.path.dirname(os.path.abspath(file_path))
