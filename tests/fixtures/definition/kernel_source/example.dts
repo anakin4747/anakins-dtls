@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/include/ "shared/labels.dtsi"
+
+/ {
+    node-with-reference {
+        ref = <&label_in_kernel>;
+    };
+};

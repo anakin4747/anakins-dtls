@@ -1,0 +1,11 @@
+// References a label that does not exist anywhere in the kernel source,
+// so no definition location should be found.
+/dts-v1/;
+
+/include/ "shared/labels.dtsi"
+
+/ {
+    node-with-reference {
+        ref = <&nonexistent_label>;
+    };
+};

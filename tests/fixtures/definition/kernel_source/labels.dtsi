@@ -1,0 +1,5 @@
+/ {
+    label_in_kernel: node-in-kernel {
+        compatible = "vendor,widget-a";
+    };
+};

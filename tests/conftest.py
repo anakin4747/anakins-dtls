@@ -779,6 +779,13 @@ def _write_example_dts(directory):
     return dts_path
 
 
+def _nested_directory(root, depth):
+    nested_dir = root
+    for level in range(depth):
+        nested_dir = nested_dir / f'level{level}'
+    return nested_dir
+
+
 @given(
     parsers.parse(
         'a devicetree source file nested {depth:d} directories below a directory containing '
@@ -790,9 +797,7 @@ def kernel_source_nested_in_tree_open(lsp, tmp_path, kernel_context, depth):
     source_tree_root = tmp_path / 'source-tree'
     _write_kernel_binding_marker(source_tree_root)
 
-    nested_dir = source_tree_root
-    for level in range(depth):
-        nested_dir = nested_dir / f'level{level}'
+    nested_dir = _nested_directory(source_tree_root, depth)
     dts_path = _write_example_dts(nested_dir)
 
     kernel_context['kernel_source_root'] = source_tree_root
@@ -813,9 +818,7 @@ def kernel_source_nested_out_of_tree_open(lsp, tmp_path, kernel_context, depth):
     _write_kernel_binding_marker(kernel_source_root)
     (project_root / '.anakins-dtls').write_text('S=../kernel_source\n')
 
-    nested_dir = project_root
-    for level in range(depth):
-        nested_dir = nested_dir / f'level{level}'
+    nested_dir = _nested_directory(project_root, depth)
     dts_path = _write_example_dts(nested_dir)
 
     kernel_context['kernel_source_root'] = kernel_source_root
@@ -1008,21 +1011,31 @@ def definition_no_match_open(lsp):
 @when('going to the definition of that label reference', target_fixture='response')
 def go_to_definition(lsp, definition_context):
     case = definition_context['case']
-    line, col = DEFINITION_REFERENCE_TARGET[case]
+    if case in DEFINITION_KERNEL_SOURCE_REFERENCE_TARGET:
+        line, col = DEFINITION_KERNEL_SOURCE_REFERENCE_TARGET[case]
+    else:
+        line, col = DEFINITION_REFERENCE_TARGET[case]
     return lsp.definition(definition_context['uri'], line - 1, col - 1)
 
 
 @then(parsers.re(r'the definition response points to the location of the label definition in .+$'))
 def check_definition_location(response, definition_context):
     case = definition_context['case']
-    filename, line, col = DEFINITION_EXPECTED_LOCATION[case]
 
     result = response.get('result')
     if result is None:
         pytest.fail('Definition returned null result (no location found)')
 
-    expected_path = os.path.join(os.getcwd(), 'tests', 'fixtures', 'definition', filename)
-    expected_uri = 'file://' + os.path.abspath(expected_path)
+    if case in DEFINITION_KERNEL_SOURCE_REFERENCE_TARGET:
+        expected_path = definition_context.get('expected_path')
+        if expected_path is None:
+            pytest.fail('No expected label definition path was recorded for this scenario')
+        line, col = DEFINITION_KERNEL_SOURCE_LABEL_LOCATION
+    else:
+        filename, line, col = DEFINITION_EXPECTED_LOCATION[case]
+        expected_path = os.path.join(os.getcwd(), 'tests', 'fixtures', 'definition', filename)
+
+    expected_uri = 'file://' + os.path.abspath(str(expected_path))
     if result['uri'] != expected_uri:
         pytest.fail(
             f'Definition response pointed to the wrong file\n'
@@ -1044,3 +1057,73 @@ def check_no_definition(response):
     result = response.get('result')
     if result is not None:
         pytest.fail(f'Expected no definition location\n  Got: {result}')
+
+
+DEFINITION_KERNEL_SOURCE_NESTING_DEPTH = 3
+DEFINITION_KERNEL_SOURCE_LABEL_LOCATION = (2, 5)
+
+
+def _write_definition_kernel_source_fixture(kernel_source_root, nested_dts_dir, dts_fixture_name):
+    labels_dtsi_text = _read_fixture_text(os.path.join('definition', 'kernel_source', 'labels.dtsi'))
+    shared_dir = kernel_source_root / 'shared'
+    shared_dir.mkdir(parents=True, exist_ok=True)
+    labels_path = shared_dir / 'labels.dtsi'
+    labels_path.write_text(labels_dtsi_text)
+
+    nested_dts_dir.mkdir(parents=True, exist_ok=True)
+    dts_path = nested_dts_dir / 'example.dts'
+    dts_path.write_text(_read_fixture_text(os.path.join('definition', 'kernel_source', dts_fixture_name)))
+
+    return dts_path, labels_path
+
+
+@given(
+    parsers.parse(
+        'a devicetree source file below a "{location}" kernel source references a label defined in a dtsi '
+        'file included from the kernel source'
+    ),
+    target_fixture='definition_context',
+)
+def definition_kernel_source_open(lsp, tmp_path, location):
+    if location == 'in-tree':
+        kernel_source_root = tmp_path / 'source-tree'
+        _write_kernel_binding_marker(kernel_source_root)
+        nested_dts_dir = _nested_directory(kernel_source_root, DEFINITION_KERNEL_SOURCE_NESTING_DEPTH)
+    elif location == 'out-of-tree':
+        project_root = tmp_path / 'project'
+        project_root.mkdir()
+        kernel_source_root = tmp_path / 'kernel_source'
+        kernel_source_root.mkdir()
+        (project_root / '.anakins-dtls').write_text('S=../kernel_source\n')
+        nested_dts_dir = _nested_directory(project_root, DEFINITION_KERNEL_SOURCE_NESTING_DEPTH)
+    else:
+        pytest.fail(f'Unknown kernel source location: {location}')
+
+    dts_path, labels_path = _write_definition_kernel_source_fixture(
+        kernel_source_root, nested_dts_dir, 'example.dts'
+    )
+    uri = lsp.open(str(dts_path))
+    return {'uri': uri, 'case': 'kernel-source', 'expected_path': str(labels_path)}
+
+
+@given(
+    'a devicetree source file references a label with no matching definition anywhere in the resolved '
+    'kernel source',
+    target_fixture='definition_context',
+)
+def definition_kernel_source_no_match_open(lsp, tmp_path):
+    kernel_source_root = tmp_path / 'source-tree'
+    _write_kernel_binding_marker(kernel_source_root)
+    nested_dts_dir = _nested_directory(kernel_source_root, DEFINITION_KERNEL_SOURCE_NESTING_DEPTH)
+
+    dts_path, _labels_path = _write_definition_kernel_source_fixture(
+        kernel_source_root, nested_dts_dir, 'no-match.dts'
+    )
+    uri = lsp.open(str(dts_path))
+    return {'uri': uri, 'case': 'kernel-source-no-match'}
+
+
+DEFINITION_KERNEL_SOURCE_REFERENCE_TARGET = {
+    'kernel-source': (7, 16),
+    'kernel-source-no-match': (9, 16),
+}
