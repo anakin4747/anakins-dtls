@@ -4,6 +4,7 @@ import sys
 
 
 from anakins_dtls._generated_hover_docs import HOVER_DOCS
+from anakins_dtls import driver_implementations
 from anakins_dtls import kernel_bindings
 from anakins_dtls import label_definitions
 
@@ -512,6 +513,7 @@ def handle_request(method: str, params: dict | None) -> dict | None:
                 'textDocumentSync': 1,
                 'hoverProvider': True,
                 'definitionProvider': True,
+                'implementationProvider': True,
             },
         }
     elif method == 'textDocument/definition':
@@ -531,6 +533,23 @@ def handle_request(method: str, params: dict | None) -> dict | None:
             return None
 
         return label_definitions.find_label_definition_location(file_path, text, label)
+    elif method == 'textDocument/implementation':
+        uri = params['textDocument']['uri']
+        line = params['position']['line']
+        character = params['position']['character']
+        text = documents.get(uri, '')
+        if not text:
+            return None
+
+        compatible = _compatible_string_at(text, line, character)
+        if compatible is None:
+            return None
+
+        file_path = document_paths.get(uri)
+        if file_path is None:
+            return None
+
+        return driver_implementations.find_driver_implementation_location(file_path, compatible)
     elif method == 'textDocument/hover':
         uri = params['textDocument']['uri']
         line = params['position']['line']
