@@ -4,7 +4,7 @@ import re
 from anakins_dtls.kernel_bindings import find_kernel_source_root
 
 
-INCLUDE_RE = re.compile(r'/include/\s*"([^"]+)"')
+INCLUDE_RE = re.compile(r'/include/\s*"([^"]+)"|#include\s*[<"]([^>"]+)[>"]')
 LABEL_DEFINITION_RE = re.compile(r'\b([A-Za-z_]\w*):')
 
 
@@ -22,7 +22,7 @@ def _find_label_definition(text: str, label: str) -> tuple[int, int, int] | None
 
 
 def _include_directive_paths(text: str) -> list[str]:
-    return [m.group(1) for m in INCLUDE_RE.finditer(text)]
+    return [m.group(1) or m.group(2) for m in INCLUDE_RE.finditer(text)]
 
 
 def _resolve_include_path(include_path: str, base_dir: str, file_path: str) -> str | None:
@@ -54,15 +54,53 @@ def _location(file_path: str, line: int, start_character: int, end_character: in
     }
 
 
+def _find_label_in_includes(
+    text: str, label: str, base_dir: str, file_path: str, visited: set[str]
+) -> tuple[str, int, int, int] | None:
+    """Recursively search ``text``'s includes (and their includes) for ``label``.
+
+    Returns ``(resolved_path, line, start_character, end_character)``, or
+    ``None`` if the label is not defined in any included file. ``visited``
+    tracks already-searched absolute paths to guard against include cycles.
+    """
+    for include_path in _include_directive_paths(text):
+        resolved_path = _resolve_include_path(include_path, base_dir, file_path)
+        if resolved_path is None:
+            continue
+
+        resolved_path = os.path.abspath(resolved_path)
+        if resolved_path in visited:
+            continue
+        visited.add(resolved_path)
+
+        with open(resolved_path) as f:
+            include_text = f.read()
+
+        found = _find_label_definition(include_text, label)
+        if found is not None:
+            line, start_character, end_character = found
+            return resolved_path, line, start_character, end_character
+
+        include_base_dir = os.path.dirname(resolved_path)
+        found_nested = _find_label_in_includes(include_text, label, include_base_dir, resolved_path, visited)
+        if found_nested is not None:
+            return found_nested
+
+    return None
+
+
 def find_label_definition_location(file_path: str, text: str, label: str) -> dict | None:
     """Find where a label is defined, searching the open file then its includes.
 
     Labels are looked up first in ``text`` (the currently open document), and
-    then, if not found there, in each ``/include/``d dtsi file in the order
-    they are included. Each include path is resolved relative to the open
-    file's directory, falling back to the kernel source root (in-tree or
-    out-of-tree) when it is not found there. Returns an LSP ``Location``, or
-    ``None`` if the label is not defined anywhere.
+    then, if not found there, recursively in each included dtsi file, in the
+    order they are included. Includes may use either the DTS-native
+    ``/include/ "path"`` directive or the C-preprocessor-style
+    ``#include "path"``/``#include <path>`` directive. Each include path is
+    resolved relative to its including file's directory, falling back to the
+    kernel source root (in-tree or out-of-tree) when it is not found there.
+    Returns an LSP ``Location``, or ``None`` if the label is not defined
+    anywhere.
     """
     found = _find_label_definition(text, label)
     if found is not None:
@@ -70,15 +108,9 @@ def find_label_definition_location(file_path: str, text: str, label: str) -> dic
         return _location(file_path, line, start_character, end_character)
 
     base_dir = os.path.dirname(os.path.abspath(file_path))
-    for include_path in _include_directive_paths(text):
-        resolved_path = _resolve_include_path(include_path, base_dir, file_path)
-        if resolved_path is None:
-            continue
-        with open(resolved_path) as f:
-            include_text = f.read()
-        found = _find_label_definition(include_text, label)
-        if found is not None:
-            line, start_character, end_character = found
-            return _location(resolved_path, line, start_character, end_character)
+    found_in_includes = _find_label_in_includes(text, label, base_dir, file_path, {os.path.abspath(file_path)})
+    if found_in_includes is not None:
+        resolved_path, line, start_character, end_character = found_in_includes
+        return _location(resolved_path, line, start_character, end_character)
 
     return None
