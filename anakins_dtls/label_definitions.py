@@ -26,7 +26,7 @@ def _include_directive_paths(text: str) -> list[str]:
 
 
 def _resolve_include_path(include_path: str, base_dir: str, file_path: str) -> str | None:
-    """Resolve an ``/include/``d path, trying the file's directory first.
+    """Resolve an included path, trying the including file's directory first.
 
     Falls back to resolving the path relative to the kernel source root
     (in-tree or out-of-tree) when it is not found relative to ``base_dir``.
