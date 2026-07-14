@@ -23,6 +23,7 @@
           nativeBuildInputs = [ pkgs.python3Packages.setuptools ];
 
           preBuild = ''
+            rm -rf devicetree-specification
             ln -s ${devicetree-specification} devicetree-specification
             PYTHONPATH=tools python -c "from generate_docs import write_hover_docs; write_hover_docs()"
           '';
@@ -226,6 +227,11 @@ MEOF
             python3Packages.pytest-xdist
             python3Packages.setuptools
           ];
+
+          shellHook = ''
+            rm -rf devicetree-specification
+            ln -s ${devicetree-specification} devicetree-specification
+          '';
         };
       });
 }

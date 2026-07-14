@@ -1,3 +1,0 @@
-[submodule "tests/devicetree-specification"]
-	path = devicetree-specification
-	url = https://github.com/devicetree-org/devicetree-specification.git

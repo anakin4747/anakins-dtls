@@ -34,10 +34,6 @@ be able to specify sandbox rules by commands in anakins-agents
 
 ---
 
-align devicetree spec submodule with the nix flake input
-
----
-
 chassis-type's list of possible values formatting is lost
 
 ---
