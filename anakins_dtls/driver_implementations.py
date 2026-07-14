@@ -2,35 +2,15 @@ import os
 import re
 
 from anakins_dtls.kernel_bindings import find_kernel_source_root
+from anakins_dtls.lsp_locations import location
 
 
-COMPATIBLE_STRING_RE_TEMPLATE = r'"{compatible}"'
-
-
-def _find_driver_file(kernel_source_root: str, compatible: str) -> str | None:
-    drivers_root = os.path.join(kernel_source_root, 'drivers')
-    if not os.path.isdir(drivers_root):
-        return None
-
-    pattern = re.compile(COMPATIBLE_STRING_RE_TEMPLATE.format(compatible=re.escape(compatible)))
-    for dirpath, _dirnames, filenames in os.walk(drivers_root):
-        for filename in filenames:
-            if not filename.endswith('.c'):
-                continue
-            driver_path = os.path.join(dirpath, filename)
-            with open(driver_path) as f:
-                content = f.read()
-            if pattern.search(content):
-                return driver_path
-    return None
-
-
-def _find_compatible_string_location(driver_path: str, compatible: str) -> tuple[int, int, int] | None:
+def _find_compatible_string_in_file(driver_path: str, compatible: str) -> tuple[int, int, int] | None:
     """Locate the compatible string literal within a driver source file.
 
     Returns ``(line, start_character, end_character)`` of the compatible
-    string (excluding the surrounding quotes), or ``None`` if it is not
-    found.
+    string (excluding the surrounding quotes), or ``None`` if the file does
+    not reference it.
     """
     pattern = re.compile(rf'"({re.escape(compatible)})"')
     with open(driver_path) as f:
@@ -41,14 +21,21 @@ def _find_compatible_string_location(driver_path: str, compatible: str) -> tuple
     return None
 
 
-def _location(file_path: str, line: int, start_character: int, end_character: int) -> dict:
-    return {
-        'uri': 'file://' + os.path.abspath(file_path),
-        'range': {
-            'start': {'line': line, 'character': start_character},
-            'end': {'line': line, 'character': end_character},
-        },
-    }
+def _find_driver_implementation(kernel_source_root: str, compatible: str) -> tuple[str, int, int, int] | None:
+    drivers_root = os.path.join(kernel_source_root, 'drivers')
+    if not os.path.isdir(drivers_root):
+        return None
+
+    for dirpath, _dirnames, filenames in os.walk(drivers_root):
+        for filename in filenames:
+            if not filename.endswith('.c'):
+                continue
+            driver_path = os.path.join(dirpath, filename)
+            found = _find_compatible_string_in_file(driver_path, compatible)
+            if found is not None:
+                line, start_character, end_character = found
+                return driver_path, line, start_character, end_character
+    return None
 
 
 def find_driver_implementation_location(file_path: str, compatible: str) -> dict | None:
@@ -63,13 +50,9 @@ def find_driver_implementation_location(file_path: str, compatible: str) -> dict
     if kernel_source_root is None:
         return None
 
-    driver_path = _find_driver_file(kernel_source_root, compatible)
-    if driver_path is None:
-        return None
-
-    found = _find_compatible_string_location(driver_path, compatible)
+    found = _find_driver_implementation(kernel_source_root, compatible)
     if found is None:
         return None
 
-    line, start_character, end_character = found
-    return _location(driver_path, line, start_character, end_character)
+    driver_path, line, start_character, end_character = found
+    return location(driver_path, line, start_character, end_character)

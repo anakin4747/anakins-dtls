@@ -2,6 +2,7 @@ import os
 import re
 
 from anakins_dtls.kernel_bindings import find_kernel_source_root
+from anakins_dtls.lsp_locations import location
 
 
 INCLUDE_RE = re.compile(r'/include/\s*"([^"]+)"|#include\s*[<"]([^>"]+)[>"]')
@@ -42,16 +43,6 @@ def _resolve_include_path(include_path: str, base_dir: str, file_path: str) -> s
             return kernel_relative_path
 
     return None
-
-
-def _location(file_path: str, line: int, start_character: int, end_character: int) -> dict:
-    return {
-        'uri': 'file://' + os.path.abspath(file_path),
-        'range': {
-            'start': {'line': line, 'character': start_character},
-            'end': {'line': line, 'character': end_character},
-        },
-    }
 
 
 def _find_label_in_includes(
@@ -105,12 +96,12 @@ def find_label_definition_location(file_path: str, text: str, label: str) -> dic
     found = _find_label_definition(text, label)
     if found is not None:
         line, start_character, end_character = found
-        return _location(file_path, line, start_character, end_character)
+        return location(file_path, line, start_character, end_character)
 
     base_dir = os.path.dirname(os.path.abspath(file_path))
     found_in_includes = _find_label_in_includes(text, label, base_dir, file_path, {os.path.abspath(file_path)})
     if found_in_includes is not None:
         resolved_path, line, start_character, end_character = found_in_includes
-        return _location(resolved_path, line, start_character, end_character)
+        return location(resolved_path, line, start_character, end_character)
 
     return None
