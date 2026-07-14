@@ -1148,3 +1148,66 @@ DEFINITION_KERNEL_SOURCE_REFERENCE_TARGET = {
     'kernel-source': (7, 16),
     'kernel-source-no-match': (9, 16),
 }
+
+
+DRIVER_IMPLEMENTATION_RELATIVE_PATH = os.path.join('drivers', 'misc', 'widget-a.c')
+DRIVER_IMPLEMENTATION_LOCATION = (6, 19)
+
+
+@given("the kernel source has a driver bound to the node's compatible string")
+def kernel_implementation_add_matching_driver(kernel_context):
+    driver_text = _read_fixture_text(os.path.join('kernel_implementation', 'driver.c'))
+    kernel_source_root = kernel_context['kernel_source_root']
+    driver_path = kernel_source_root / DRIVER_IMPLEMENTATION_RELATIVE_PATH
+    driver_path.parent.mkdir(parents=True, exist_ok=True)
+    driver_path.write_text(driver_text)
+    kernel_context['driver_path'] = driver_path
+
+
+@given("the kernel source has no driver bound to the node's compatible string")
+def kernel_implementation_omit_matching_driver():
+    # Intentionally do not create a driver file; the kernel source root
+    # created when the devicetree source file was opened already
+    # establishes kernel context without a matching driver.
+    pass
+
+
+@when('going to the implementation of the compatible property value', target_fixture='response')
+def go_to_implementation(lsp, uri):
+    line, col = TARGET['compatible property value']
+    return lsp.implementation(uri, line - 1, col - 1)
+
+
+@then('the implementation response points to the location of the compatible string in the driver source file')
+def check_implementation_location(response, kernel_context):
+    result = response.get('result')
+    if result is None:
+        pytest.fail('Implementation returned null result (no location found)')
+
+    driver_path = kernel_context.get('driver_path')
+    if driver_path is None:
+        pytest.fail('No driver file path was recorded for this scenario')
+
+    expected_uri = 'file://' + os.path.abspath(str(driver_path))
+    if result['uri'] != expected_uri:
+        pytest.fail(
+            'Implementation response pointed to the wrong file\n'
+            f'  Expected: {expected_uri}\n'
+            f'  Got: {result["uri"]}'
+        )
+
+    line, col = DRIVER_IMPLEMENTATION_LOCATION
+    start = result['range']['start']
+    if (start['line'], start['character']) != (line - 1, col - 1):
+        pytest.fail(
+            'Implementation response pointed to the wrong location\n'
+            f'  Expected: line {line}, character {col}\n'
+            f'  Got: line {start["line"] + 1}, character {start["character"] + 1}'
+        )
+
+
+@then('the implementation response contains no location')
+def check_no_implementation(response):
+    result = response.get('result')
+    if result is not None:
+        pytest.fail(f'Expected no implementation location\n  Got: {result}')

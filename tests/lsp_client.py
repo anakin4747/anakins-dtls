@@ -180,3 +180,10 @@ class LSPClient:
             'position': {'line': line, 'character': character},
         })
         return resp
+
+    def implementation(self, uri, line, character):
+        resp = self.request('textDocument/implementation', {
+            'textDocument': {'uri': uri},
+            'position': {'line': line, 'character': character},
+        })
+        return resp
