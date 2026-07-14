@@ -1,0 +1,5 @@
+/ {
+    label_in_nested: node-nested {
+        compatible = "vendor,widget-nested";
+    };
+};

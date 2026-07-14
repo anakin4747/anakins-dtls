@@ -960,12 +960,16 @@ DEFINITION_REFERENCE_TARGET = {
     'single-include': (7, 16),
     'two-includes': (8, 16),
     'no-match': (7, 16),
+    'cpp-include': (7, 16),
+    'nested-include': (7, 16),
 }
 
 DEFINITION_EXPECTED_LOCATION = {
     'same-file': ('same-file.dts', 4, 5),
     'single-include': ('included-a.dtsi', 2, 5),
     'two-includes': ('included-b.dtsi', 2, 5),
+    'cpp-include': ('included-a.dtsi', 2, 5),
+    'nested-include': ('included-nested-inner.dtsi', 2, 5),
 }
 
 
@@ -1006,6 +1010,23 @@ def definition_two_includes_open(lsp):
 )
 def definition_no_match_open(lsp):
     return _open_definition_fixture(lsp, 'no-match.dts', 'no-match')
+
+
+@given(
+    'a devicetree source file that uses a C-preprocessor-style include to include a dtsi file defining a label '
+    'is open',
+    target_fixture='definition_context',
+)
+def definition_cpp_include_open(lsp):
+    return _open_definition_fixture(lsp, 'cpp-include.dts', 'cpp-include')
+
+
+@given(
+    'a devicetree source file includes a dtsi file that itself includes another dtsi file defining a label',
+    target_fixture='definition_context',
+)
+def definition_nested_include_open(lsp):
+    return _open_definition_fixture(lsp, 'nested-include.dts', 'nested-include')
 
 
 @when('going to the definition of that label reference', target_fixture='response')

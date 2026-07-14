@@ -37,3 +37,13 @@ Feature: Go to definition for label references in included dtsi files
     Given a devicetree source file references a label with no matching definition anywhere in the resolved kernel source
     When going to the definition of that label reference
     Then the definition response contains no location
+
+  Scenario: Go to definition for a label reference resolves to the label definition in a C-preprocessor-style included dtsi file
+    Given a devicetree source file that uses a C-preprocessor-style include to include a dtsi file defining a label is open
+    When going to the definition of that label reference
+    Then the definition response points to the location of the label definition in the included dtsi file
+
+  Scenario: Go to definition for a label reference resolves to a label defined in a dtsi file included by another included dtsi file
+    Given a devicetree source file includes a dtsi file that itself includes another dtsi file defining a label
+    When going to the definition of that label reference
+    Then the definition response points to the location of the label definition in the nested included dtsi file

@@ -1,0 +1,9 @@
+/dts-v1/;
+
+/include/ "included-nested-outer.dtsi"
+
+/ {
+    node-with-reference {
+        ref = <&label_in_nested>;
+    };
+};
