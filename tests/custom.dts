@@ -104,6 +104,12 @@
 		regulator-max-microvolt = <1800000>;
 		regulator-min-microvolt = <1800000>;
 	};
+
+    child {
+        aliases {
+            dummy = "value";
+        };
+    };
 };
 
 /* ADC */
@@ -374,4 +380,5 @@
 			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
 		>;
 	};
+
 };
