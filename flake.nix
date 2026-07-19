@@ -21,8 +21,8 @@
 
           installPhase = ''
             runHook preInstall
-            patchShebangs hello.lua
-            install -Dm755 hello.lua $out/bin/lua-hello-world
+            patchShebangs lua/anakins-dtls.lua
+            install -Dm755 lua/anakins-dtls.lua $out/bin/anakins-dtls
             runHook postInstall
           '';
         };
@@ -39,7 +39,7 @@
 
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/lua-hello-world";
+          program = "${self.packages.${system}.default}/bin/anakins-dtls";
         };
 
         devShells.default = mkShell {

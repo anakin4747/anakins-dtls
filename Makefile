@@ -14,7 +14,7 @@ test:
 .PHONY: lint
 lint:
 	cog check
-	luacheck hello.lua spec
+	luacheck lua spec
 
 .PHONY: install
 install: uninstall
