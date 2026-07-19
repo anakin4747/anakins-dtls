@@ -5,14 +5,13 @@ endif
 
 .PHONY: make
 make:
-	$(SHELL_PREFIX) make luarc test lint fmt-check
+	$(SHELL_PREFIX) make test lint fmt-check
 
-.PHONY: luarc
-luarc:
+.luarc.json:
 	./scripts/generate-luarc
 
 .PHONY: test
-test:
+test: .luarc.json
 	busted -o gtest --pattern="_tests%.lua$$" tests
 
 .PHONY: lint
