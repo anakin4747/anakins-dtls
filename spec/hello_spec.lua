@@ -1,0 +1,6 @@
+describe("lua-hello-world", function()
+  it("prints hello world", function()
+    local output = io.popen("lua ./hello.lua"):read("*a")
+    assert.are.equal("hello world\n", output)
+  end)
+end)
