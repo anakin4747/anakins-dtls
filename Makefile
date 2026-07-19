@@ -5,12 +5,15 @@ endif
 
 .PHONY: make
 make:
-	$(SHELL_PREFIX) make test
+	$(SHELL_PREFIX) make test lint
 
 .PHONY: test
 test:
-	cog check
 	busted spec
+
+.PHONY: lint
+lint:
+	cog check
 
 .PHONY: install
 install: uninstall

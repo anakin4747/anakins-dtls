@@ -32,6 +32,22 @@
           };
         });
 
+      checks = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        with pkgs; {
+          default = runCommand "lua-hello-world-check" {
+            nativeBuildInputs = [ gnumake lua luaPackages.busted cocogitto ];
+            src = ./.;
+            IN_NIX_SHELL = 1;
+          } ''
+            cd "$src"
+            make test
+            touch "$out"
+          '';
+        });
+
       apps = forAllSystems (system: {
         default = {
           type = "app";
