@@ -5,7 +5,7 @@ endif
 
 .PHONY: make
 make:
-	$(SHELL_PREFIX) make luarc test lint
+	$(SHELL_PREFIX) make luarc test lint fmt-check
 
 .PHONY: luarc
 luarc:
@@ -19,6 +19,10 @@ test:
 lint:
 	cog check
 	luacheck lua tests
+
+.PHONY: fmt-check
+fmt-check:
+	stylua --check lua tests
 
 .PHONY: install
 install: uninstall

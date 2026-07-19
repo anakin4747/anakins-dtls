@@ -28,12 +28,12 @@
         };
 
         checks.default = runCommand "lua-hello-world-check" {
-          nativeBuildInputs = [ gnumake lua luaPackages.busted cocogitto ];
+          nativeBuildInputs = [ gnumake lua luaPackages.busted luaPackages.luacheck cocogitto stylua ];
           src = ./.;
           IN_NIX_SHELL = 1;
         } ''
           cd "$src"
-          make test
+          make
           touch "$out"
         '';
 
@@ -47,6 +47,7 @@
             lua
             luaPackages.busted
             luaPackages.luacheck
+            stylua
             cocogitto
             gnumake
           ];
