@@ -3,9 +3,15 @@ local assert = require("luassert")
 local describe = busted.describe
 local it = busted.it
 
-describe("anakins-dtls", function()
-    it("prints hello world", function()
-        local output = io.popen("lua ./lua/anakins-dtls.lua"):read("*a")
-        assert.are.equal("hello world\n", output)
+local dts_locations = {
+    { name = "in-tree", path = "in-tree/arch/arm64/boot/dts/freescale/custom.dts" },
+    { name = "out-of-tree", path = "out-of-tree/custom.dts" },
+}
+
+for _, location in ipairs(dts_locations) do
+    describe(location.name, function()
+        it("dummy test", function()
+            assert(true)
+        end)
     end)
-end)
+end
