@@ -13,7 +13,7 @@ luarc:
 
 .PHONY: test
 test:
-	busted --pattern="_tests%.lua$$" tests
+	busted -o gtest --pattern="_tests%.lua$$" tests
 
 .PHONY: lint
 lint:
