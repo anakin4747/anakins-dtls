@@ -1,5 +1,1 @@
-globals = {
-  "describe",
-  "it",
-  "assert",
-}
+std = "lua52"

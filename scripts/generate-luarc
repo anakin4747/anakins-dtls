@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+template="$repo_root/.luarc.json.in"
+output="$repo_root/.luarc.json"
+
+lua_version=$(nix eval --experimental-features 'nix-command flakes' --impure --raw --expr '
+let
+  flake = builtins.getFlake (toString ./.);
+  pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
+in "Lua ${pkgs.lib.versions.majorMinor pkgs.lua.version}"')
+
+library_json=$(nix eval --experimental-features 'nix-command flakes' --impure --json --expr '
+let
+  flake = builtins.getFlake (toString ./.);
+  pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
+  luaApiVersion = pkgs.lib.versions.majorMinor pkgs.lua.version;
+  libraryDirs = builtins.filter builtins.pathExists [
+    "${pkgs.lua}/share/lua/${luaApiVersion}"
+    "${pkgs.lua}/lib/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.busted}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.luassert}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.say}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.penlight}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.mediator_lua}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.luasystem}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.luasystem}/lib/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.lua_cliargs}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.lua-term}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.lua-term}/lib/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.dkjson}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.luafilesystem}/lib/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.argparse}/share/lua/${luaApiVersion}"
+    "${pkgs.luaPackages.luacheck}/share/lua/${luaApiVersion}"
+  ];
+in libraryDirs')
+
+escaped_version=$(printf '%s' "$lua_version" | sed 's/[&/]/\\&/g')
+escaped_libraries=$(printf '%s' "$library_json" | sed 's/[&/]/\\&/g')
+sed \
+  -e "s/@LUA_VERSION@/$escaped_version/g" \
+  -e "s/@LIBRARIES@/$escaped_libraries/g" \
+  "$template" > "$output"

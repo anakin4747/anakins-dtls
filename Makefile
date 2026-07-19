@@ -5,7 +5,11 @@ endif
 
 .PHONY: make
 make:
-	$(SHELL_PREFIX) make test lint
+	$(SHELL_PREFIX) make luarc test lint
+
+.PHONY: luarc
+luarc:
+	./scripts/generate-luarc
 
 .PHONY: test
 test:
