@@ -9,12 +9,12 @@ make:
 
 .PHONY: test
 test:
-	busted spec
+	busted --pattern="_tests%.lua$$" tests
 
 .PHONY: lint
 lint:
 	cog check
-	luacheck lua spec
+	luacheck lua tests
 
 .PHONY: install
 install: uninstall
