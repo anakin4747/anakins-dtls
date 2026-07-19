@@ -46,6 +46,7 @@
           packages = [
             lua
             luaPackages.busted
+            luaPackages.luacheck
             cocogitto
             gnumake
           ];
