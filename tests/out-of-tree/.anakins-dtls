@@ -1,0 +1,11 @@
+#
+# $S [5 operations]
+#   set /home/kin/build/../layers/openembedded-core/meta/conf/bitbake.conf:410
+#     "${WORKDIR}/${BP}"
+#   set /home/kin/build/../layers/openembedded-core/meta/conf/documentation.conf:371
+#     [doc] "The location in the Build Directory where unpacked package source code resides."
+#   set /home/kin/build/../layers/openembedded-core/meta/classes-recipe/kernel.bbclass:26
+#     "${STAGING_KERNEL_DIR}"
+# pre-expansion value:
+#   "${WORKDIR}/git"
+S="./linux"
