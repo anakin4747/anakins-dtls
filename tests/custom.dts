@@ -373,6 +373,10 @@
         chosen { // should not return hover since it is only a root node
             dummy;
         };
+
+        cpus { // should not return hover since it is only a root node
+            dummy;
+        };
     };
 
     ordinary-device {

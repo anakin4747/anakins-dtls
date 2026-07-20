@@ -261,5 +261,182 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.on_a_chosen_node(ctx))
             end)
         end)
+
+        describe("/cpus", function()
+            it("identifies if in a /cpus node", function()
+                -- inside /cpus {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cpus_node(ctx))
+            end)
+
+            it("identifies if not in a /cpus node", function()
+                -- in root node but outside /cpus
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_cpus_node(ctx))
+
+                -- in /child/cpus
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_cpus_node(ctx))
+            end)
+
+            it("indicates that it is in a root node even in a /cpus node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a /cpus node", function()
+                -- /cpus' 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpus_node(ctx))
+
+                -- /cpus' '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpus_node(ctx))
+
+                -- /cpus' '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpus_node(ctx))
+
+                -- /cpus' ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpus_node(ctx))
+            end)
+
+            it("indicates if not on a /cpus node", function()
+                -- inside /cpus
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpus_node(ctx))
+
+                -- on /aliases's 'a'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpus_node(ctx))
+
+                -- on /child/cpus's 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpus_node(ctx))
+            end)
+
+            it("identifies if in a cpu node", function()
+                -- inside cpu@0 {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cpu_node(ctx))
+            end)
+
+            it("identifies if not in a cpu node", function()
+                -- in /cpus but outside any cpu@N
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_cpu_node(ctx))
+            end)
+
+            it("indicates that it is in a /cpus node and a root node even in a cpu node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cpus_node(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a cpu node", function()
+                -- cpu@0's 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+
+                -- cpu@0's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+
+                -- cpu@0's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+
+                -- cpu@0's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+
+                -- cpu@0's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+
+                -- cpu@0's '0'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cpu_node(ctx))
+            end)
+
+            it("indicates if not on a cpu node", function()
+                -- on /cpus' 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpu_node(ctx))
+
+                -- inside cpu@0
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpu_node(ctx))
+
+                -- on /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cpu_node(ctx))
+            end)
+
+            it("identifies if in a cache node", function()
+                -- inside l2-cache {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cache_node(ctx))
+
+                -- inside nested l3-cache {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cache_node(ctx))
+            end)
+
+            it("identifies if not in a cache node", function()
+                -- in cpu@0 but outside any cache node
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_cache_node(ctx))
+            end)
+
+            it("indicates that it is in a cpu, /cpus, and root node even in a cache node", function()
+                -- inside l2-cache
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cpu_node(ctx))
+                assert(dtls.in_a_cpus_node(ctx))
+                assert(dtls.in_a_root_node(ctx))
+
+                -- inside nested l3-cache
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_cpu_node(ctx))
+                assert(dtls.in_a_cpus_node(ctx))
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a cache node", function()
+                -- l2-cache's 'l'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cache_node(ctx))
+
+                -- l2-cache's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cache_node(ctx))
+
+                -- l2-cache's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cache_node(ctx))
+
+                -- l2-cache's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_cache_node(ctx))
+            end)
+
+            it("indicates if not on a cache node", function()
+                -- on cpu@0's 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cache_node(ctx))
+
+                -- inside l2-cache
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cache_node(ctx))
+
+                -- on /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_cache_node(ctx))
+            end)
+        end)
     end)
 end
