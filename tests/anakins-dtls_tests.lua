@@ -54,6 +54,26 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:113:2")
                 assert(dtls.on_a_root_node(ctx))
             end)
+
+            it("indicates if not on a root node", function()
+                -- outside the root node
+                ctx.row, ctx.col = row_col("tests/custom.dts:1:1")
+                assert(not dtls.on_a_root_node(ctx))
+
+                -- inside the root node
+                ctx.row, ctx.col = row_col("tests/custom.dts:16:1")
+                assert(not dtls.on_a_root_node(ctx))
+            end)
+
+            it("doesn't mistake being on an aliases node for being on a root node", function()
+                -- /aliases' 'a'
+                ctx.row, ctx.col = row_col("tests/custom.dts:20:2")
+                assert(not dtls.on_a_root_node(ctx))
+
+                -- /aliases' '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:45:2")
+                assert(not dtls.on_a_root_node(ctx))
+            end)
         end)
 
         describe("/aliases", function()
