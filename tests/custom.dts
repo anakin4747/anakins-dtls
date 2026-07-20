@@ -423,12 +423,17 @@
     };
 
     serial-device {
+        compatible = "ns8250";
         clock-frequency = <1000000>;
     };
 
     serial@4500 {
         clock-frequency = <100000000>;
         current-speed = <115200>;
+    };
+
+    hdlc-device {
+        compatible = "arinc,x25-hdlc"; // should be identified as a serial device via *-hdlc$ fallback
     };
 
     uart@4600 {

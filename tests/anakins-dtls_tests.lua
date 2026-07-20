@@ -555,5 +555,344 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.on_a_reserved_memory_region_node(ctx))
             end)
         end)
+
+        describe("serial device", function()
+            it("identifies if in a serial device node", function()
+                -- inside serial-device { (compatible = "ns8250")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_serial_device_node(ctx))
+
+                -- inside hdlc-device { (compatible = "arinc,x25-hdlc")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_serial_device_node(ctx))
+            end)
+
+            it("identifies if not in a serial device node", function()
+                -- inside serial@4500, which has no compatible property
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_serial_device_node(ctx))
+
+                -- inside ethernet@0, unrelated device
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_serial_device_node(ctx))
+            end)
+
+            it("identifies if on a serial device node", function()
+                -- serial-device's 's'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_serial_device_node(ctx))
+
+                -- serial-device's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_serial_device_node(ctx))
+
+                -- serial-device's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_serial_device_node(ctx))
+
+                -- serial-device's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_serial_device_node(ctx))
+            end)
+
+            it("indicates if not on a serial device node", function()
+                -- on serial@4500's 's' (no compatible property)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_serial_device_node(ctx))
+
+                -- inside serial-device
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_serial_device_node(ctx))
+            end)
+        end)
+
+        describe("ns16550", function()
+            it("identifies if in a ns16550 node", function()
+                -- inside uart@4600 { (compatible = "ns16550")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_ns16550_node(ctx))
+            end)
+
+            it("identifies if not in a ns16550 node", function()
+                -- inside serial-device (compatible = "ns8250", not ns16550)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_ns16550_node(ctx))
+
+                -- inside serial@4500, which has no compatible property
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_ns16550_node(ctx))
+            end)
+
+            it("identifies if on a ns16550 node", function()
+                -- uart@4600's 'u'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+
+                -- uart@4600's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+
+                -- uart@4600's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+
+                -- uart@4600's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+
+                -- uart@4600's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+
+                -- uart@4600's '4'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_ns16550_node(ctx))
+            end)
+
+            it("indicates if not on a ns16550 node", function()
+                -- on serial-device's 's' (compatible = "ns8250")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_ns16550_node(ctx))
+
+                -- inside uart@4600
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_ns16550_node(ctx))
+            end)
+        end)
+
+        describe("network device", function()
+            it("identifies if in a network device node", function()
+                -- inside ethernet@0 { (has local-mac-address, mac-address, max-frame-size)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_network_device_node(ctx))
+
+                -- inside ethernet@1 { (still a network device even without those
+                -- extra properties -- they extend, not gate, the classification)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_network_device_node(ctx))
+            end)
+
+            it("identifies if not in a network device node", function()
+                -- inside uart@4600, an unrelated device
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_network_device_node(ctx))
+            end)
+
+            it("identifies if on a network device node", function()
+                -- ethernet@0's 'e'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@0's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@0's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@0's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@0's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@0's '0'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+
+                -- ethernet@1's 'e'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_network_device_node(ctx))
+            end)
+
+            it("indicates if not on a network device node", function()
+                -- on uart@4600's 'u'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_network_device_node(ctx))
+
+                -- inside ethernet@0
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_network_device_node(ctx))
+            end)
+        end)
+
+        describe("open-pic", function()
+            it("identifies if in an open-pic node", function()
+                -- inside interrupt-controller@10000000 { (compatible = "open-pic")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_an_open_pic_node(ctx))
+            end)
+
+            it("identifies if not in an open-pic node", function()
+                -- inside pic@10000000, which has no compatible property
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_an_open_pic_node(ctx))
+            end)
+
+            it("identifies if on an open-pic node", function()
+                -- interrupt-controller@10000000's 'i'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+
+                -- interrupt-controller@10000000's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+
+                -- interrupt-controller@10000000's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+
+                -- interrupt-controller@10000000's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+
+                -- interrupt-controller@10000000's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+
+                -- interrupt-controller@10000000's '1'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_an_open_pic_node(ctx))
+            end)
+
+            it("indicates if not on an open-pic node", function()
+                -- on pic@10000000's 'p' (no compatible property)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_an_open_pic_node(ctx))
+
+                -- inside interrupt-controller@10000000
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_an_open_pic_node(ctx))
+            end)
+        end)
+
+        describe("simple-bus", function()
+            it("identifies if in a simple-bus node", function()
+                -- inside the second soc { (compatible = "simple-bus")
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_simple_bus_node(ctx))
+            end)
+
+            it("identifies if not in a simple-bus node", function()
+                -- inside the first soc {, which has no compatible property
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_simple_bus_node(ctx))
+            end)
+
+            it("identifies if on a simple-bus node", function()
+                -- soc's 's'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_simple_bus_node(ctx))
+
+                -- soc's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_simple_bus_node(ctx))
+
+                -- soc's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_simple_bus_node(ctx))
+
+                -- soc's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_simple_bus_node(ctx))
+            end)
+
+            it("indicates if not on a simple-bus node", function()
+                -- on the first soc's 's' (no compatible property)
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_simple_bus_node(ctx))
+
+                -- inside the second soc
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_simple_bus_node(ctx))
+            end)
+        end)
+
+        describe("top level", function()
+            it("identifies if at the top level", function()
+                -- before /dts-v1/;
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_top_level(ctx))
+
+                -- after the root node's closing '};' and before '&adc1 {'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_top_level(ctx))
+
+                -- between '&adc1 { ... };' and '&eqos { ... };'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_top_level(ctx))
+            end)
+
+            it("identifies if not at the top level", function()
+                -- inside the root node
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_top_level(ctx))
+
+                -- inside a &label { ... } reference block
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_top_level(ctx))
+            end)
+        end)
+
+        describe("labels", function()
+            it("identifies if on a label definition", function()
+                -- curr_sens: current-sense {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_definition(ctx))
+
+                -- display_reserved: framebuffer@78000000 {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_definition(ctx))
+
+                -- L2_0:l2-cache {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_definition(ctx))
+            end)
+
+            it("indicates if not on a label definition", function()
+                -- on the node name after the label, e.g. "current-sense"
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_label_definition(ctx))
+
+                -- on a node with no label at all, e.g. "serial-device"
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_label_definition(ctx))
+
+                -- on a label reference, e.g. "&eqos"
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_label_definition(ctx))
+            end)
+
+            it("identifies if on a label reference", function()
+                -- ethernet1 = &eqos;
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_reference(ctx))
+
+                -- io-channels = <&adc1 1>;
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_reference(ctx))
+
+                -- interrupt-parent = <&pic>;
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_reference(ctx))
+
+                -- &adc1 { ... }; top-level reference/override block
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_label_reference(ctx))
+            end)
+
+            it("indicates if not on a label reference", function()
+                -- on a label definition, e.g. "curr_sens:"
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_label_reference(ctx))
+
+                -- on a property name/value that isn't a label reference
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_label_reference(ctx))
+            end)
+        end)
     end)
 end
