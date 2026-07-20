@@ -29,32 +29,29 @@ for _, location in ipairs(dts_locations) do
                 assert(dtls.in_a_root_node(ctx))
             end)
 
-            it("does not mistake outside of a root node for inside a root node", function()
+            it("indicates if not in a root node", function()
+                -- before the root node
                 ctx.row, ctx.col = row_col("tests/custom.dts:1:1")
                 assert(not dtls.in_a_root_node(ctx))
 
+                -- after the root node
                 ctx.row, ctx.col = row_col("tests/custom.dts:114:1")
                 assert(not dtls.in_a_root_node(ctx))
             end)
 
-            it("indicates if not on a root node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:1:1")
-                assert(not dtls.on_a_root_node(ctx))
-            end)
-
-            it("indicates if on a root node's opening bracket", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:20:10")
+            it("indicates if on a root node", function()
+                -- should cover the '/', the ' ', the '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:2")
+                assert(dtls.on_a_root_node(ctx))
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:3")
+                assert(dtls.on_a_root_node(ctx))
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:4")
                 assert(dtls.on_a_root_node(ctx))
 
-                ctx.row, ctx.col = row_col("tests/custom.dts:20:9") -- The space before should also count
+                -- and the '}' and ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:113:1")
                 assert(dtls.on_a_root_node(ctx))
-            end)
-
-            it("indicates if on a root node's closing bracket", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:45:2")
-                assert(dtls.on_a_root_node(ctx))
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:45:3") -- The semicolon after should also count
+                ctx.row, ctx.col = row_col("tests/custom.dts:113:2")
                 assert(dtls.on_a_root_node(ctx))
             end)
         end)
@@ -65,7 +62,7 @@ for _, location in ipairs(dts_locations) do
                 assert(dtls.in_an_aliases_node(ctx))
             end)
 
-            it("indicates if in a root node even in an /aliases node", function()
+            it("indicates that it is in a root node even in an /aliases node", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:21:3")
                 assert(dtls.in_a_root_node(ctx))
             end)
