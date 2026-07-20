@@ -96,6 +96,111 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:110:13")
                 assert(not dtls.in_an_aliases_node(ctx))
             end)
+
+            it("identifies if on an /aliases node", function()
+                -- /aliases' 'a'
+                ctx.row, ctx.col = row_col("tests/custom.dts:20:2")
+                assert(dtls.on_an_aliases_node(ctx))
+
+                -- /aliases' '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:20:10")
+                assert(dtls.on_an_aliases_node(ctx))
+
+                -- /aliases' '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:45:2")
+                assert(dtls.on_an_aliases_node(ctx))
+
+                -- /aliases' ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:45:3")
+                assert(dtls.on_an_aliases_node(ctx))
+            end)
+
+            it("indicates if not on an /aliases node", function()
+                -- on /chosen's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:49:2")
+                assert(not dtls.on_an_aliases_node(ctx))
+
+                -- inside /aliases
+                ctx.row, ctx.col = row_col("tests/custom.dts:40:3")
+                assert(not dtls.on_an_aliases_node(ctx))
+
+                -- on /'s '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:121:1")
+                assert(not dtls.on_an_aliases_node(ctx))
+            end)
+        end)
+
+        describe("/memory", function()
+            it("identifies if in a /memory node without a unit address", function()
+                -- inside memory {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_memory_node(ctx))
+            end)
+
+            it("identifies if in a /memory node with a unit address", function()
+                -- inside memory@0 {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_memory_node(ctx))
+            end)
+
+            it("identifies if not in a /memory node", function()
+                -- in root node but outside /memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_memory_node(ctx))
+
+                -- in /child/memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_memory_node(ctx))
+            end)
+
+            it("indicates that it is in a root node even in a /memory node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a /memory node", function()
+                -- /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+
+                -- /memory's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+
+                -- /memory's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+
+                -- /memory's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+
+                -- /memory@0's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+
+                -- /memory@0's '0'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_memory_node(ctx))
+            end)
+
+            it("indicates if not on a /memory node", function()
+                -- on /chosen's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_memory_node(ctx))
+
+                -- inside /memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_memory_node(ctx))
+
+                -- on /aliases's 'a'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_memory_node(ctx))
+
+                -- on /child/memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_memory_node(ctx))
+            end)
         end)
     end)
 end
