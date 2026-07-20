@@ -377,6 +377,10 @@
         cpus { // should not return hover since it is only a root node
             dummy;
         };
+
+        reserved-memory { // should not return hover since it is only a root node
+            dummy;
+        };
     };
 
     ordinary-device {

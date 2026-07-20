@@ -438,5 +438,122 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.on_a_cache_node(ctx))
             end)
         end)
+
+        describe("/reserved-memory", function()
+            it("identifies if in a /reserved-memory node", function()
+                -- inside reserved-memory {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_reserved_memory_node(ctx))
+            end)
+
+            it("identifies if not in a /reserved-memory node", function()
+                -- in root node but outside /reserved-memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_reserved_memory_node(ctx))
+
+                -- in /child/reserved-memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_reserved_memory_node(ctx))
+            end)
+
+            it("indicates that it is in a root node even in a /reserved-memory node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a /reserved-memory node", function()
+                -- /reserved-memory's 'r'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_node(ctx))
+
+                -- /reserved-memory's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_node(ctx))
+
+                -- /reserved-memory's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_node(ctx))
+
+                -- /reserved-memory's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_node(ctx))
+            end)
+
+            it("indicates if not on a /reserved-memory node", function()
+                -- on /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_reserved_memory_node(ctx))
+
+                -- inside /reserved-memory
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_reserved_memory_node(ctx))
+            end)
+
+            it("identifies if in a reserved-memory region node", function()
+                -- inside linux,cma {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_reserved_memory_region_node(ctx))
+
+                -- inside framebuffer@78000000 {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_reserved_memory_region_node(ctx))
+
+                -- inside multimedia@77000000 {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_reserved_memory_region_node(ctx))
+            end)
+
+            it("identifies if not in a reserved-memory region node", function()
+                -- in /reserved-memory but outside any region node
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_reserved_memory_region_node(ctx))
+            end)
+
+            it("indicates that it is in a /reserved-memory node and a root node even in a region node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_reserved_memory_node(ctx))
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a reserved-memory region node", function()
+                -- linux,cma's 'l'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- linux,cma's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- linux,cma's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- linux,cma's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- framebuffer@78000000's '@'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- framebuffer@78000000's '7'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_reserved_memory_region_node(ctx))
+            end)
+
+            it("indicates if not on a reserved-memory region node", function()
+                -- on /reserved-memory's 'r'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- inside linux,cma
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_reserved_memory_region_node(ctx))
+
+                -- on /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_reserved_memory_region_node(ctx))
+            end)
+        end)
     end)
 end
