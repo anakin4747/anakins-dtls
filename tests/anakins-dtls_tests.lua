@@ -202,5 +202,64 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.on_a_memory_node(ctx))
             end)
         end)
+
+        describe("/chosen", function()
+            it("identifies if in a /chosen node", function()
+                -- inside chosen {
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_chosen_node(ctx))
+            end)
+
+            it("identifies if not in a /chosen node", function()
+                -- in root node but outside /chosen
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_chosen_node(ctx))
+
+                -- in /child/chosen
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.in_a_chosen_node(ctx))
+            end)
+
+            it("indicates that it is in a root node even in a /chosen node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.in_a_root_node(ctx))
+            end)
+
+            it("identifies if on a /chosen node", function()
+                -- /chosen's 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_chosen_node(ctx))
+
+                -- /chosen's '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_chosen_node(ctx))
+
+                -- /chosen's '}'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_chosen_node(ctx))
+
+                -- /chosen's ';'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(dtls.on_a_chosen_node(ctx))
+            end)
+
+            it("indicates if not on a /chosen node", function()
+                -- on /memory's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_chosen_node(ctx))
+
+                -- inside /chosen
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_chosen_node(ctx))
+
+                -- on /aliases's 'a'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_chosen_node(ctx))
+
+                -- on /child/chosen's 'c'
+                ctx.row, ctx.col = row_col("tests/custom.dts:")
+                assert(not dtls.on_a_chosen_node(ctx))
+            end)
+        end)
     end)
 end

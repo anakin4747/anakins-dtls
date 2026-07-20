@@ -369,6 +369,10 @@
         memory { // should not return hover since it is only a root node
             dummy;
         };
+
+        chosen { // should not return hover since it is only a root node
+            dummy;
+        };
     };
 
     ordinary-device {
