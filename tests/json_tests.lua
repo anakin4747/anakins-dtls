@@ -4,7 +4,7 @@ local describe = busted.describe
 local it = busted.it
 
 package.path = "./lua/?.lua;" .. package.path
-local json = require("json")
+local json = require("anakins-dtls").json
 
 describe("json.encode()", function()
     it("encodes an empty table as an empty object by default", function()

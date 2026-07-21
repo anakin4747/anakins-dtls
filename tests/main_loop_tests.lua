@@ -5,7 +5,7 @@ local it = busted.it
 
 package.path = "./lua/?.lua;" .. package.path
 local dtls = require("anakins-dtls")
-local json = require("json")
+local json = dtls.json
 
 -- Sentinel used in expected-output tables to mean "this field must be
 -- present, but its exact value isn't asserted here" (e.g. capabilities).
