@@ -219,6 +219,99 @@ describe("exit notification", function()
     end)
 end)
 
+describe("initialize captures the workspace root", function()
+    local cases = {
+        {
+            name = "from workspaceFolders",
+            params = {
+                workspaceFolders = {
+                    { uri = "file:///some/repo", name = "repo" },
+                },
+            },
+            expect_workspace_root = "/some/repo",
+        },
+        {
+            name = "from rootUri when workspaceFolders is absent",
+            params = { rootUri = "file:///some/repo" },
+            expect_workspace_root = "/some/repo",
+        },
+        {
+            name = "prefers workspaceFolders over rootUri when both are present",
+            params = {
+                rootUri = "file:///some/other-repo",
+                workspaceFolders = {
+                    { uri = "file:///some/repo", name = "repo" },
+                },
+            },
+            expect_workspace_root = "/some/repo",
+        },
+        {
+            name = "is left unset when neither rootUri nor workspaceFolders is given",
+            params = {},
+            expect_workspace_root = nil,
+        },
+    }
+
+    for _, case in ipairs(cases) do
+        it("sets workspace_root " .. case.name, function()
+            local server = dtls.new_server(dtls.new_memory_channel())
+            server.channel:push_input(frame({ method = "initialize", id = 1, params = case.params }))
+
+            local continues = dtls.server_step(server)
+
+            assert.are.equal("initialized", server.state)
+            assert.are.equal(case.expect_workspace_root, server.workspace_root)
+            assert(continues)
+        end)
+    end
+end)
+
+describe("workspace/didChangeWorkspaceFolders notification", function()
+    it("updates workspace_root to a newly added folder", function()
+        local server = new_server_in_state("initialized")
+
+        server.channel:push_input(frame({
+            method = "workspace/didChangeWorkspaceFolders",
+            params = {
+                event = {
+                    added = { { uri = "file:///some/repo", name = "repo" } },
+                    removed = {},
+                },
+            },
+        }))
+
+        local continues = dtls.server_step(server)
+
+        assert.are.equal("/some/repo", server.workspace_root)
+        assert(continues)
+    end)
+
+    it("clears workspace_root when its folder is removed", function()
+        local server = dtls.new_server(dtls.new_memory_channel())
+        server.channel:push_input(frame({
+            method = "initialize",
+            id = 1,
+            params = { workspaceFolders = { { uri = "file:///some/repo", name = "repo" } } },
+        }))
+        dtls.server_step(server)
+        server.channel:take_output()
+
+        server.channel:push_input(frame({
+            method = "workspace/didChangeWorkspaceFolders",
+            params = {
+                event = {
+                    added = {},
+                    removed = { { uri = "file:///some/repo", name = "repo" } },
+                },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        assert.is_nil(server.workspace_root)
+    end)
+end)
+
 describe("error handling", function()
     it("catches a Lua error thrown while handling a message and keeps running", function()
         local server = new_server_in_state("initialized")
