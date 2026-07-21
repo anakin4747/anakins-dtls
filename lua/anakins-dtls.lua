@@ -944,7 +944,7 @@ default_handlers["initialize"] = function(server, msg)
     local params = msg.params or {}
     server.workspace_root = workspace_root_from_params(params)
     server.state = "initialized"
-    send_response(server, msg.id, { capabilities = { textDocumentSync = 1 } })
+    send_response(server, msg.id, { capabilities = { textDocumentSync = 1, hoverProvider = true } })
 end
 
 default_handlers["initialized"] = function(_, _) end
@@ -960,6 +960,26 @@ default_handlers["shutdown"] = function(server, msg)
 end
 
 default_handlers["textDocument/didSave"] = function(_, _) end
+
+default_handlers["textDocument/hover"] = function(server, msg)
+    local params = msg.params or {}
+    local position = params.position or {}
+
+    local ctx = {
+        file = uri_to_path((params.textDocument or {}).uri),
+        -- LSP positions are 0-based; the rest of this codebase's row/col
+        -- helpers are 1-based (matching Lua's own `file:line:col` errors).
+        row = (position.line or 0) + 1,
+        col = (position.character or 0) + 1,
+    }
+
+    local markdown = M.hover(ctx)
+    if markdown then
+        send_response(server, msg.id, { contents = { kind = "markdown", value = markdown } })
+    else
+        send_response(server, msg.id, json.NULL)
+    end
+end
 
 default_handlers["workspace/didChangeWorkspaceFolders"] = function(server, msg)
     local event = (msg.params or {}).event or {}

@@ -312,6 +312,77 @@ describe("workspace/didChangeWorkspaceFolders notification", function()
     end)
 end)
 
+describe("textDocument/hover", function()
+    it("advertises hoverProvider in the initialize response capabilities", function()
+        local server = dtls.new_server(dtls.new_memory_channel())
+        server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.is_true(output[1].result.capabilities.hoverProvider)
+    end)
+
+    it("responds with hover markdown for a position on the root node", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/hover",
+            id = 2,
+            params = {
+                textDocument = { uri = ("file://%s/tests/custom.dts"):format(cwd) },
+                -- tests/custom.dts:15:1 in 1-based row/col is line 14, character 0
+                -- in 0-based LSP position terms.
+                position = { line = 14, character = 0 },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.are.equal(2, output[1].id)
+        assert.are.equal("markdown", output[1].result.contents.kind)
+        assert.are.equal(
+            [[
+# Devicetree Specification:
+
+The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
+
+All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:
+-  One `/cpus` node
+-  At least one `/memory` node
+
+The devicetree has a single root node of which all other device nodes are descendants. The full path to the root node is `/`.]],
+            output[1].result.contents.value
+        )
+    end)
+
+    it("responds with a null result when there is no hover content for the position", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/hover",
+            id = 3,
+            params = {
+                textDocument = { uri = ("file://%s/tests/custom.dts"):format(cwd) },
+                position = { line = 0, character = 0 },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.are.equal(3, output[1].id)
+        assert.same(json.NULL, output[1].result)
+    end)
+end)
+
 describe("error handling", function()
     it("catches a Lua error thrown while handling a message and keeps running", function()
         local server = new_server_in_state("initialized")
