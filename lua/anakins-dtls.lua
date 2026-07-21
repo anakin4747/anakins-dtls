@@ -25,15 +25,25 @@ local function node_name_before_brace(line, open_col)
     return after_colon or last_token
 end
 
+-- Check whether `name` satisfies `matcher`, which is either an exact node
+-- name or a predicate function that receives the name and returns a boolean.
+local function name_matches(name, matcher)
+    if type(matcher) == "function" then
+        return matcher(name)
+    end
+
+    return name == matcher
+end
+
 -- Check whether `stack` (an array of node names, from outermost to
--- innermost) exactly matches `path`.
+-- innermost) matches `path` (an array of exact names and/or predicates).
 local function path_matches(stack, path)
     if #stack ~= #path then
         return false
     end
 
-    for i, name in ipairs(path) do
-        if stack[i] ~= name then
+    for i, matcher in ipairs(path) do
+        if not name_matches(stack[i], matcher) then
             return false
         end
     end
@@ -41,13 +51,15 @@ local function path_matches(stack, path)
     return true
 end
 
--- Find the row/column bounds of the opening and closing braces of the node
--- addressed by `path` (an array of node names, e.g. { "/", "aliases" }), by
--- walking the file and tracking node depth via a name stack.
-local function find_node_bounds(file, path)
+-- Find the row/column bounds of the opening and closing braces of every node
+-- addressed by `path` (an array of exact names and/or predicates, e.g.
+-- { "/", "aliases" }), by walking the file and tracking node depth via a
+-- name stack.
+local function find_all_node_bounds(file, path)
     local lines = read_lines(file)
     local stack = {}
-    local pending
+    local pending_by_depth = {}
+    local results = {}
 
     for row, line in ipairs(lines) do
         local col = 1
@@ -56,14 +68,17 @@ local function find_node_bounds(file, path)
             if char == "{" then
                 local name = node_name_before_brace(line, col)
                 stack[#stack + 1] = name
-                if not pending and path_matches(stack, path) then
-                    pending = { open_row = row, open_col = col, depth = #stack }
+                if path_matches(stack, path) then
+                    pending_by_depth[#stack] = { open_row = row, open_col = col }
                 end
             elseif char == "}" then
-                if pending and #stack == pending.depth then
+                local depth = #stack
+                local pending = pending_by_depth[depth]
+                if pending then
                     pending.close_row = row
                     pending.close_col = col
-                    return pending
+                    results[#results + 1] = pending
+                    pending_by_depth[depth] = nil
                 end
                 stack[#stack] = nil
             end
@@ -71,30 +86,30 @@ local function find_node_bounds(file, path)
         end
     end
 
-    return nil
+    return results
 end
 
 local function in_node(ctx, path)
-    local bounds = find_node_bounds(ctx.file, path)
-    if not bounds then
-        return false
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, path)) do
+        if ctx.row > bounds.open_row and ctx.row < bounds.close_row then
+            return true
+        end
     end
 
-    return ctx.row > bounds.open_row and ctx.row < bounds.close_row
+    return false
 end
 
 local function on_node(ctx, path)
-    local bounds = find_node_bounds(ctx.file, path)
-    if not bounds then
-        return false
-    end
-
-    if ctx.row == bounds.open_row then
-        return ctx.col >= 1 and ctx.col <= bounds.open_col
-    end
-
-    if ctx.row == bounds.close_row then
-        return ctx.col >= bounds.close_col and ctx.col <= bounds.close_col + 1
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, path)) do
+        if ctx.row == bounds.open_row then
+            if ctx.col >= 1 and ctx.col <= bounds.open_col then
+                return true
+            end
+        elseif ctx.row == bounds.close_row then
+            if ctx.col >= bounds.close_col and ctx.col <= bounds.close_col + 1 then
+                return true
+            end
+        end
     end
 
     return false
@@ -114,6 +129,18 @@ end
 
 function M.on_an_aliases_node(ctx)
     return on_node(ctx, { "/", "aliases" })
+end
+
+local function is_memory_name(name)
+    return name == "memory" or name:match("^memory@") ~= nil
+end
+
+function M.in_a_memory_node(ctx)
+    return in_node(ctx, { "/", is_memory_name })
+end
+
+function M.on_a_memory_node(ctx)
+    return on_node(ctx, { "/", is_memory_name })
 end
 
 return M
