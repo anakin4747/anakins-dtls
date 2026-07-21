@@ -1063,9 +1063,16 @@ function M.server_run(server)
 end
 
 -- When invoked directly as a script (rather than `require`d by tests), run
--- the language server over real stdio.
+-- the language server over real stdio. Compares `arg[0]` against this
+-- chunk's own source rather than matching a hardcoded file name, so this
+-- still works when installed under a different name (e.g. by Nix, which
+-- installs this file as `bin/anakins-dtls` without the `.lua` suffix).
 local function running_as_main_script()
-    return arg ~= nil and arg[0] ~= nil and arg[0]:match("anakins%-dtls%.lua$") ~= nil
+    if arg == nil or arg[0] == nil then
+        return false
+    end
+
+    return ("@" .. arg[0]) == debug.getinfo(1, "S").source
 end
 
 if running_as_main_script() then
