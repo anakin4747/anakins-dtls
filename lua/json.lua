@@ -28,6 +28,18 @@ local json = { _version = "0.1.2" }
 -- Encode
 -------------------------------------------------------------------------------
 
+-- Marker metatable used to disambiguate an empty table that should be
+-- encoded as `[]` rather than the default `{}` (see `json.array`).
+local array_mt = {}
+
+-- Tag `t` (or a new table if `t` is omitted) so that `json.encode` treats it
+-- as an array even when it is empty. This resolves the ambiguity between an
+-- empty JSON object and an empty JSON array, since an empty Lua table alone
+-- cannot convey that distinction.
+function json.array(t)
+    return setmetatable(t or {}, array_mt)
+end
+
 local encode
 
 local escape_char_map = {
@@ -64,7 +76,15 @@ local function encode_table(val, stack)
 
     stack[val] = true
 
-    if rawget(val, 1) ~= nil or next(val) == nil then
+    if next(val) == nil then
+        -- Ambiguous empty table: default to an empty object, unless it was
+        -- explicitly tagged as an array via `json.array`.
+        stack[val] = nil
+        if getmetatable(val) == array_mt then
+            return "[]"
+        end
+        return "{}"
+    elseif rawget(val, 1) ~= nil then
         -- Treat as array -- check keys are valid and it is not sparse
         local n = 0
         for k in pairs(val) do
