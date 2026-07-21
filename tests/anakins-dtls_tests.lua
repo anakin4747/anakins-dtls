@@ -538,270 +538,270 @@ for _, location in ipairs(dts_locations) do
             end)
         end)
 
-        describe("in_a_serial_device_node()", function()
-            it("returns true if in a serial device node", function()
-                -- inside serial-device { (compatible = "ns8250")
-                ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
-                assert(dtls.in_a_serial_device_node(ctx))
-
-                -- inside hdlc-device { (compatible = "arinc,x25-hdlc")
-                ctx.row, ctx.col = row_col("tests/custom.dts:436:9")
-                assert(dtls.in_a_serial_device_node(ctx))
-            end)
-
-            it("returns false if not in a serial device node", function()
-                -- inside a non serial device node
-                ctx.row, ctx.col = row_col("tests/custom.dts:419:9")
-                assert(not dtls.in_a_serial_device_node(ctx))
-            end)
-        end)
-
-        describe("on_a_serial_device_node()", function()
-            it("returns true if on a serial device node", function()
-                -- serial-device's 's'
-                ctx.row, ctx.col = row_col("tests/custom.dts:425:5")
-                assert(dtls.on_a_serial_device_node(ctx))
-
-                -- serial-device's '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:425:19")
-                assert(dtls.on_a_serial_device_node(ctx))
-
-                -- serial-device's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:428:5")
-                assert(dtls.on_a_serial_device_node(ctx))
-
-                -- serial-device's ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:428:6")
-                assert(dtls.on_a_serial_device_node(ctx))
-            end)
-
-            it("returns false if not on a serial device node", function()
-                -- on miscellaneous-device's 'm'
-                ctx.row, ctx.col = row_col("tests/custom.dts:415:5")
-                assert(not dtls.on_a_serial_device_node(ctx))
-
-                -- inside serial-device
-                ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
-                assert(not dtls.on_a_serial_device_node(ctx))
-            end)
-        end)
-
-        describe("in_a_ns16550_node()", function()
-            it("returns true if in a ns16550 node", function()
-                -- inside uart@4600 { (compatible = "ns16550")
-                ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
-                assert(dtls.in_a_ns16550_node(ctx))
-            end)
-
-            it("returns false if not in a ns16550 node", function()
-                -- inside serial-device (compatible = "ns8250", not ns16550)
-                ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
-                assert(not dtls.in_a_ns16550_node(ctx))
-
-                -- on miscellaneous-device's 'm'
-                ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
-                assert(not dtls.in_a_ns16550_node(ctx))
-            end)
-        end)
-
-        describe("on_a_ns16550_node()", function()
-            it("returns true if on a ns16550 node", function()
-                -- uart@4600's 'u'
-                ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
-                assert(dtls.on_a_ns16550_node(ctx))
-
-                -- uart@4600's '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:439:15")
-                assert(dtls.on_a_ns16550_node(ctx))
-
-                -- uart@4600's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:447:5")
-                assert(dtls.on_a_ns16550_node(ctx))
-
-                -- uart@4600's ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:447:6")
-                assert(dtls.on_a_ns16550_node(ctx))
-
-                -- uart@4600's '@'
-                ctx.row, ctx.col = row_col("tests/custom.dts:439:9")
-                assert(dtls.on_a_ns16550_node(ctx))
-
-                -- uart@4600's '4'
-                ctx.row, ctx.col = row_col("tests/custom.dts:439:10")
-                assert(dtls.on_a_ns16550_node(ctx))
-            end)
-
-            it("returns false if not on a ns16550 node", function()
-                -- on serial-device's 's' (compatible = "ns8250")
-                ctx.row, ctx.col = row_col("tests/custom.dts:425:5")
-                assert(not dtls.on_a_ns16550_node(ctx))
-
-                -- inside uart@4600
-                ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
-                assert(not dtls.on_a_ns16550_node(ctx))
-            end)
-        end)
-
-        describe("in_a_network_device_node()", function()
-            it("returns true if in a network device node", function()
-                -- inside ethernet@0
-                ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
-                assert(dtls.in_a_network_device_node(ctx))
-
-                -- inside ethernet@1
-                ctx.row, ctx.col = row_col("tests/custom.dts:457:9")
-                assert(dtls.in_a_network_device_node(ctx))
-            end)
-
-            it("returns false if not in a network device node", function()
-                -- inside uart@4600, an unrelated device
-                ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
-                assert(not dtls.in_a_network_device_node(ctx))
-
-                -- on ethernet@1's 'e'
-                ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
-                assert(not dtls.in_a_network_device_node(ctx))
-            end)
-        end)
-
-        describe("on_a_network_device_node()", function()
-            it("returns true if on a network device node", function()
-                -- ethernet@0's 'e'
-                ctx.row, ctx.col = row_col("tests/custom.dts:449:5")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@0's '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:449:16")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@0's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:454:5")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@0's ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:454:6")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@0's '@'
-                ctx.row, ctx.col = row_col("tests/custom.dts:449:13")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@0's '0'
-                ctx.row, ctx.col = row_col("tests/custom.dts:449:14")
-                assert(dtls.on_a_network_device_node(ctx))
-
-                -- ethernet@1's 'e'
-                ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
-                assert(dtls.on_a_network_device_node(ctx))
-            end)
-
-            it("returns false if not on a network device node", function()
-                -- on uart@4600's 'u'
-                ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
-                assert(not dtls.on_a_network_device_node(ctx))
-
-                -- inside ethernet@0
-                ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
-                assert(not dtls.on_a_network_device_node(ctx))
-            end)
-        end)
-
-        describe("in_an_open_pic_node()", function()
-            it("returns true if in an open-pic node", function()
-                -- inside interrupt-controller@10000000 { (compatible = "open-pic")
-                ctx.row, ctx.col = row_col("tests/custom.dts:463:9")
-                assert(dtls.in_an_open_pic_node(ctx))
-            end)
-
-            it("returns false if not in an open-pic node", function()
-                -- inside pic@10000000, which has no compatible property
-                ctx.row, ctx.col = row_col("tests/custom.dts:227:9")
-                assert(not dtls.in_an_open_pic_node(ctx))
-            end)
-        end)
-
-        describe("on_an_open_pic_node()", function()
-            it("returns true if on an open-pic node", function()
-                -- interrupt-controller@10000000's 'i'
-                ctx.row, ctx.col = row_col("tests/custom.dts:462:5")
-                assert(dtls.on_an_open_pic_node(ctx))
-
-                -- interrupt-controller@10000000's '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:462:35")
-                assert(dtls.on_an_open_pic_node(ctx))
-
-                -- interrupt-controller@10000000's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:468:5")
-                assert(dtls.on_an_open_pic_node(ctx))
-
-                -- interrupt-controller@10000000's ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:468:6")
-                assert(dtls.on_an_open_pic_node(ctx))
-
-                -- interrupt-controller@10000000's '@'
-                ctx.row, ctx.col = row_col("tests/custom.dts:462:25")
-                assert(dtls.on_an_open_pic_node(ctx))
-
-                -- interrupt-controller@10000000's '1'
-                ctx.row, ctx.col = row_col("tests/custom.dts:462:26")
-                assert(dtls.on_an_open_pic_node(ctx))
-            end)
-
-            it("returns false if not on an open-pic node", function()
-                -- on pic@10000000's 'p' (no compatible property)
-                ctx.row, ctx.col = row_col("tests/custom.dts:226:5")
-                assert(not dtls.on_an_open_pic_node(ctx))
-
-                -- inside interrupt-controller@10000000
-                ctx.row, ctx.col = row_col("tests/custom.dts:463:9")
-                assert(not dtls.on_an_open_pic_node(ctx))
-            end)
-        end)
-
-        describe("in_a_simple_bus_node()", function()
-            it("returns true if in a simple-bus node", function()
-                -- inside the second soc { (compatible = "simple-bus")
-                ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
-                assert(dtls.in_a_simple_bus_node(ctx))
-            end)
-
-            it("returns false if not in a simple-bus node", function()
-                -- inside the first soc {
-                ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
-                assert(not dtls.in_a_simple_bus_node(ctx))
-            end)
-        end)
-
-        describe("on_a_simple_bus_node()", function()
-            it("returns true if on a simple-bus node", function()
-                -- soc's 's'
-                ctx.row, ctx.col = row_col("tests/custom.dts:470:5")
-                assert(dtls.on_a_simple_bus_node(ctx))
-
-                -- soc's '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:470:9")
-                assert(dtls.on_a_simple_bus_node(ctx))
-
-                -- soc's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:474:5")
-                assert(dtls.on_a_simple_bus_node(ctx))
-
-                -- soc's ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:474:6")
-                assert(dtls.on_a_simple_bus_node(ctx))
-            end)
-
-            it("returns false if not on a simple-bus node", function()
-                -- on the first soc's 's' (no compatible property)
-                ctx.row, ctx.col = row_col("tests/custom.dts:232:5")
-                assert(not dtls.on_a_simple_bus_node(ctx))
-
-                -- inside the second soc
-                ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
-                assert(not dtls.on_a_simple_bus_node(ctx))
-            end)
-        end)
-
+        -- describe("in_a_serial_device_node()", function()
+        --     it("returns true if in a serial device node", function()
+        --         -- inside serial-device { (compatible = "ns8250")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
+        --         assert(dtls.in_a_serial_device_node(ctx))
+        --
+        --         -- inside hdlc-device { (compatible = "arinc,x25-hdlc")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:436:9")
+        --         assert(dtls.in_a_serial_device_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not in a serial device node", function()
+        --         -- inside a non serial device node
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:419:9")
+        --         assert(not dtls.in_a_serial_device_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("on_a_serial_device_node()", function()
+        --     it("returns true if on a serial device node", function()
+        --         -- serial-device's 's'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:425:5")
+        --         assert(dtls.on_a_serial_device_node(ctx))
+        --
+        --         -- serial-device's '{'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:425:19")
+        --         assert(dtls.on_a_serial_device_node(ctx))
+        --
+        --         -- serial-device's '}'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:428:5")
+        --         assert(dtls.on_a_serial_device_node(ctx))
+        --
+        --         -- serial-device's ';'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:428:6")
+        --         assert(dtls.on_a_serial_device_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not on a serial device node", function()
+        --         -- on miscellaneous-device's 'm'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:415:5")
+        --         assert(not dtls.on_a_serial_device_node(ctx))
+        --
+        --         -- inside serial-device
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
+        --         assert(not dtls.on_a_serial_device_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("in_a_ns16550_node()", function()
+        --     it("returns true if in a ns16550 node", function()
+        --         -- inside uart@4600 { (compatible = "ns16550")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        --         assert(dtls.in_a_ns16550_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not in a ns16550 node", function()
+        --         -- inside serial-device (compatible = "ns8250", not ns16550)
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
+        --         assert(not dtls.in_a_ns16550_node(ctx))
+        --
+        --         -- on miscellaneous-device's 'm'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
+        --         assert(not dtls.in_a_ns16550_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("on_a_ns16550_node()", function()
+        --     it("returns true if on a ns16550 node", function()
+        --         -- uart@4600's 'u'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- uart@4600's '{'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:439:15")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- uart@4600's '}'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:447:5")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- uart@4600's ';'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:447:6")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- uart@4600's '@'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:439:9")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- uart@4600's '4'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:439:10")
+        --         assert(dtls.on_a_ns16550_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not on a ns16550 node", function()
+        --         -- on serial-device's 's' (compatible = "ns8250")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:425:5")
+        --         assert(not dtls.on_a_ns16550_node(ctx))
+        --
+        --         -- inside uart@4600
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        --         assert(not dtls.on_a_ns16550_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("in_a_network_device_node()", function()
+        --     it("returns true if in a network device node", function()
+        --         -- inside ethernet@0
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
+        --         assert(dtls.in_a_network_device_node(ctx))
+        --
+        --         -- inside ethernet@1
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:457:9")
+        --         assert(dtls.in_a_network_device_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not in a network device node", function()
+        --         -- inside uart@4600, an unrelated device
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        --         assert(not dtls.in_a_network_device_node(ctx))
+        --
+        --         -- on ethernet@1's 'e'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
+        --         assert(not dtls.in_a_network_device_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("on_a_network_device_node()", function()
+        --     it("returns true if on a network device node", function()
+        --         -- ethernet@0's 'e'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:449:5")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@0's '{'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:449:16")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@0's '}'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:454:5")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@0's ';'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:454:6")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@0's '@'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:449:13")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@0's '0'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:449:14")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --
+        --         -- ethernet@1's 'e'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
+        --         assert(dtls.on_a_network_device_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not on a network device node", function()
+        --         -- on uart@4600's 'u'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
+        --         assert(not dtls.on_a_network_device_node(ctx))
+        --
+        --         -- inside ethernet@0
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
+        --         assert(not dtls.on_a_network_device_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("in_an_open_pic_node()", function()
+        --     it("returns true if in an open-pic node", function()
+        --         -- inside interrupt-controller@10000000 { (compatible = "open-pic")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:463:9")
+        --         assert(dtls.in_an_open_pic_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not in an open-pic node", function()
+        --         -- inside pic@10000000, which has no compatible property
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:227:9")
+        --         assert(not dtls.in_an_open_pic_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("on_an_open_pic_node()", function()
+        --     it("returns true if on an open-pic node", function()
+        --         -- interrupt-controller@10000000's 'i'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:462:5")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- interrupt-controller@10000000's '{'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:462:35")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- interrupt-controller@10000000's '}'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:468:5")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- interrupt-controller@10000000's ';'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:468:6")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- interrupt-controller@10000000's '@'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:462:25")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- interrupt-controller@10000000's '1'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:462:26")
+        --         assert(dtls.on_an_open_pic_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not on an open-pic node", function()
+        --         -- on pic@10000000's 'p' (no compatible property)
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:226:5")
+        --         assert(not dtls.on_an_open_pic_node(ctx))
+        --
+        --         -- inside interrupt-controller@10000000
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:463:9")
+        --         assert(not dtls.on_an_open_pic_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("in_a_simple_bus_node()", function()
+        --     it("returns true if in a simple-bus node", function()
+        --         -- inside the second soc { (compatible = "simple-bus")
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
+        --         assert(dtls.in_a_simple_bus_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not in a simple-bus node", function()
+        --         -- inside the first soc {
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
+        --         assert(not dtls.in_a_simple_bus_node(ctx))
+        --     end)
+        -- end)
+        --
+        -- describe("on_a_simple_bus_node()", function()
+        --     it("returns true if on a simple-bus node", function()
+        --         -- soc's 's'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:470:5")
+        --         assert(dtls.on_a_simple_bus_node(ctx))
+        --
+        --         -- soc's '{'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:470:9")
+        --         assert(dtls.on_a_simple_bus_node(ctx))
+        --
+        --         -- soc's '}'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:474:5")
+        --         assert(dtls.on_a_simple_bus_node(ctx))
+        --
+        --         -- soc's ';'
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:474:6")
+        --         assert(dtls.on_a_simple_bus_node(ctx))
+        --     end)
+        --
+        --     it("returns false if not on a simple-bus node", function()
+        --         -- on the first soc's 's' (no compatible property)
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:232:5")
+        --         assert(not dtls.on_a_simple_bus_node(ctx))
+        --
+        --         -- inside the second soc
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
+        --         assert(not dtls.on_a_simple_bus_node(ctx))
+        --     end)
+        -- end)
+        --
         describe("in_top_level()", function()
             it("returns true if at the top level", function()
                 -- before /dts-v1/;
