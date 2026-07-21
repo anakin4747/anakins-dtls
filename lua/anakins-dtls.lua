@@ -207,4 +207,16 @@ function M.on_a_reserved_memory_node(ctx)
     return on_node(ctx, { "/", "reserved-memory" })
 end
 
+local function any_name()
+    return true
+end
+
+function M.in_a_reserved_memory_region_node(ctx)
+    return in_node(ctx, { "/", "reserved-memory", any_name })
+end
+
+function M.on_a_reserved_memory_region_node(ctx)
+    return on_node(ctx, { "/", "reserved-memory", any_name })
+end
+
 return M
