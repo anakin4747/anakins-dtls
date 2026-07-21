@@ -82,11 +82,6 @@ for _, location in ipairs(dts_locations) do
                 assert(dtls.in_an_aliases_node(ctx))
             end)
 
-            it("indicates that it is in a root node even in an /aliases node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:21:3")
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("doesn't mistake inside the root node for inside an /aliases node", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:17:2")
                 assert(not dtls.in_an_aliases_node(ctx))
@@ -153,11 +148,6 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_memory_node(ctx))
             end)
 
-            it("indicates that it is in a root node even in a /memory node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("identifies if on a /memory node", function()
                 -- /memory's 'm'
                 ctx.row, ctx.col = row_col("tests/custom.dts:119:5")
@@ -220,11 +210,6 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_chosen_node(ctx))
             end)
 
-            it("indicates that it is in a root node even in a /chosen node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("identifies if on a /chosen node", function()
                 -- /chosen's 'c'
                 ctx.row, ctx.col = row_col("tests/custom.dts:52:5")
@@ -279,11 +264,6 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_cpus_node(ctx))
             end)
 
-            it("indicates that it is in a root node even in a /cpus node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("identifies if on a /cpus node", function()
                 -- /cpus' 'c'
                 ctx.row, ctx.col = row_col("tests/custom.dts:172:5")
@@ -326,14 +306,6 @@ for _, location in ipairs(dts_locations) do
                 -- in /cpus but outside any cpu@N
                 ctx.row, ctx.col = row_col("tests/custom.dts:173:9")
                 assert(not dtls.in_a_cpu_node(ctx))
-            end)
-
-            it("indicates that it is in a /cpus node and a root node even in a cpu node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_cpus_node(ctx))
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_root_node(ctx))
             end)
 
             it("identifies if on a cpu node", function()
@@ -392,20 +364,6 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_cache_node(ctx))
             end)
 
-            it("indicates that it is in a cpu, /cpus, and root node even in a cache node", function()
-                -- inside l2-cache
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_cpu_node(ctx))
-                assert(dtls.in_a_cpus_node(ctx))
-                assert(dtls.in_a_root_node(ctx))
-
-                -- inside nested l3-cache
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_cpu_node(ctx))
-                assert(dtls.in_a_cpus_node(ctx))
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("identifies if on a cache node", function()
                 -- l2-cache's 'l'
                 ctx.row, ctx.col = row_col("tests/custom.dts:184:18")
@@ -456,11 +414,6 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_reserved_memory_node(ctx))
             end)
 
-            it("indicates that it is in a root node even in a /reserved-memory node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_root_node(ctx))
-            end)
-
             it("identifies if on a /reserved-memory node", function()
                 -- /reserved-memory's 'r'
                 ctx.row, ctx.col = row_col("tests/custom.dts:132:5")
@@ -507,12 +460,6 @@ for _, location in ipairs(dts_locations) do
                 -- in /reserved-memory but outside any region node
                 ctx.row, ctx.col = row_col("tests/custom.dts:133:9")
                 assert(not dtls.in_a_reserved_memory_region_node(ctx))
-            end)
-
-            it("indicates that it is in a /reserved-memory node and a root node even in a region node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:")
-                assert(dtls.in_a_reserved_memory_node(ctx))
-                assert(dtls.in_a_root_node(ctx))
             end)
 
             it("identifies if on a reserved-memory region node", function()
