@@ -151,4 +151,12 @@ function M.on_a_chosen_node(ctx)
     return on_node(ctx, { "/", "chosen" })
 end
 
+function M.in_a_cpus_node(ctx)
+    return in_node(ctx, { "/", "cpus" })
+end
+
+function M.on_a_cpus_node(ctx)
+    return on_node(ctx, { "/", "cpus" })
+end
+
 return M
