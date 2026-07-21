@@ -24,6 +24,15 @@
 
 local json = { _version = "0.1.2" }
 
+-- Sentinel used to represent the JSON `null` literal, distinguishable from
+-- Lua's `nil` so that object keys with a `null` value survive a decode
+-- round-trip instead of being silently dropped from the resulting table.
+json.NULL = setmetatable({}, {
+    __tostring = function()
+        return "null"
+    end,
+})
+
 -------------------------------------------------------------------------------
 -- Encode
 -------------------------------------------------------------------------------
@@ -136,6 +145,10 @@ local type_func_map = {
 }
 
 encode = function(val, stack)
+    if val == json.NULL then
+        return "null"
+    end
+
     local t = type(val)
     local f = type_func_map[t]
     if f then
@@ -170,7 +183,7 @@ local literals = create_set("true", "false", "null")
 local literal_map = {
     ["true"] = true,
     ["false"] = false,
-    ["null"] = nil,
+    ["null"] = json.NULL,
 }
 
 local function next_char(str, idx, set, negate)

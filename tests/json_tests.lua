@@ -22,4 +22,23 @@ describe("json.encode()", function()
     it("still encodes non-empty tables with string keys as objects", function()
         assert.are.equal('{"a":1}', json.encode({ a = 1 }))
     end)
+
+    it("encodes json.NULL as the JSON null literal", function()
+        assert.are.equal("null", json.encode(json.NULL))
+    end)
+
+    it("encodes json.NULL nested inside a table as null", function()
+        assert.are.equal('{"a":null}', json.encode({ a = json.NULL }))
+    end)
+end)
+
+describe("json.decode()", function()
+    it("decodes the JSON null literal as json.NULL rather than dropping it", function()
+        assert.are.equal(json.NULL, json.decode("null"))
+    end)
+
+    it("preserves an object key whose value is null instead of removing it", function()
+        local decoded = json.decode('{"a":null}')
+        assert.are.equal(json.NULL, decoded.a)
+    end)
 end)
