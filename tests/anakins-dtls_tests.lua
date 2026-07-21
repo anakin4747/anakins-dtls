@@ -936,6 +936,45 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(on_a_root_node).was_called()
                 assert.spy(on_a_root_node).returned_with(true)
             end)
+
+            it("returns hover markdown for root node model property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
+                local expected = dedent([[
+                    # Devicetree Specification:
+
+                    Property Name: model
+
+                    Usage: Required
+
+                    Value Type: `<string>`
+
+                    Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
+
+                    # Type Definition:
+
+                    `<string>` - Strings are printable and null-terminated. Example: the string "hello" would be represented in memory as:
+
+                    ```
+                      address  68  'h'
+                    address+1  65  'e'
+                    address+2  6C  'l'
+                    address+3  6C  'l'
+                    address+4  6F  'o'
+                    address+5  00  '\0'
+                    ```
+                ]])
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("calls in_a_root_node() to determine the type of node", function()
+                local in_a_root_node = spy.on(dtls, "in_a_root_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
+                dtls.hover(ctx)
+
+                assert.spy(in_a_root_node).was_called()
+                assert.spy(in_a_root_node).returned_with(true)
+            end)
         end)
     end)
 end
