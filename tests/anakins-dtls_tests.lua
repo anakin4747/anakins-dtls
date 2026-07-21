@@ -11,6 +11,10 @@ local function row_col(filename_linenumber)
     return tonumber(row), tonumber(col)
 end
 
+local handle = io.popen("pwd")
+local cwd = handle:read("*l")
+handle:close()
+
 local dts_locations = {
     { name = "in-tree", path = "arch/arm64/boot/dts/freescale/custom.dts" },
     { name = "out-of-tree", path = "custom.dts" },
@@ -18,8 +22,7 @@ local dts_locations = {
 
 for _, location in ipairs(dts_locations) do
     local ctx = {
-        cwd = location.name,
-        file = location.path,
+        file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path)
     }
 
     describe(location.name, function()
