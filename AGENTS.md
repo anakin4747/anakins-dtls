@@ -31,6 +31,11 @@ yourself.
 - If `make` fails, fix the root cause (test, implementation, lint, or
   formatting) and re-run `make` until it passes cleanly before moving on.
 - Do not edit the `Makefile` to bypass or skip steps in order to make it pass.
+- Never change lint or style configuration (e.g. `.luacheckrc`, `stylua.toml`,
+  `.editorconfig`) to silence, relax, or sidestep a lint/style failure.
+  Fix the actual code (or, in rare cases where a rule is genuinely wrong for
+  the whole project, get explicit human sign-off first) instead of adjusting
+  the config to make a failure go away.
 
 ## Git best practices
 
