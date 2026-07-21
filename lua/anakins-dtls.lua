@@ -219,4 +219,12 @@ function M.on_a_reserved_memory_region_node(ctx)
     return on_node(ctx, { "/", "reserved-memory", any_name })
 end
 
+local function is_top_level_stack(stack)
+    return #stack == 1
+end
+
+function M.in_top_level(ctx)
+    return not in_node(ctx, is_top_level_stack)
+end
+
 return M
