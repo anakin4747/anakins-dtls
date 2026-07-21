@@ -227,4 +227,22 @@ function M.in_top_level(ctx)
     return not in_node(ctx, is_top_level_stack)
 end
 
+function M.on_a_label_definition(ctx)
+    local lines = read_lines(ctx.file)
+    local line = lines[ctx.row]
+    if not line then
+        return false
+    end
+
+    local leading, label = line:match("^(%s*)([%w_]+):")
+    if not label then
+        return false
+    end
+
+    local start_col = #leading + 1
+    local colon_col = start_col + #label
+
+    return ctx.col >= start_col and ctx.col <= colon_col
+end
+
 return M
