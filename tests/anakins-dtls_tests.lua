@@ -1,5 +1,6 @@
 local busted = require("busted")
 local assert = require("luassert")
+local spy = require("luassert.spy")
 local describe = busted.describe
 local it = busted.it
 
@@ -906,6 +907,34 @@ for _, location in ipairs(dts_locations) do
                 -- on a property name/value that isn't a label reference
                 ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
                 assert(not dtls.on_a_label_reference(ctx))
+            end)
+        end)
+
+        describe("hover()", function()
+            it("returns hover markdown for root node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:1")
+                local expected = dedent([[
+                    # Devicetree Specification:
+
+                    The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
+
+                    All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:
+                    -  One `/cpus` node
+                    -  At least one `/memory` node
+
+                    The devicetree has a single root node of which all other device nodes are descendants. The full path to the root node is `/`.
+                ]])
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("calls on_a_root_node() to determine the type of node", function()
+                local on_a_root_node = spy.on(dtls, "on_a_root_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:1")
+                dtls.hover(ctx)
+
+                assert.spy(on_a_root_node).was_called()
+                assert.spy(on_a_root_node).returned_with(true)
             end)
         end)
     end)

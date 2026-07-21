@@ -272,4 +272,21 @@ function M.on_a_label_reference(ctx)
     end
 end
 
+local root_node_markdown = [[
+# Devicetree Specification:
+
+The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
+
+All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:
+-  One `/cpus` node
+-  At least one `/memory` node
+
+The devicetree has a single root node of which all other device nodes are descendants. The full path to the root node is `/`.]] -- luacheck: ignore 631
+
+function M.hover(ctx)
+    if M.on_a_root_node(ctx) then
+        return root_node_markdown
+    end
+end
+
 return M
