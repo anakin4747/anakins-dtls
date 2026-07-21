@@ -159,4 +159,16 @@ function M.on_a_cpus_node(ctx)
     return on_node(ctx, { "/", "cpus" })
 end
 
+local function is_cpu_name(name)
+    return name == "cpu" or name:match("^cpu@") ~= nil
+end
+
+function M.in_a_cpu_node(ctx)
+    return in_node(ctx, { "/", "cpus", is_cpu_name })
+end
+
+function M.on_a_cpu_node(ctx)
+    return on_node(ctx, { "/", "cpus", is_cpu_name })
+end
+
 return M
