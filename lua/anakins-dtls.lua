@@ -288,6 +288,8 @@ local model_property_markdown = [[
 
 ## Property Name: model
 
+## Path: /model
+
 ## Usage: Required
 
 ## Value Type: `<string>`
@@ -298,7 +300,9 @@ Specifies a string that uniquely identifies the model of the system board. The r
 
 ## Type Definition:
 
-`<string>` - Strings are printable and null-terminated. Example: the string "hello" would be represented in memory as:
+`<string>` - Strings are printable and null-terminated.
+
+Example: the string `"hello"` would be represented in memory as:
 
 ```
   address  68  'h'
@@ -307,6 +311,50 @@ address+2  6C  'l'
 address+3  6C  'l'
 address+4  6F  'o'
 address+5  00  '\0'
+```]] -- luacheck: ignore 631
+
+local compatible_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: compatible
+
+## Path: /compatible
+
+## Usage: Required
+
+## Value Type: `<stringlist>`
+
+## Definition:
+
+Specifies a list of platform architectures with which this platform is compatible. This property can be used by operating systems in selecting platform specific code. The recommended form of the property value is:
+
+`"manufacturer,model"`
+
+For example:
+
+```dts
+compatible = "fsl,mpc8572ds"
+```
+
+## Type Definition:
+
+`<stringlist>` - A list of `<string>` values concatenated together.
+
+Example: The string list `"hello", "world"` would be represented in memory as:
+
+```
+   address  68  'h'
+ address+1  65  'e'
+ address+2  6C  'l'
+ address+3  6C  'l'
+ address+4  6F  'o'
+ address+5  00  '\0'
+ address+6  77  'w'
+ address+7  6f  'o'
+ address+8  72  'r'
+ address+9  6C  'l'
+address+10  64  'd'
+address+11  00  '\0'
 ```]] -- luacheck: ignore 631
 
 local function on_a_property_name(ctx, prop_name)
@@ -334,6 +382,10 @@ function M.hover(ctx)
 
     if M.in_a_root_node(ctx) and on_a_property_name(ctx, "model") then
         return model_property_markdown
+    end
+
+    if M.in_a_root_node(ctx) and on_a_property_name(ctx, "compatible") then
+        return compatible_property_markdown
     end
 end
 
