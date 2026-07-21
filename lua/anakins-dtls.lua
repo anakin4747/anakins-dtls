@@ -245,4 +245,31 @@ function M.on_a_label_definition(ctx)
     return ctx.col >= start_col and ctx.col <= colon_col
 end
 
+function M.on_a_label_reference(ctx)
+    local lines = read_lines(ctx.file)
+    local line = lines[ctx.row]
+    if not line then
+        return false
+    end
+
+    local search_from = 1
+    while true do
+        local amp_col = line:find("&", search_from)
+        if not amp_col then
+            return false
+        end
+
+        local end_col = amp_col
+        while end_col + 1 <= #line and line:sub(end_col + 1, end_col + 1):match("[%w_]") do
+            end_col = end_col + 1
+        end
+
+        if ctx.col >= amp_col and ctx.col <= end_col then
+            return true
+        end
+
+        search_from = amp_col + 1
+    end
+end
+
 return M
