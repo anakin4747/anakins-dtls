@@ -25,11 +25,29 @@ local function node_name_before_brace(line, open_col)
     return after_colon or last_token
 end
 
--- Find the row/column bounds of the root ("/") node's opening and closing
--- braces by walking the file and tracking node depth via a brace stack.
-local function find_root_bounds(file)
+-- Check whether `stack` (an array of node names, from outermost to
+-- innermost) exactly matches `path`.
+local function path_matches(stack, path)
+    if #stack ~= #path then
+        return false
+    end
+
+    for i, name in ipairs(path) do
+        if stack[i] ~= name then
+            return false
+        end
+    end
+
+    return true
+end
+
+-- Find the row/column bounds of the opening and closing braces of the node
+-- addressed by `path` (an array of node names, e.g. { "/", "aliases" }), by
+-- walking the file and tracking node depth via a name stack.
+local function find_node_bounds(file, path)
     local lines = read_lines(file)
     local stack = {}
+    local pending
 
     for row, line in ipairs(lines) do
         local col = 1
@@ -37,18 +55,17 @@ local function find_root_bounds(file)
             local char = line:sub(col, col)
             if char == "{" then
                 local name = node_name_before_brace(line, col)
-                stack[#stack + 1] = { name = name, open_row = row, open_col = col }
-            elseif char == "}" then
-                local entry = stack[#stack]
-                stack[#stack] = nil
-                if entry and entry.name == "/" then
-                    return {
-                        open_row = entry.open_row,
-                        open_col = entry.open_col,
-                        close_row = row,
-                        close_col = col,
-                    }
+                stack[#stack + 1] = name
+                if not pending and path_matches(stack, path) then
+                    pending = { open_row = row, open_col = col, depth = #stack }
                 end
+            elseif char == "}" then
+                if pending and #stack == pending.depth then
+                    pending.close_row = row
+                    pending.close_col = col
+                    return pending
+                end
+                stack[#stack] = nil
             end
             col = col + 1
         end
@@ -57,8 +74,8 @@ local function find_root_bounds(file)
     return nil
 end
 
-function M.in_a_root_node(ctx)
-    local bounds = find_root_bounds(ctx.file)
+local function in_node(ctx, path)
+    local bounds = find_node_bounds(ctx.file, path)
     if not bounds then
         return false
     end
@@ -66,8 +83,8 @@ function M.in_a_root_node(ctx)
     return ctx.row > bounds.open_row and ctx.row < bounds.close_row
 end
 
-function M.on_a_root_node(ctx)
-    local bounds = find_root_bounds(ctx.file)
+local function on_node(ctx, path)
+    local bounds = find_node_bounds(ctx.file, path)
     if not bounds then
         return false
     end
@@ -81,6 +98,22 @@ function M.on_a_root_node(ctx)
     end
 
     return false
+end
+
+function M.in_a_root_node(ctx)
+    return in_node(ctx, { "/" })
+end
+
+function M.on_a_root_node(ctx)
+    return on_node(ctx, { "/" })
+end
+
+function M.in_an_aliases_node(ctx)
+    return in_node(ctx, { "/", "aliases" })
+end
+
+function M.on_an_aliases_node(ctx)
+    return on_node(ctx, { "/", "aliases" })
 end
 
 return M
