@@ -38,6 +38,10 @@ Two ways to drive the loop:
 - `server_run(server)` — loop until natural termination (EOF or `exit`
   handled). Used for the end-to-end scenario tests.
 
+The one deliberate exception is section 5, which runs the real script as a
+subprocess over real `stdio_channel` pipes — every other test in this doc
+uses the memory channel.
+
 ## 1. State-transition table
 
 One `describe` block table-driving inputs against expected outcomes, rather
@@ -268,6 +272,66 @@ it("handles a full initialize -> didSave -> shutdown -> exit session", function(
 end)
 ```
 
+## 5. One real stdio smoke test
+
+Everything above uses `memory_channel` deliberately, to avoid real syscalls
+in the bulk of the suite. But that only proves the shared framing/dispatch
+logic works — it says nothing about whether `stdio_channel` actually wires
+that logic up to real `io.stdin`/`io.stdout`/`io.stderr` correctly (buffered
+reads, EOF handling, flushing, etc.), nor that the script's "run as CLI"
+entry point guard is correct. So there should be exactly **one** black-box
+test that runs the real script as a subprocess over real OS pipes, to catch
+wiring bugs the memory-channel tests structurally cannot see.
+
+This test is intentionally not part of the granular red/green cycle for
+state management (that's what the `memory_channel` tests are for) — it's a
+single smoke test added once the loop is otherwise implemented and tested,
+to prove the production entry point isn't broken.
+
+Approach: write the same framed session bytes as the end-to-end scenario
+test to a temp file, run `lua/anakins-dtls.lua` as a subprocess with stdin
+redirected from that file and stdout redirected to another temp file (e.g.
+via `io.popen("lua lua/anakins-dtls.lua < <infile> > <outfile>", "r")`, or
+`os.execute` plus separate temp files, since stock `io.popen` is
+unidirectional), then read the output file back and assert on the same
+transcript shape as the memory-channel version:
+
+```lua
+it("runs the real script end-to-end over real stdio", function()
+    local infile = os.tmpname()
+    local outfile = os.tmpname()
+
+    local input = io.open(infile, "w")
+    input:write(frame({ method = "initialize", id = 1, params = {} }))
+    input:write(frame({ method = "initialized", params = {} }))
+    input:write(frame({
+        method = "textDocument/didSave",
+        params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(cwd) } },
+    }))
+    input:write(frame({ method = "shutdown", id = 2 }))
+    input:write(frame({ method = "exit" }))
+    input:close()
+
+    os.execute(("lua lua/anakins-dtls.lua < %q > %q"):format(infile, outfile))
+
+    local output_handle = io.open(outfile, "r")
+    local output = parse_output_string(output_handle:read("*a"))
+    output_handle:close()
+    os.remove(infile)
+    os.remove(outfile)
+
+    assert.are.equal(1, output[1].id)
+    assert.truthy(output[1].result.capabilities)
+    assert.are.equal(2, output[2].id)
+    assert.same(json.NULL, output[2].result)
+    assert.are.equal(2, #output)
+end)
+```
+
+This is slower and touches the real filesystem/process/pipes, which is
+exactly why it should stay a single smoke test rather than the pattern used
+for the rest of the suite.
+
 ## Order of implementation (red -> green per step)
 
 1. `frame()` / `parse_output()` test helpers + channel push/take — exercised
@@ -282,7 +346,9 @@ end)
 7. Error resilience: handler throws -> `showMessage`, loop continues, state
    unaffected, subsequent messages still served.
 8. Garbage/unparsable input -> `showMessage`, loop continues.
-9. Full end-to-end scenario test.
+9. Full end-to-end scenario test (memory channel).
+10. One real stdio smoke test (subprocess over real pipes), added last, once
+    everything above is green.
 
 Each numbered step gets its own red -> green -> refactor cycle and its own
 commit, per `AGENTS.md`.
