@@ -51,11 +51,27 @@ local function path_matches(stack, path)
     return true
 end
 
+-- Build a stack-matching function that matches a node found anywhere in the
+-- file (regardless of depth or ancestry) whose own name satisfies `matcher`.
+local function any_depth(matcher)
+    return function(stack)
+        return name_matches(stack[#stack], matcher)
+    end
+end
+
 -- Find the row/column bounds of the opening and closing braces of every node
--- addressed by `path` (an array of exact names and/or predicates, e.g.
--- { "/", "aliases" }), by walking the file and tracking node depth via a
--- name stack.
-local function find_all_node_bounds(file, path)
+-- matched by `criteria`: either a path (an array of exact names and/or
+-- predicates, e.g. { "/", "aliases" }) or a stack-matching function (see
+-- `any_depth`), by walking the file and tracking node depth via a name
+-- stack.
+local function find_all_node_bounds(file, criteria)
+    local matches = criteria
+    if type(criteria) == "table" then
+        matches = function(stack)
+            return path_matches(stack, criteria)
+        end
+    end
+
     local lines = read_lines(file)
     local stack = {}
     local pending_by_depth = {}
@@ -68,7 +84,7 @@ local function find_all_node_bounds(file, path)
             if char == "{" then
                 local name = node_name_before_brace(line, col)
                 stack[#stack + 1] = name
-                if path_matches(stack, path) then
+                if matches(stack) then
                     pending_by_depth[#stack] = { open_row = row, open_col = col }
                 end
             elseif char == "}" then
@@ -89,8 +105,8 @@ local function find_all_node_bounds(file, path)
     return results
 end
 
-local function in_node(ctx, path)
-    for _, bounds in ipairs(find_all_node_bounds(ctx.file, path)) do
+local function in_node(ctx, criteria)
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row > bounds.open_row and ctx.row < bounds.close_row then
             return true
         end
@@ -99,8 +115,8 @@ local function in_node(ctx, path)
     return false
 end
 
-local function on_node(ctx, path)
-    for _, bounds in ipairs(find_all_node_bounds(ctx.file, path)) do
+local function on_node(ctx, criteria)
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row == bounds.open_row then
             if ctx.col >= 1 and ctx.col <= bounds.open_col then
                 return true
@@ -169,6 +185,18 @@ end
 
 function M.on_a_cpu_node(ctx)
     return on_node(ctx, { "/", "cpus", is_cpu_name })
+end
+
+local function is_cache_name(name)
+    return name:match("cache") ~= nil
+end
+
+function M.in_a_cache_node(ctx)
+    return in_node(ctx, any_depth(is_cache_name))
+end
+
+function M.on_a_cache_node(ctx)
+    return on_node(ctx, any_depth(is_cache_name))
 end
 
 return M
