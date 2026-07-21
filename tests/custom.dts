@@ -433,7 +433,7 @@
     };
 
     hdlc-device {
-        compatible = "arinc,x25-hdlc"; // should be identified as a serial device via *-hdlc$ fallback
+        compatible = "arinc,x25-hdlc";
     };
 
     uart@4600 {

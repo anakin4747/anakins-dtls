@@ -25,7 +25,7 @@ for _, location in ipairs(dts_locations) do
     describe(location.name, function()
         describe("in_a_root_node()", function()
             it("returns true if in a root node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:16:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
                 assert(dtls.in_a_root_node(ctx))
             end)
 
@@ -35,7 +35,7 @@ for _, location in ipairs(dts_locations) do
                 assert(not dtls.in_a_root_node(ctx))
 
                 -- after the root node
-                ctx.row, ctx.col = row_col("tests/custom.dts:114:1")
+                ctx.row, ctx.col = row_col("tests/custom.dts:476:1")
                 assert(not dtls.in_a_root_node(ctx))
             end)
         end)
@@ -43,17 +43,17 @@ for _, location in ipairs(dts_locations) do
         describe("on_a_root_node()", function()
             it("returns true if on a root node", function()
                 -- should cover the '/', the ' ', the '{'
+                ctx.row, ctx.col = row_col("tests/custom.dts:15:1")
+                assert(dtls.on_a_root_node(ctx))
                 ctx.row, ctx.col = row_col("tests/custom.dts:15:2")
                 assert(dtls.on_a_root_node(ctx))
                 ctx.row, ctx.col = row_col("tests/custom.dts:15:3")
                 assert(dtls.on_a_root_node(ctx))
-                ctx.row, ctx.col = row_col("tests/custom.dts:15:4")
-                assert(dtls.on_a_root_node(ctx))
 
                 -- and the '}' and ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:113:1")
+                ctx.row, ctx.col = row_col("tests/custom.dts:475:1")
                 assert(dtls.on_a_root_node(ctx))
-                ctx.row, ctx.col = row_col("tests/custom.dts:113:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:475:2")
                 assert(dtls.on_a_root_node(ctx))
             end)
 
@@ -69,18 +69,18 @@ for _, location in ipairs(dts_locations) do
 
             it("returns false if on an /aliases node", function()
                 -- /aliases' 'a'
-                ctx.row, ctx.col = row_col("tests/custom.dts:20:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:25:5")
                 assert(not dtls.on_a_root_node(ctx))
 
                 -- /aliases' '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:45:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:50:5")
                 assert(not dtls.on_a_root_node(ctx))
             end)
         end)
 
         describe("in_an_aliases_node()", function()
             it("returns true if in an /aliases node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:21:3")
+                ctx.row, ctx.col = row_col("tests/custom.dts:30:9")
                 assert(dtls.in_an_aliases_node(ctx))
             end)
 
@@ -90,7 +90,7 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("returns false if in a /child/aliases node", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:114:13")
+                ctx.row, ctx.col = row_col("tests/custom.dts:115:13")
                 assert(not dtls.in_an_aliases_node(ctx))
             end)
         end)
@@ -98,33 +98,33 @@ for _, location in ipairs(dts_locations) do
         describe("on_an_aliases_node()", function()
             it("returns true if on an /aliases node", function()
                 -- /aliases' 'a'
-                ctx.row, ctx.col = row_col("tests/custom.dts:20:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:25:5")
                 assert(dtls.on_an_aliases_node(ctx))
 
                 -- /aliases' '{'
-                ctx.row, ctx.col = row_col("tests/custom.dts:20:10")
+                ctx.row, ctx.col = row_col("tests/custom.dts:25:13")
                 assert(dtls.on_an_aliases_node(ctx))
 
                 -- /aliases' '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:45:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:50:5")
                 assert(dtls.on_an_aliases_node(ctx))
 
                 -- /aliases' ';'
-                ctx.row, ctx.col = row_col("tests/custom.dts:45:3")
+                ctx.row, ctx.col = row_col("tests/custom.dts:50:6")
                 assert(dtls.on_an_aliases_node(ctx))
             end)
 
             it("returns false if not on an /aliases node", function()
                 -- on /chosen's '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:49:2")
+                ctx.row, ctx.col = row_col("tests/custom.dts:54:5")
                 assert(not dtls.on_an_aliases_node(ctx))
 
                 -- inside /aliases
-                ctx.row, ctx.col = row_col("tests/custom.dts:40:3")
+                ctx.row, ctx.col = row_col("tests/custom.dts:40:9")
                 assert(not dtls.on_an_aliases_node(ctx))
 
                 -- on /'s '}'
-                ctx.row, ctx.col = row_col("tests/custom.dts:121:1")
+                ctx.row, ctx.col = row_col("tests/custom.dts:475:1")
                 assert(not dtls.on_an_aliases_node(ctx))
             end)
         end)
@@ -318,6 +318,10 @@ for _, location in ipairs(dts_locations) do
                 -- in /cpus but outside any cpu@N
                 ctx.row, ctx.col = row_col("tests/custom.dts:173:9")
                 assert(not dtls.in_a_cpu_node(ctx))
+
+                -- outside /cpus
+                ctx.row, ctx.col = row_col("tests/custom.dts:171:5")
+                assert(not dtls.in_a_cpu_node(ctx))
             end)
         end)
 
@@ -377,6 +381,10 @@ for _, location in ipairs(dts_locations) do
             it("returns false if not in a cache node", function()
                 -- in cpu@0 but outside any cache node
                 ctx.row, ctx.col = row_col("tests/custom.dts:176:13")
+                assert(not dtls.in_a_cache_node(ctx))
+
+                -- in /cpus
+                ctx.row, ctx.col = row_col("tests/custom.dts:173:9")
                 assert(not dtls.in_a_cache_node(ctx))
             end)
         end)
@@ -539,12 +547,8 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("returns false if not in a serial device node", function()
-                -- inside serial@4500, which has no compatible property
-                ctx.row, ctx.col = row_col("tests/custom.dts:431:9")
-                assert(not dtls.in_a_serial_device_node(ctx))
-
-                -- inside ethernet@0, unrelated device
-                ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
+                -- inside a non serial device node
+                ctx.row, ctx.col = row_col("tests/custom.dts:419:9")
                 assert(not dtls.in_a_serial_device_node(ctx))
             end)
         end)
@@ -569,8 +573,8 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("returns false if not on a serial device node", function()
-                -- on serial@4500's 's' (no compatible property)
-                ctx.row, ctx.col = row_col("tests/custom.dts:430:5")
+                -- on miscellaneous-device's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:415:5")
                 assert(not dtls.on_a_serial_device_node(ctx))
 
                 -- inside serial-device
@@ -591,8 +595,8 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
                 assert(not dtls.in_a_ns16550_node(ctx))
 
-                -- inside serial@4500, which has no compatible property
-                ctx.row, ctx.col = row_col("tests/custom.dts:431:9")
+                -- on miscellaneous-device's 'm'
+                ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
                 assert(not dtls.in_a_ns16550_node(ctx))
             end)
         end)
@@ -637,12 +641,11 @@ for _, location in ipairs(dts_locations) do
 
         describe("in_a_network_device_node()", function()
             it("returns true if in a network device node", function()
-                -- inside ethernet@0 { (has local-mac-address, mac-address, max-frame-size)
+                -- inside ethernet@0
                 ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
                 assert(dtls.in_a_network_device_node(ctx))
 
-                -- inside ethernet@1 { (still a network device even without those
-                -- extra properties -- they extend, not gate, the classification)
+                -- inside ethernet@1
                 ctx.row, ctx.col = row_col("tests/custom.dts:457:9")
                 assert(dtls.in_a_network_device_node(ctx))
             end)
@@ -650,6 +653,10 @@ for _, location in ipairs(dts_locations) do
             it("returns false if not in a network device node", function()
                 -- inside uart@4600, an unrelated device
                 ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+                assert(not dtls.in_a_network_device_node(ctx))
+
+                -- on ethernet@1's 'e'
+                ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
                 assert(not dtls.in_a_network_device_node(ctx))
             end)
         end)
@@ -756,8 +763,8 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("returns false if not in a simple-bus node", function()
-                -- inside the first soc {, which has no compatible property
-                ctx.row, ctx.col = row_col("tests/custom.dts:233:9")
+                -- inside the first soc {
+                ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
                 assert(not dtls.in_a_simple_bus_node(ctx))
             end)
         end)
