@@ -889,3 +889,33 @@ for _, location in ipairs(dts_locations) do
         end)
     end)
 end
+
+describe("missing file", function()
+    local function_names = {
+        "in_a_root_node", "on_a_root_node",
+        "in_an_aliases_node", "on_an_aliases_node",
+        "in_a_memory_node", "on_a_memory_node",
+        "in_a_chosen_node", "on_a_chosen_node",
+        "in_a_cpus_node", "on_a_cpus_node",
+        "in_a_cpu_node", "on_a_cpu_node",
+        "in_a_cache_node", "on_a_cache_node",
+        "in_a_reserved_memory_node", "on_a_reserved_memory_node",
+        "in_a_reserved_memory_region_node", "on_a_reserved_memory_region_node",
+        "in_a_serial_device_node", "on_a_serial_device_node",
+        "in_a_ns16550_node", "on_a_ns16550_node",
+        "in_a_network_device_node", "on_a_network_device_node",
+        "in_an_open_pic_node", "on_an_open_pic_node",
+        "in_a_simple_bus_node", "on_a_simple_bus_node",
+        "in_top_level",
+        "on_a_label_definition", "on_a_label_reference",
+    }
+
+    for _, name in ipairs(function_names) do
+        it(name .. "() errors if ctx.file does not exist", function()
+            local ctx = { file = "/nonexistent/custom.dts", row = 1, col = 1 }
+            assert.has_error(function()
+                dtls[name](ctx)
+            end)
+        end)
+    end
+end)
