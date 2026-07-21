@@ -199,4 +199,12 @@ function M.on_a_cache_node(ctx)
     return on_node(ctx, any_depth(is_cache_name))
 end
 
+function M.in_a_reserved_memory_node(ctx)
+    return in_node(ctx, { "/", "reserved-memory" })
+end
+
+function M.on_a_reserved_memory_node(ctx)
+    return on_node(ctx, { "/", "reserved-memory" })
+end
+
 return M
