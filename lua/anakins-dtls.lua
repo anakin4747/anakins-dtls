@@ -143,4 +143,12 @@ function M.on_a_memory_node(ctx)
     return on_node(ctx, { "/", is_memory_name })
 end
 
+function M.in_a_chosen_node(ctx)
+    return in_node(ctx, { "/", "chosen" })
+end
+
+function M.on_a_chosen_node(ctx)
+    return on_node(ctx, { "/", "chosen" })
+end
+
 return M
