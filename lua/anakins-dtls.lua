@@ -283,9 +283,57 @@ All devicetrees shall have a root node and the following nodes shall be present 
 
 The devicetree has a single root node of which all other device nodes are descendants. The full path to the root node is `/`.]] -- luacheck: ignore 631
 
+local model_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: model
+
+## Usage: Required
+
+## Value Type: `<string>`
+
+## Definition:
+
+Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
+
+## Type Definition:
+
+`<string>` - Strings are printable and null-terminated. Example: the string "hello" would be represented in memory as:
+
+```
+  address  68  'h'
+address+1  65  'e'
+address+2  6C  'l'
+address+3  6C  'l'
+address+4  6F  'o'
+address+5  00  '\0'
+```]] -- luacheck: ignore 631
+
+local function on_a_property_name(ctx, prop_name)
+    local lines = read_lines(ctx.file)
+    local line = lines[ctx.row]
+    if not line then
+        return false
+    end
+
+    local leading, name = line:match("^(%s*)([%w,._%-#]+)%s*=")
+    if name ~= prop_name then
+        return false
+    end
+
+    local start_col = #leading + 1
+    local end_col = start_col + #name - 1
+
+    return ctx.col >= start_col and ctx.col <= end_col
+end
+
 function M.hover(ctx)
     if M.on_a_root_node(ctx) then
         return root_node_markdown
+    end
+
+    if M.in_a_root_node(ctx) and on_a_property_name(ctx, "model") then
+        return model_property_markdown
     end
 end
 

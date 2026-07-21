@@ -937,22 +937,28 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(on_a_root_node).returned_with(true)
             end)
 
-            it("returns hover markdown for root node model property name", function()
+            it("returns hover markdown for root node `model` property name", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
                 local expected = dedent([[
                     # Devicetree Specification:
 
-                    Property Name: model
+                    ## Property Name: model
 
-                    Usage: Required
+                    ## Path: /model
 
-                    Value Type: `<string>`
+                    ## Usage: Required
+
+                    ## Value Type: `<string>`
+
+                    ## Definition:
 
                     Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
 
-                    # Type Definition:
+                    ## Type Definition:
 
-                    `<string>` - Strings are printable and null-terminated. Example: the string "hello" would be represented in memory as:
+                    `<string>` - Strings are printable and null-terminated.
+
+                    Example: the string "hello" would be represented in memory as:
 
                     ```
                       address  68  'h'
