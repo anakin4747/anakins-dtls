@@ -8,23 +8,12 @@ list_node_properties():
 identifying standard nodes:
 - fall back to standard properties and Miscellaneous Properties if no other one
   is found
-- /memory
-  - in_memory_node()
-  - covers both
-- /reserved-memory parent node
-- /reserved-memory child nodes
-- /chosen
-- /cpus parent node
-- /cpus/cpu* child nodes
-- Multi-level and Shared Cache Nodes (``/cpus/cpu*/l?-cache``)
 - a serial device for Serial Class Binding determined by fallback compatible
   string containing one of ns8250 or substring match of *-hdlc$
 - `National Semiconductor 16450/16550 Compatible UART Requirements` identified
   by compatible fallback to ns16550 or ns16550a
-- `Network` devices identified by properties:
-  - local-mac-address
-  - mac-address
-  - max-frame-size
+- `Network` devices identified by properties: address-bits, local-mac-address,
+  mac-address, max-frame-size, max-speed, phy-connection-type, phy-handle
 - `Power ISA Open PIC Interrupt Controllers` gets decided by compatible = "open-pic"
 - ``simple-bus`` Compatible by compatible = "simple-bus"
 - top level (outside root node or any references) for completion of `/dts-v1/`
@@ -67,6 +56,9 @@ diagnostic rules:
 - ``/dts-v1/;`` shall be present to identify the file as a version 1 DTS
 - The client program may access memory not covered by any memory reservations,
   so error if the client program tries to use reserved memory
+- Unit address (``@<address>``) should be appended to the name if the node is a
+  static allocation (for /reserved-memory child nodes)
+
 
 
 Do rule checking on didOpen, didChange, and didSave
@@ -75,13 +67,30 @@ Do rule checking on didOpen, didChange, and didSave
 
 Hover:
 
+                    # Devicetree Specification:
+
+                    ## Property Name: model
+
+                    ## Path: /model
+
+                    ## Usage: Required
+
+                    ## Value Type: `<string>`
+
+                    ## Definition:
+
+                    Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
+
+                    ## Type Definition:
+
+
     Devicetree Bindings from Kernel Documentation: (Optional if found)
 
     /* ... */
 
     Devicetree Bindings from Specification: (Optional if found)
 
-    /* ... */
+    /* ... */ from chapter 4
 
     Devicetree Specification:
 
@@ -95,6 +104,59 @@ Hover:
 
     /* ... */
 
+
+hover(file:row:col) {
+
+}
+
+---
+
+cwd is sent via the initialize request or workspace/didChangeWorkspaceFolders
+
+---
+
+when you are in a dts you know that you are appending the nodes in dtsi but
+when you are in dtsi the language server wont know which dts so it should have
+to assume the perspective of the dtsi
+
+---
+
+damn need to handle state with didOpen and didChange and didClose
+
+```lua
+local state = {
+}
+
+while true do
+    local request = wait_for_request(stdin)
+    local response = handle_request(request)
+    send_response(response) > stdout
+end
+
+local function handle_request()
+
+end
+```
+
+---
+
+factor out Type Definition in tests
+
+---
+
+easiest I don't want to manage state when the filesystem already can
+{
+  "capabilities": {
+    "textDocumentSync": 0 // 2 corresponds to Incremental, 1 to Full, 0 to None
+  }
+}
+
+react on textDocument/didSave instead
+
+---
+
+have the language server monitor its own memory usage to kill itself if it gets
+too big for some reason
 
 ---
 
