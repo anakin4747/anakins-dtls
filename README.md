@@ -15,9 +15,13 @@ described in feature files found in the `./features/` directory
 
 Hover for nodes and properties defined in the Devicetree Specification
 
+https://github.com/user-attachments/assets/539627f3-b1d2-4dc1-ab16-90fa4538dc1b
+
 ## goto definition
 
 Goto defintion for devicetree labels
+
+https://github.com/user-attachments/assets/71e0987a-2eab-4d14-b761-6aba843f042f
 
 ## goto implementation
 
@@ -26,6 +30,8 @@ driver in the linux source code
 
 Uses ripgrep for searching your Linux's source code but still a little slow
 currently
+
+https://github.com/user-attachments/assets/ecd47604-88a5-4297-be7d-2000d386523d
 
 # usage
 
