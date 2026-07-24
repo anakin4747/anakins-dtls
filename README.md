@@ -15,7 +15,7 @@ described in feature files found in the `./features/` directory
 
 Hover for nodes and properties defined in the Devicetree Specification
 
-https://github.com/user-attachments/assets/539627f3-b1d2-4dc1-ab16-90fa4538dc1b
+https://github.com/user-attachments/assets/14ead7e5-c9e2-46b9-9661-95f352aaf360
 
 ## goto definition
 
