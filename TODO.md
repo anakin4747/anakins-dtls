@@ -105,10 +105,6 @@ Hover:
     /* ... */
 
 
-hover(file:row:col) {
-
-}
-
 ---
 
 cwd is sent via the initialize request or workspace/didChangeWorkspaceFolders
@@ -152,6 +148,19 @@ easiest I don't want to manage state when the filesystem already can
 }
 
 react on textDocument/didSave instead
+
+---
+
+a way to enable logging for getting a debug tracing for automated bug capturing
+
+anakins-dtls --trace
+
+---
+
+and a way to save the json RPC messages from Neovim verbatim for known good
+fixtures
+
+anakins-dtls --save-rpc-to /path/to/save/to/
 
 ---
 
