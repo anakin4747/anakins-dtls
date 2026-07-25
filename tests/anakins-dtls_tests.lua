@@ -970,68 +970,90 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(expected, dtls.hover(ctx))
             end)
 
-            -- it("returns hover markdown for root node `#address-cells` property name", function()
-            --     ctx.row, ctx.col = row_col("tests/custom.dts:17:5")
-            --     local expected = dtls.dedent([[
-            --         # Devicetree Specification:
-            --
-            --         ## Property Name: #address-cells
-            --
-            --         ## Path: /#address-cells
-            --
-            --         ## Usage: Required
-            --
-            --         ## Definition:
-            --
-            --         Specifies the number of `<u32>` cells to represent the address in the `reg` property in children of root.
-            --
-            --         ## Type Definition:
-            --
-            --         ]]) .. dtls.type_definitions.u32
-            --     assert.are.same(expected, dtls.hover(ctx))
-            -- end)
-            --
-            -- it("returns hover markdown for root node `#size-cells` property name", function()
-            --     ctx.row, ctx.col = row_col("tests/custom.dts:17:5")
-            --     local expected = dtls.dedent([[
-            --         # Devicetree Specification:
-            --
-            --         ## Property Name: #size-cells
-            --
-            --         ## Path: /#size-cells
-            --
-            --         ## Usage: Required
-            --
-            --         ## Definition:
-            --
-            --         Specifies the number of `<u32>` cells to represent the size in the `reg` property in children of root.
-            --
-            --         ## Type Definition:
-            --
-            --         ]]) .. dtls.type_definitions.u32
-            --     assert.are.same(expected, dtls.hover(ctx))
-            -- end)
-            --
-            -- it("returns hover markdown for root node `serial-number` property name", function()
-            --     ctx.row, ctx.col = row_col("tests/custom.dts:17:5")
-            --     local expected = dtls.dedent([[
-            --         # Devicetree Specification:
-            --
-            --         ## Property Name: serial-number
-            --
-            --         ## Path: /serial-number
-            --
-            --         ## Usage: Optional
-            --
-            --         ## Definition:
-            --
-            --         Specifies a string that identifies the form-factor of the system. The property value can be one of:
-            --
-            --         ## Type Definition:
-            --
-            --         ]]) .. dtls.type_definitions.string
-            --     assert.are.same(expected, dtls.hover(ctx))
-            -- end)
+            it("returns hover markdown for root node `#address-cells` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:19:5")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #address-cells
+
+                    ## Path: /#address-cells
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the number of `<u32>` cells to represent the address in the `reg` property in children of root.
+                ]]) .. dtls.get_type_definition("u32")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for root node `#size-cells` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:20:5")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #size-cells
+
+                    ## Path: /#size-cells
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the number of `<u32>` cells to represent the size in the `reg` property in children of root.
+                ]]) .. dtls.get_type_definition("u32")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for root node `serial-number` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:22:5")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: serial-number
+
+                    ## Path: /serial-number
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Specifies a string representing the device's serial number.
+                ]]) .. dtls.get_type_definition("string")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for root node `chassis-type` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:23:5")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: chassis-type
+
+                    ## Path: /chassis-type
+
+                    ## Usage: Optional but recommended
+
+                    ## Definition:
+
+                    Specifies a string that identifies the form-factor of the system. The property value can be one of:
+
+                    - `"desktop"`
+                    - `"laptop"`
+                    - `"convertible"`
+                    - `"server"`
+                    - `"all-in-one"`
+                    - `"tablet"`
+                    - `"handheld"`
+                    - `"handset"`
+                    - `"watch"`
+                    - `"embedded"`
+                    - `"television"`
+                    - `"spectacles"`
+                ]]) .. dtls.get_type_definition("string")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
         end)
     end)
 end
