@@ -818,6 +818,84 @@ For example:
 compatible = "fsl,mpc8572ds"
 ```]] .. M.get_type_definition("stringlist")
 
+local address_cells_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: #address-cells
+
+## Path: /#address-cells
+
+## Usage: Required
+
+## Definition:
+
+Specifies the number of `<u32>` cells to represent the address in the `reg` property in children of root.]] .. M.get_type_definition(
+    "u32"
+)
+
+local size_cells_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: #size-cells
+
+## Path: /#size-cells
+
+## Usage: Required
+
+## Definition:
+
+Specifies the number of `<u32>` cells to represent the size in the `reg` property in children of root.]] .. M.get_type_definition(
+    "u32"
+)
+
+local serial_number_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: serial-number
+
+## Path: /serial-number
+
+## Usage: Optional
+
+## Definition:
+
+Specifies a string representing the device's serial number.]] .. M.get_type_definition("string")
+
+local chassis_type_property_markdown = [[
+# Devicetree Specification:
+
+## Property Name: chassis-type
+
+## Path: /chassis-type
+
+## Usage: Optional but recommended
+
+## Definition:
+
+Specifies a string that identifies the form-factor of the system. The property value can be one of:
+
+- `"desktop"`
+- `"laptop"`
+- `"convertible"`
+- `"server"`
+- `"all-in-one"`
+- `"tablet"`
+- `"handheld"`
+- `"handset"`
+- `"watch"`
+- `"embedded"`
+- `"television"`
+- `"spectacles"`]] .. M.get_type_definition("string")
+
+local root_property_markdown = {
+    ["#address-cells"] = address_cells_property_markdown,
+    ["#size-cells"] = size_cells_property_markdown,
+    ["chassis-type"] = chassis_type_property_markdown,
+    compatible = compatible_property_markdown,
+    model = model_property_markdown,
+    ["serial-number"] = serial_number_property_markdown,
+}
+
 local function on_a_property_name(ctx, prop_name)
     local lines = read_lines(ctx.file)
     local line = lines[ctx.row]
@@ -841,12 +919,15 @@ function M.hover(ctx)
         return root_node_markdown
     end
 
-    if M.in_a_root_node(ctx) and on_a_property_name(ctx, "model") then
-        return model_property_markdown
-    end
-
-    if M.in_a_root_node(ctx) and on_a_property_name(ctx, "compatible") then
-        return compatible_property_markdown
+    local in_descendant_node = in_node(ctx, function(stack)
+        return #stack > 1
+    end)
+    if M.in_a_root_node(ctx) and not in_descendant_node then
+        for property_name, markdown in pairs(root_property_markdown) do
+            if on_a_property_name(ctx, property_name) then
+                return markdown
+            end
+        end
     end
 end
 
