@@ -58,7 +58,8 @@ diagnostic rules:
   so error if the client program tries to use reserved memory
 - Unit address (``@<address>``) should be appended to the name if the node is a
   static allocation (for /reserved-memory child nodes)
-
+- warnings if required root node properties do not exist
+- hints if optional but recommended root node properties do not exist
 
 
 Do rule checking on didOpen, didChange, and didSave
