@@ -431,7 +431,7 @@ function M.dedent(text)
     return (text:gsub("%s+$", ""))
 end
 
-M.type_definitions = {
+local type_definitions = {
     empty = [[`<empty>` - Value is empty. Used for conveying true-false information, when the presence or absence of the property itself is sufficiently descriptive.]],
     u32 = M.dedent([[
         `<u32>` - A 32-bit integer in big-endian format.
@@ -496,6 +496,10 @@ M.type_definitions = {
         address+11  00  '\0'
         ```]]),
 }
+
+function M.get_type_definition(name)
+    return "\n\n## Type Definition:\n\n" .. type_definitions[name]
+end
 
 local function read_lines(file)
     local handle, err = io.open(file, "r")
@@ -787,26 +791,11 @@ local model_property_markdown = [[
 
 ## Usage: Required
 
-## Value Type: `<string>`
-
 ## Definition:
 
-Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
-
-## Type Definition:
-
-`<string>` - Strings are printable and null-terminated.
-
-Example: the string `"hello"` would be represented in memory as:
-
-```
-  address  68  'h'
-address+1  65  'e'
-address+2  6C  'l'
-address+3  6C  'l'
-address+4  6F  'o'
-address+5  00  '\0'
-```]] -- luacheck: ignore 631
+Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".]] .. M.get_type_definition(
+    "string"
+)
 
 local compatible_property_markdown = [[
 # Devicetree Specification:
@@ -816,8 +805,6 @@ local compatible_property_markdown = [[
 ## Path: /compatible
 
 ## Usage: Required
-
-## Value Type: `<stringlist>`
 
 ## Definition:
 
@@ -829,28 +816,7 @@ For example:
 
 ```dts
 compatible = "fsl,mpc8572ds"
-```
-
-## Type Definition:
-
-`<stringlist>` - A list of `<string>` values concatenated together.
-
-Example: The string list `"hello", "world"` would be represented in memory as:
-
-```
-   address  68  'h'
- address+1  65  'e'
- address+2  6C  'l'
- address+3  6C  'l'
- address+4  6F  'o'
- address+5  00  '\0'
- address+6  77  'w'
- address+7  6f  'o'
- address+8  72  'r'
- address+9  6C  'l'
-address+10  64  'd'
-address+11  00  '\0'
-```]] -- luacheck: ignore 631
+```]] .. M.get_type_definition("stringlist")
 
 local function on_a_property_name(ctx, prop_name)
     local lines = read_lines(ctx.file)
