@@ -1124,6 +1124,62 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(on_an_aliases_node).was_called()
                 assert.spy(on_an_aliases_node).returned_with(true)
             end)
+
+            it("returns hover markdown for /aliases node properties", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:26:9")
+                local expected = dtls.dedent([[
+                    # Anakin's Advice
+
+                    A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
+                ]])
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:27:9")
+                expected = dtls.dedent([[
+                    # Anakin's Advice
+
+                    A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `gpio0` to refer to this node.
+                ]])
+                actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown across an alias property name", function()
+                local expected = dtls.dedent([[
+                    # Anakin's Advice
+
+                    A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
+                ]])
+
+                for col = 9, 17 do
+                    ctx.row, ctx.col = 26, col
+                    local actual = dtls.hover(ctx)
+                    assert.are.same(expected, actual)
+                end
+            end)
+
+            it("does not return alias hover markdown outside a property name", function()
+                for _, col in ipairs({ 8, 18, 19, 20, 21, 25, 26 }) do
+                    ctx.row, ctx.col = 26, col
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return alias hover markdown in descendant aliases nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:115:13")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls in_an_aliases_node() to determine the type of node", function()
+                local in_an_aliases_node = spy.on(dtls, "in_an_aliases_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:26:9")
+                dtls.hover(ctx)
+
+                assert.spy(in_an_aliases_node).was_called()
+                assert.spy(in_an_aliases_node).returned_with(true)
+            end)
         end)
     end)
 end

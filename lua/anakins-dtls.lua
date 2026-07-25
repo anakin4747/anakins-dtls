@@ -930,22 +930,29 @@ local root_property_markdown = {
     ["serial-number"] = serial_number_property_markdown,
 }
 
-local function on_a_property_name(ctx, prop_name)
+local function property_name_at_cursor(ctx)
     local lines = read_lines(ctx.file)
     local line = lines[ctx.row]
     if not line then
-        return false
+        return nil
     end
 
     local leading, name = line:match("^(%s*)([%w,._%-#]+)%s*=")
-    if name ~= prop_name then
-        return false
+    if not name then
+        return nil
     end
 
     local start_col = #leading + 1
     local end_col = start_col + #name - 1
+    if ctx.col < start_col or ctx.col > end_col then
+        return nil
+    end
 
-    return ctx.col >= start_col and ctx.col <= end_col
+    return name
+end
+
+local function on_a_property_name(ctx, prop_name)
+    return property_name_at_cursor(ctx) == prop_name
 end
 
 function M.hover(ctx)
@@ -955,6 +962,15 @@ function M.hover(ctx)
 
     if M.on_an_aliases_node(ctx) then
         return aliases_node_markdown
+    end
+
+    if M.in_an_aliases_node(ctx) then
+        local alias = property_name_at_cursor(ctx)
+        if alias then
+            return ("# Anakin's Advice\n\nA client program, such as Linux, Zephyr, or U-Boot, can look up the alias `%s` to refer to this node."):format(
+                alias
+            )
+        end
     end
 
     local in_descendant_node = in_node(ctx, function(stack)
