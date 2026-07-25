@@ -1054,6 +1054,22 @@ for _, location in ipairs(dts_locations) do
                 ]]) .. dtls.get_type_definition("string")
                 assert.are.same(expected, dtls.hover(ctx))
             end)
+
+            it("does not return root property hover markdown for descendant properties", function()
+                local positions = {
+                    "tests/custom.dts:416:9", -- compatible
+                    "tests/custom.dts:417:9", -- model
+                    "tests/custom.dts:418:9", -- #address-cells
+                    "tests/custom.dts:419:9", -- #size-cells
+                    "tests/custom.dts:349:9", -- serial-number
+                    "tests/custom.dts:350:9", -- chassis-type
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
         end)
     end)
 end
