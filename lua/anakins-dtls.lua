@@ -782,6 +782,40 @@ All devicetrees shall have a root node and the following nodes shall be present 
 
 The devicetree has a single root node of which all other device nodes are descendants. The full path to the root node is `/`.]] -- luacheck: ignore 631
 
+local aliases_node_markdown = [[
+# Devicetree Specification:
+
+## `/aliases` node
+
+A devicetree may have an aliases node (`/aliases`) that defines one or more alias properties. The alias node shall be at the root of the devicetree and have the node name `/aliases`.
+
+Each property of the `/aliases` node defines an alias. The property name specifies the alias name. The property value specifies the full path to a node in the devicetree. For example, the property serial0 = `"/simple-bus@fe000000/serial@llc500"` defines the alias `serial0`.
+
+Alias names shall be lowercase text strings of 1 to 31 characters from the following set of characters.
+
+## Valid characters for alias names
+
+| Character | Description |
+| --- | --- |
+| 0-9 | digit |
+| a-z | lowercase letter |
+| - | dash |
+
+An alias value is a device path and is encoded as a string. The value represents the full path to a node, but the path does not need to refer to a leaf node.
+
+A client program may use an alias property name to refer to a full device path as all or part of its string value. A client program, when considering a string as a device path, shall detect and use the alias.
+
+## Example
+
+```dts
+aliases {
+    serial0 = "/simple-bus@fe000000/serial@llc500";
+    ethernet0 = "/simple-bus@fe000000/ethernet@31c000";
+};
+```
+
+Given the alias `serial0`, a client program can look at the `/aliases` node and determine the alias refers to the device path `/simple-bus@fe000000/serial@llc500`.]] -- luacheck: ignore 631
+
 local model_property_markdown = [[
 # Devicetree Specification:
 
@@ -917,6 +951,10 @@ end
 function M.hover(ctx)
     if M.on_a_root_node(ctx) then
         return root_node_markdown
+    end
+
+    if M.on_an_aliases_node(ctx) then
+        return aliases_node_markdown
     end
 
     local in_descendant_node = in_node(ctx, function(stack)

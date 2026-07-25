@@ -1070,6 +1070,60 @@ for _, location in ipairs(dts_locations) do
                     assert.is_nil(dtls.hover(ctx))
                 end
             end)
+
+            it("returns hover markdown for /aliases node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:25:5")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## `/aliases` node
+
+                    A devicetree may have an aliases node (`/aliases`) that defines one or more alias properties. The alias node shall be at the root of the devicetree and have the node name `/aliases`.
+
+                    Each property of the `/aliases` node defines an alias. The property name specifies the alias name. The property value specifies the full path to a node in the devicetree. For example, the property serial0 = `"/simple-bus@fe000000/serial@llc500"` defines the alias `serial0`.
+
+                    Alias names shall be lowercase text strings of 1 to 31 characters from the following set of characters.
+
+                    ## Valid characters for alias names
+
+                    | Character | Description |
+                    | --- | --- |
+                    | 0-9 | digit |
+                    | a-z | lowercase letter |
+                    | - | dash |
+
+                    An alias value is a device path and is encoded as a string. The value represents the full path to a node, but the path does not need to refer to a leaf node.
+
+                    A client program may use an alias property name to refer to a full device path as all or part of its string value. A client program, when considering a string as a device path, shall detect and use the alias.
+
+                    ## Example
+
+                    ```dts
+                    aliases {
+                        serial0 = "/simple-bus@fe000000/serial@llc500";
+                        ethernet0 = "/simple-bus@fe000000/ethernet@31c000";
+                    };
+                    ```
+
+                    Given the alias `serial0`, a client program can look at the `/aliases` node and determine the alias refers to the device path `/simple-bus@fe000000/serial@llc500`.
+                ]])
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("does not return /aliases hover markdown for descendant aliases nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:114:9")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls on_an_aliases_node() to determine the type of node", function()
+                local on_an_aliases_node = spy.on(dtls, "on_an_aliases_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:25:5")
+                dtls.hover(ctx)
+
+                assert.spy(on_an_aliases_node).was_called()
+                assert.spy(on_an_aliases_node).returned_with(true)
+            end)
         end)
     end)
 end
