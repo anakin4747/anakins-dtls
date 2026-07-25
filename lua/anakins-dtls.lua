@@ -410,6 +410,27 @@ end
 local M = {}
 M.json = json
 
+function M.dedent(text)
+    text = text:gsub("^\n", "")
+
+    local indent
+    for line in text:gmatch("[^\n]*") do
+        if line:match("%S") then
+            local line_indent = line:match("^%s*")
+            if indent == nil or #line_indent < #indent then
+                indent = line_indent
+            end
+        end
+    end
+
+    if indent and #indent > 0 then
+        text = text:gsub("\n" .. indent, "\n")
+        text = text:gsub("^" .. indent, "")
+    end
+
+    return (text:gsub("%s+$", ""))
+end
+
 local function read_lines(file)
     local handle, err = io.open(file, "r")
     if not handle then
