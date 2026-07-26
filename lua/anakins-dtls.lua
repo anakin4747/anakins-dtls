@@ -1382,6 +1382,34 @@ local reserved_memory_region_property_markdown = {
         The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
 
         All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
+    ["linux,cma-default"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: linux,cma-default
+
+        ## Path: %s/linux,cma-default
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        If present, then Linux will use the region for the default pool of the contiguous memory allocator.
+
+        All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
+    ["linux,dma-default"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: linux,dma-default
+
+        ## Path: %s/linux,dma-default
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        If present, then Linux will use the region for the default pool of the consistent DMA allocator.
+
+        All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
 }
 
 local memory_region_property_markdown = {

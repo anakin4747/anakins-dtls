@@ -2087,6 +2087,36 @@ for _, location in ipairs(dts_locations) do
 
                     All other standard properties are allowed but are optional.
                 ]]):format(region_path)) .. dtls.get_type_definition("empty"),
+                    ["linux,cma-default"] = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: linux,cma-default
+
+                    ## Path: %s/linux,cma-default
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    If present, then Linux will use the region for the default pool of the contiguous memory allocator.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("empty"),
+                    ["linux,dma-default"] = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: linux,dma-default
+
+                    ## Path: %s/linux,dma-default
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    If present, then Linux will use the region for the default pool of the consistent DMA allocator.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("empty"),
                 }
             end
 
@@ -2144,15 +2174,37 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(framebuffer_property_markdown.reusable, dtls.hover(ctx))
             end)
 
+            it("returns hover markdown for reserved-memory region `linux,cma-default` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:143:13")
+                assert.are.same(linux_cma_property_markdown["linux,cma-default"], dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:151:13")
+                assert.are.same(
+                    framebuffer_property_markdown["linux,cma-default"],
+                    dtls.hover(ctx)
+                )
+            end)
+
+            it("returns hover markdown for reserved-memory region `linux,dma-default` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:157:13")
+                assert.are.same(
+                    multimedia_property_markdown["linux,dma-default"],
+                    dtls.hover(ctx)
+                )
+            end)
+
             it("returns hover markdown across reserved-memory region property names", function()
                 local properties = {
                     { markdown = linux_cma_property_markdown, name = "compatible", row = 139 },
                     { markdown = linux_cma_property_markdown, name = "reusable", row = 140 },
                     { markdown = linux_cma_property_markdown, name = "size", row = 141 },
                     { markdown = linux_cma_property_markdown, name = "alignment", row = 142 },
+                    { markdown = linux_cma_property_markdown, name = "linux,cma-default", row = 143 },
                     { markdown = linux_cma_property_markdown, name = "no-map", row = 144 },
                     { markdown = linux_cma_property_markdown, name = "alloc-ranges", row = 145 },
                     { markdown = framebuffer_property_markdown, name = "reg", row = 150 },
+                    { markdown = framebuffer_property_markdown, name = "linux,cma-default", row = 151 },
+                    { markdown = multimedia_property_markdown, name = "linux,dma-default", row = 157 },
                 }
 
                 for _, property in ipairs(properties) do
@@ -2173,12 +2225,18 @@ for _, location in ipairs(dts_locations) do
                     "tests/custom.dts:141:17",
                     "tests/custom.dts:142:12",
                     "tests/custom.dts:142:22",
+                    "tests/custom.dts:143:12",
+                    "tests/custom.dts:143:30",
                     "tests/custom.dts:144:12",
                     "tests/custom.dts:144:19",
                     "tests/custom.dts:145:12",
                     "tests/custom.dts:145:25",
                     "tests/custom.dts:150:12",
                     "tests/custom.dts:150:16",
+                    "tests/custom.dts:151:12",
+                    "tests/custom.dts:151:30",
+                    "tests/custom.dts:157:12",
+                    "tests/custom.dts:157:30",
                 }
 
                 for _, position in ipairs(positions) do
