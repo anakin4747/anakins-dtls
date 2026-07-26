@@ -2306,6 +2306,15 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(memory_region_property_markdown["memory-region"], dtls.hover(ctx))
             end)
 
+            it("returns the device path for `memory-region` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:164:9")
+                local markdown = memory_region_property_markdown["memory-region"]:gsub(
+                    "/child/memory%-region",
+                    "/video@12300000/memory-region"
+                )
+                assert.are.same(markdown, dtls.hover(ctx))
+            end)
+
             it("returns hover markdown for `memory-region-names` property name", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:353:9")
                 assert.are.same(memory_region_property_markdown["memory-region-names"], dtls.hover(ctx))

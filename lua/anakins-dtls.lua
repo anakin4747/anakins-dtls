@@ -558,6 +558,16 @@ local function any_depth(matcher)
     end
 end
 
+local function stack_path(stack)
+    local path = ""
+    for _, name in ipairs(stack) do
+        if name ~= "/" then
+            path = path .. "/" .. name
+        end
+    end
+    return path ~= "" and path or "/"
+end
+
 -- Find the row/column bounds of the opening and closing braces of every node
 -- matched by `criteria`: either a path (an array of exact names and/or
 -- predicates, e.g. { "/", "aliases" }) or a stack-matching function (see
@@ -586,6 +596,7 @@ local function find_all_node_bounds(file, criteria)
                 if matches(stack) then
                     pending_by_depth[#stack] = {
                         name = name,
+                        path = stack_path(stack),
                         open_row = row,
                         open_col = col,
                         start_col = line:find("%S"),
@@ -729,6 +740,14 @@ end
 
 function M.in_possible_memory_region_consumer(ctx)
     return in_node(ctx, is_possible_memory_region_consumer)
+end
+
+local function possible_memory_region_consumer_path(ctx)
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, is_possible_memory_region_consumer)) do
+        if ctx.row > bounds.open_row and ctx.row < bounds.close_row then
+            return bounds.path
+        end
+    end
 end
 
 local function reserved_memory_region_path(ctx)
@@ -1418,7 +1437,7 @@ local memory_region_property_markdown = {
 
         ## Property Name: memory-region
 
-        ## Path: /child/memory-region
+        ## Path: %s/memory-region
 
         ## Usage: Optional
 
@@ -1431,7 +1450,7 @@ local memory_region_property_markdown = {
 
         ## Property Name: memory-region-names
 
-        ## Path: /child/memory-region-names
+        ## Path: %s/memory-region-names
 
         ## Usage: Optional
 
@@ -1639,7 +1658,10 @@ function M.hover(ctx)
 
     if M.in_possible_memory_region_consumer(ctx) then
         local property_name = property_name_at_cursor(ctx)
-        return memory_region_property_markdown[property_name]
+        local markdown = memory_region_property_markdown[property_name]
+        if markdown then
+            return markdown:format(possible_memory_region_consumer_path(ctx))
+        end
     end
 
     local in_descendant_node = in_node(ctx, function(stack)
