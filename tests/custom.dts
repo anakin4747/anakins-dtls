@@ -367,7 +367,7 @@
         };
 
         memory { // should not return hover since it is only a root node
-            dummy;
+            device_type = "memory";
         };
 
         chosen { // should not return hover since it is only a root node

@@ -876,6 +876,67 @@ memory@100000000 {
 
 The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.]] -- luacheck: ignore 631
 
+local memory_property_markdown = {
+    device_type = [[
+# Devicetree Specification:
+
+## Property Name: device_type
+
+## Path: /memory/device_type
+
+## Usage: Required
+
+## Definition:
+
+Value shall be "memory"
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+    reg = [[
+# Devicetree Specification:
+
+## Property Name: reg
+
+## Path: /memory/reg
+
+## Usage: Required
+
+## Definition:
+
+Consists of an arbitrary number of address and size pairs that specify the physical address and size of the memory ranges.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("prop_encoded_array"),
+    ["initial-mapped-area"] = [[
+# Devicetree Specification:
+
+## Property Name: initial-mapped-area
+
+## Path: /memory/initial-mapped-area
+
+## Usage: Optional
+
+## Definition:
+
+Specifies the address and size of the Initial Mapped Area
+
+Is a prop-encoded-array consisting of a triplet of (effective address, physical address, size). The effective and physical address shall each be 64-bit (`<u64>` value), and the size shall be 32-bits (`<u32>` value).
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("prop_encoded_array"),
+    hotpluggable = [[
+# Devicetree Specification:
+
+## Property Name: hotpluggable
+
+## Path: /memory/hotpluggable
+
+## Usage: Optional
+
+## Definition:
+
+Specifies an explicit hint to the operating system that this memory may potentially be removed later.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("empty"),
+}
+
 local model_property_markdown = [[
 # Devicetree Specification:
 
@@ -997,7 +1058,7 @@ local function property_name_at_cursor(ctx)
         return nil
     end
 
-    local leading, name = line:match("^(%s*)([%w,._%-#]+)%s*=")
+    local leading, name = line:match("^(%s*)([%w,._%-#]+)%s*[=;]")
     if not name then
         return nil
     end
@@ -1035,6 +1096,11 @@ function M.hover(ctx)
                 alias
             )
         end
+    end
+
+    if M.in_a_memory_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return memory_property_markdown[property_name]
     end
 
     local in_descendant_node = in_node(ctx, function(stack)

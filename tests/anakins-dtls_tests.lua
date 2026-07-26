@@ -1339,17 +1339,19 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("does not return /memory node hover markdown inside or between memory nodes", function()
-                local positions = {
+                local property_positions = {
                     "tests/custom.dts:120:9", -- property in memory
                     "tests/custom.dts:123:9", -- property in memory
-                    "tests/custom.dts:125:1", -- blank line between memory nodes
                     "tests/custom.dts:127:9", -- property in memory@0
                 }
 
-                for _, position in ipairs(positions) do
+                for _, position in ipairs(property_positions) do
                     ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
+                    assert.are_not.same(memory_node_markdown, dtls.hover(ctx))
                 end
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:125:1") -- blank line between memory nodes
+                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("does not return /memory hover markdown for descendant memory nodes", function()
@@ -1365,6 +1367,168 @@ for _, location in ipairs(dts_locations) do
 
                 assert.spy(on_a_memory_node).was_called()
                 assert.spy(on_a_memory_node).returned_with(true)
+            end)
+
+            local memory_property_markdown = {
+                device_type = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: device_type
+
+                    ## Path: /memory/device_type
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Value shall be "memory"
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+                reg = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: reg
+
+                    ## Path: /memory/reg
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Consists of an arbitrary number of address and size pairs that specify the physical address and size of the memory ranges.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("prop_encoded_array"),
+                ["initial-mapped-area"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: initial-mapped-area
+
+                    ## Path: /memory/initial-mapped-area
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Specifies the address and size of the Initial Mapped Area
+
+                    Is a prop-encoded-array consisting of a triplet of (effective address, physical address, size). The effective and physical address shall each be 64-bit (`<u64>` value), and the size shall be 32-bits (`<u32>` value).
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("prop_encoded_array"),
+                hotpluggable = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: hotpluggable
+
+                    ## Path: /memory/hotpluggable
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Specifies an explicit hint to the operating system that this memory may potentially be removed later.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("empty"),
+            }
+
+            it("returns hover markdown for /memory `device_type` property name", function()
+                for _, row in ipairs({ 120, 127 }) do
+                    ctx.row, ctx.col = row, 9
+                    assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
+                end
+            end)
+
+            it("returns hover markdown for /memory `reg` property name", function()
+                for _, row in ipairs({ 121, 128 }) do
+                    ctx.row, ctx.col = row, 9
+                    assert.are.same(memory_property_markdown.reg, dtls.hover(ctx))
+                end
+            end)
+
+            it("returns hover markdown for /memory `initial-mapped-area` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:123:9")
+                assert.are.same(memory_property_markdown["initial-mapped-area"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /memory `hotpluggable` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:122:9")
+                assert.are.same(memory_property_markdown.hotpluggable, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown across memory property names", function()
+                local properties = {
+                    { name = "device_type", row = 120 },
+                    { name = "reg", row = 121 },
+                    { name = "hotpluggable", row = 122 },
+                    { name = "initial-mapped-area", row = 123 },
+                }
+
+                for _, property in ipairs(properties) do
+                    for col = 9, 8 + #property.name do
+                        ctx.row, ctx.col = property.row, col
+                        assert.are.same(memory_property_markdown[property.name], dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("does not return memory property hover markdown outside property names", function()
+                local positions = {
+                    "tests/custom.dts:120:8",
+                    "tests/custom.dts:120:20",
+                    "tests/custom.dts:120:21",
+                    "tests/custom.dts:121:8",
+                    "tests/custom.dts:121:12",
+                    "tests/custom.dts:121:13",
+                    "tests/custom.dts:122:8",
+                    "tests/custom.dts:122:21",
+                    "tests/custom.dts:123:8",
+                    "tests/custom.dts:123:28",
+                    "tests/custom.dts:123:29",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:120:9")
+                assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
+            end)
+
+            it("does not return memory property hover markdown outside memory nodes", function()
+                local positions = {
+                    "tests/custom.dts:265:5", -- device_type
+                    "tests/custom.dts:258:5", -- reg
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:121:9")
+                assert.are.same(memory_property_markdown.reg, dtls.hover(ctx))
+            end)
+
+            it("does not return memory property hover markdown in descendant memory nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:370:13")
+                assert.is_nil(dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:120:9")
+                assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
+            end)
+
+            it("calls in_a_memory_node() to determine the type of node", function()
+                local in_a_memory_node = spy.on(dtls, "in_a_memory_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:120:9")
+                dtls.hover(ctx)
+
+                assert.spy(in_a_memory_node).was_called()
+                assert.spy(in_a_memory_node).returned_with(true)
             end)
         end)
     end)
