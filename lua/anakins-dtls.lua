@@ -800,6 +800,27 @@ function M.list_node_properties(ctx)
     return properties
 end
 
+function M.in_a_serial_device_node(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
+        return false
+    end
+
+    local lines = read_lines(ctx.file)
+    for row = bounds.open_row + 1, bounds.close_row - 1 do
+        local values = lines[row]:match("^%s*compatible%s*=%s*(.-)%s*;")
+        if values then
+            for compatible in values:gmatch('"([^"]+)"') do
+                if compatible == "ns8250" or compatible:match("%-hdlc$") then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
 local function in_node(ctx, criteria)
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row > bounds.open_row and ctx.row < bounds.close_row then

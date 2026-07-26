@@ -681,24 +681,28 @@ for _, location in ipairs(dts_locations) do
     end)
 end
 
--- describe("in_a_serial_device_node()", function()
---     it("returns true if in a serial device node", function()
---         -- inside serial-device { (compatible = "ns8250")
---         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
---         assert(dtls.in_a_serial_device_node(ctx))
---
---         -- inside hdlc-device { (compatible = "arinc,x25-hdlc")
---         ctx.row, ctx.col = row_col("tests/custom.dts:436:9")
---         assert(dtls.in_a_serial_device_node(ctx))
---     end)
---
---     it("returns false if not in a serial device node", function()
---         -- inside a non serial device node
---         ctx.row, ctx.col = row_col("tests/custom.dts:419:9")
---         assert(not dtls.in_a_serial_device_node(ctx))
---     end)
--- end)
---
+describe("in_a_serial_device_node()", function()
+    it("returns true if in a node with a compatible string is 'ns8250'", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
+        assert(dtls.in_a_serial_device_node(ctx))
+    end)
+
+    it("returns true if in a node a compatible string is contains '-hdlc$'", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:436:9")
+        assert(dtls.in_a_serial_device_node(ctx))
+    end)
+
+    it("returns false if not in a serial device node", function()
+        -- inside a non serial device node
+        ctx.row, ctx.col = row_col("tests/custom.dts:389:9")
+        assert(not dtls.in_a_serial_device_node(ctx))
+
+        -- inside a ns16550 device node
+        ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        assert(not dtls.in_a_serial_device_node(ctx))
+    end)
+end)
+
 -- describe("on_a_serial_device_node()", function()
 --     it("returns true if on a serial device node", function()
 --         -- serial-device's 's'
