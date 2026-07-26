@@ -1449,6 +1449,234 @@ describe("hover()", function()
         assert.spy(in_a_cpus_node).returned_with(true)
     end)
 
+    local cpu_node_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## `/cpus/cpu@0` node
+
+        A `cpu` node represents a hardware execution block that is sufficiently independent that it is capable of running an operating system without interfering with other CPUs possibly running other operating systems.
+
+        Hardware threads that share an MMU would generally be represented under one `cpu` node. If other more complex CPU topographies are designed, the binding for the CPU must describe the topography (e.g. threads that don’t share an MMU).
+
+        CPUs and threads are numbered through a unified number-space that should match as closely as possible the interrupt controller’s numbering of CPUs/threads.
+
+        Properties that have identical values across `cpu` nodes may be placed in the `/cpus` node instead. A client program must first examine a specific `cpu` node, but if an expected property is not found then it should look at the parent `/cpus` node. This results in a less verbose representation of properties which are identical across all CPUs.
+
+        The node name for every CPU node should be `cpu`.
+    ]])
+
+    it("returns hover markdown for /cpus/cpu* node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:306:9")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_node_markdown, actual)
+    end)
+
+    it("calls on_a_cpu_node() to determine the type of node", function()
+        local on_a_cpu_node = spy.on(dtls, "on_a_cpu_node")
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:306:9")
+        dtls.hover(ctx)
+
+        assert.spy(on_a_cpu_node).was_called()
+        assert.spy(on_a_cpu_node).returned_with(true)
+    end)
+
+    local cpu_device_type_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: device_type
+
+        ## Path: /cpus/cpu@0/device_type
+
+        ## Usage: Required
+
+        ## Definition:
+
+        Value shall be `"cpu"`.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("string")
+
+    it("returns hover markdown for /cpus/cpu* `device_type` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:307:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_device_type_markdown, actual)
+    end)
+
+    local cpu_reg_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: reg
+
+        ## Path: /cpus/cpu@0/reg
+
+        ## Usage: Required
+
+        ## Definition:
+
+        The value of `reg` is a `<prop-encoded-array>` that defines a unique CPU/thread id for the CPU/threads represented by the CPU node.
+
+        If a CPU supports more than one thread (i.e. multiple streams of execution) the `reg` property is an array with 1 element per thread. The `#address-cells` on the `/cpus` node specifies how many cells each element of the array takes. Software can determine the number of threads by dividing the size of `reg` by the parent node's `#address-cells`.
+
+        If a CPU/thread can be the target of an external interrupt the `reg` property value must be a unique CPU/thread id that is addressable by the interrupt controller.
+
+        If a CPU/thread cannot be the target of an external interrupt, then `reg` must be unique and out of bounds of the range addressed by the interrupt controller.
+
+        If a CPU/thread's PIR (pending interrupt register) is modifiable, a client program should modify PIR to match the `reg` property value. If PIR cannot be modified and the PIR value is distinct from the interrupt controller number space, the CPUs binding may define a binding-specific representation of PIR values if desired.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("prop_encoded_array")
+
+    it("returns hover markdown for /cpus/cpu* `reg` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:308:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_reg_markdown, actual)
+    end)
+
+    local cpu_clock_frequency_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: clock-frequency
+
+        ## Path: /cpus/cpu@0/clock-frequency
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Specifies the clock speed of the CPU in Hertz, if that is constant. The value is a `<prop-encoded-array>` in one of two forms:
+        - A 32-bit integer consisting of one `<u32>` specifying the frequency.
+        - A 64-bit integer represented as a `<u64>` specifying the frequency.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("prop_encoded_array")
+
+    it("returns hover markdown for /cpus/cpu* `clock-frequency` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:309:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_clock_frequency_markdown, actual)
+    end)
+
+    local cpu_timebase_frequency_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: timebase-frequency
+
+        ## Path: /cpus/cpu@0/timebase-frequency
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Specifies the current frequency at which the timebase and decrementer registers are updated (in Hertz). The value is a `<prop-encoded-array>` in one of two forms:
+        - A 32-bit integer consisting of one `<u32>` specifying the frequency.
+        - A 64-bit integer represented as a `<u64>`.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("prop_encoded_array")
+
+    it("returns hover markdown for /cpus/cpu* `timebase-frequency` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:310:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_timebase_frequency_markdown, actual)
+    end)
+
+    local cpu_status_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: status
+
+        ## Path: /cpus/cpu@0/status
+
+        ## Usage: See definition
+
+        ## Definition:
+
+        A standard property describing the state of a CPU. This property shall be present for nodes representing CPUs in a symmetric multiprocessing (SMP) configuration. For a CPU node the meaning of the `"okay"`, `"disabled"` and `"fail"` values are as follows:
+
+        `"okay"` : The CPU is running.
+        `"disabled"` : The CPU is in a quiescent state.
+        `"fail"` : The CPU is not operational or does not exist.
+
+        A quiescent CPU is in a state where it cannot interfere with the normal operation of other CPUs, nor can its state be affected by the normal operation of other running CPUs, except by an explicit method for enabling or re-enabling the quiescent CPU (see the enable-method property).
+
+        In particular, a running CPU shall be able to issue broadcast TLB invalidates without affecting a quiescent CPU.
+
+        Examples: A quiescent CPU could be in a spin loop, held in reset, and electrically isolated from the system bus or in another implementation dependent state.
+
+        A CPU with `"fail"` status does not affect the system in any way. The status is assigned to nodes for which no corresponding CPU exists.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("string")
+
+    it("returns hover markdown for /cpus/cpu* `status` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:311:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_status_markdown, actual)
+    end)
+
+    local cpu_enable_method_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: enable-method
+
+        ## Path: /cpus/cpu@0/enable-method
+
+        ## Usage: See definition
+
+        ## Definition:
+
+        Describes the method by which a CPU in a disabled state is enabled. This property is required for CPUs with a status property with a value of `"disabled"`. The value consists of one or more strings that define the method to release this CPU. If a client program recognizes any of the methods, it may use it. The value shall be one of the following:
+
+        `"spin-table"` : The CPU is enabled with the spin table method defined in the |spec|.
+
+        `"[vendor],[method]"` : Implementation dependent string that describes the method by which a CPU is released from a `"disabled"` state. The required format is: `"[vendor],[method]"`, where vendor is a string describing the name of the manufacturer and method is a string describing the vendor specific mechanism.
+
+        Example: `"fsl,MPC8572DS"`
+
+        Note: Other methods may be added to later revisions of the Devicetree specification.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("stringlist")
+
+    it("returns hover markdown for /cpus/cpu* `enable-method` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:312:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_enable_method_markdown, actual)
+    end)
+
+    local cpu_release_addr_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: cpu-release-addr
+
+        ## Path: /cpus/cpu@0/cpu-release-addr
+
+        ## Usage: See definition
+
+        ## Definition:
+
+        The cpu-release-addr property is required for cpu nodes that have an enable-method property value of `"spin-table"`. The value specifies the physical address of a spin table entry that releases a secondary CPU from its spin loop.
+
+        All other standard properties are allowed but are optional.
+    ]]) .. dtls.get_type_definition("u64")
+
+    it("returns hover markdown for /cpus/cpu* `cpu-release-addr` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:313:13")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpu_release_addr_markdown, actual)
+    end)
+
+    it("calls in_a_cpu_node() to determine the type of node", function()
+        local in_a_cpu_node = spy.on(dtls, "in_a_cpu_node")
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:307:13")
+        dtls.hover(ctx)
+
+        assert.spy(in_a_cpu_node).was_called()
+        assert.spy(in_a_cpu_node).returned_with(true)
+    end)
+
     local memory_node_markdown = dtls.dedent([[
         # Devicetree Specification:
 
