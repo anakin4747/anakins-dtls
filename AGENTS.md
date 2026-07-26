@@ -16,6 +16,22 @@ Never write implementation code before a failing test exists for it. Never
 mark a task done without having observed both the red and the green state
 yourself.
 
+## Test responsibilities
+
+- Test behavior at the lowest level that owns it. Exhaustive inputs, boundary
+  positions, permutations, and edge cases for a helper belong in that helper's
+  direct tests.
+- Higher-level tests should cover only the higher-level contract, such as
+  orchestration, integration between helpers, output selection, and externally
+  observable behavior. Use representative inputs instead of repeating every
+  lower-level helper case.
+- Before adding a higher-level assertion, check whether a lower-level test
+  already proves the same behavior. Do not duplicate it unless the assertion
+  also verifies a distinct higher-level responsibility.
+- A spy test is appropriate when calling a shared helper is an intentional
+  architectural requirement. This protects against bypassing tested helper
+  logic, even when the resulting output would be the same.
+
 ## Running tests — `make` only
 
 - The **only** command used to run tests is:
