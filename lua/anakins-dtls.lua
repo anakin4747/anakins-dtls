@@ -723,6 +723,14 @@ function M.on_a_reserved_memory_region_node(ctx)
     return on_node(ctx, { "/", "reserved-memory", any_name })
 end
 
+local function is_possible_memory_region_consumer(stack)
+    return #stack > 1 and stack[2] ~= "reserved-memory"
+end
+
+function M.in_possible_memory_region_consumer(ctx)
+    return in_node(ctx, is_possible_memory_region_consumer)
+end
+
 local function reserved_memory_region_path(ctx)
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, { "/", "reserved-memory", any_name })) do
         if ctx.row >= bounds.open_row and ctx.row <= bounds.close_row then
