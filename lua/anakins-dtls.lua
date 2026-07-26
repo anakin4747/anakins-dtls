@@ -893,6 +893,25 @@ memory@100000000 {
 
 The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.]] -- luacheck: ignore 631
 
+local chosen_node_markdown = [[
+# Devicetree Specification:
+
+## `/chosen` node
+
+## Path: /chosen
+
+The `/chosen` node does not represent a real device in the system but describes parameters chosen or specified by the system firmware at run time. It shall be a child of the root node.
+
+## Example
+
+```dts
+chosen {
+    bootargs = "root=/dev/nfs rw nfsroot=192.168.1.1 console=ttyS0,115200";
+};
+```
+
+Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.]] -- luacheck: ignore 631
+
 local reserved_memory_node_markdown = [[
 # Devicetree Specification:
 
@@ -1051,6 +1070,83 @@ All other standard properties are allowed but are optional.]] .. M.get_type_defi
 Specifies an explicit hint to the operating system that this memory may potentially be removed later.
 
 All other standard properties are allowed but are optional.]] .. M.get_type_definition("empty"),
+}
+
+local chosen_property_markdown = {
+    bootargs = [[
+# Devicetree Specification:
+
+## Property Name: bootargs
+
+## Path: /chosen/bootargs
+
+## Usage: Optional
+
+## Definition:
+
+A string that specifies the boot arguments for the client program. The value could potentially be a null string if no boot arguments are required.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+    bootsource = [[
+# Devicetree Specification:
+
+## Property Name: bootsource
+
+## Path: /chosen/bootsource
+
+## Usage: Optional
+
+## Definition:
+
+A string that specifies the full path to the node representing the device the BootROM used to load the initial boot program. If the initial boot program is split into multiple stages, this represents the storage medium or device (e.g. used by fastboot) from which the very first stage was loaded by the BootROM. It may differ from the device from which later stages of the boot program or client program are loaded from, as this property isn't meant to represent those devices. A later stage of the boot program, or the client program, may use this information to favor the device in this property over others for loading later stages, or know the storage medium to flash an update to.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+    ["stdout-path"] = [[
+# Devicetree Specification:
+
+## Property Name: stdout-path
+
+## Path: /chosen/stdout-path
+
+## Usage: Optional
+
+## Definition:
+
+A string that specifies the full path to the node representing the device to be used for boot console output. If the character ":" is present in the value it terminates the path. The value may be an alias. If the stdin-path property is not specified, stdout-path should be assumed to define the input device.
+
+Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+    ["linux,stdout-path"] = [[
+# Devicetree Specification:
+
+## Property Name: linux,stdout-path
+
+## Path: /chosen/linux,stdout-path
+
+## Usage: Optional
+
+## Definition:
+
+A string that specifies the full path to the node representing the device to be used for boot console output. If the character ":" is present in the value it terminates the path. The value may be an alias. If the stdin-path property is not specified, stdout-path should be assumed to define the input device.
+
+Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+    ["stdin-path"] = [[
+# Devicetree Specification:
+
+## Property Name: stdin-path
+
+## Path: /chosen/stdin-path
+
+## Usage: Optional
+
+## Definition:
+
+A string that specifies the full path to the node representing the device to be used for boot console input. If the character ":" is present in the value it terminates the path. The value may be an alias.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
 }
 
 local reserved_memory_property_markdown = {
@@ -1401,6 +1497,10 @@ function M.hover(ctx)
         return memory_node_markdown
     end
 
+    if M.on_a_chosen_node(ctx) then
+        return chosen_node_markdown
+    end
+
     if M.on_a_reserved_memory_node(ctx) then
         return reserved_memory_node_markdown
     end
@@ -1421,6 +1521,11 @@ function M.hover(ctx)
     if M.in_a_memory_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
         return memory_property_markdown[property_name]
+    end
+
+    if M.in_a_chosen_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return chosen_property_markdown[property_name]
     end
 
     if M.in_a_reserved_memory_region_node(ctx) then
