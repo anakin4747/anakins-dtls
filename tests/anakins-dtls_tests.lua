@@ -469,6 +469,13 @@ for _, location in ipairs(dts_locations) do
                     assert(not dtls.on_a_cache_node(ctx))
                 end
             end)
+
+            it("returns false on a cache node label definition", function()
+                for col = 13, 17 do
+                    ctx.row, ctx.col = 184, col
+                    assert(not dtls.on_a_cache_node(ctx))
+                end
+            end)
         end)
 
         describe("in_a_reserved_memory_node()", function()
@@ -592,6 +599,13 @@ for _, location in ipairs(dts_locations) do
             it("returns false on whitespace before a reserved-memory region node", function()
                 for col = 1, 8 do
                     ctx.row, ctx.col = 138, col
+                    assert(not dtls.on_a_reserved_memory_region_node(ctx))
+                end
+            end)
+
+            it("returns false on a reserved-memory region label definition", function()
+                for col = 9, 25 do
+                    ctx.row, ctx.col = 148, col
                     assert(not dtls.on_a_reserved_memory_region_node(ctx))
                 end
             end)
@@ -1929,13 +1943,9 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(expected, dtls.hover(ctx))
             end)
 
-            it("returns hover markdown for /reserved-memory/framebuffer@78000000 node with label definition docs", function()
-                local expected = reserved_memory_region_node_markdown(
-                    "/reserved-memory/framebuffer@78000000"
-                )
-
+            it("does not return node hover markdown on a reserved-memory region label", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:148:9")
-                assert.are.same(expected, dtls.hover(ctx))
+                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("does not return reserved-memory region hover markdown outside node declaration boundaries", function()

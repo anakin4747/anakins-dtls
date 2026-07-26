@@ -631,6 +631,10 @@ local function in_node(ctx, criteria)
 end
 
 local function on_node(ctx, criteria)
+    if M.on_a_label_definition(ctx) then
+        return false
+    end
+
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row == bounds.open_row then
             if ctx.col >= bounds.start_col and ctx.col <= bounds.open_col then
