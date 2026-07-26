@@ -131,6 +131,13 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:475:1")
                 assert(not dtls.on_an_aliases_node(ctx))
             end)
+
+            it("returns false on whitespace before an /aliases node", function()
+                for col = 1, 4 do
+                    ctx.row, ctx.col = 25, col
+                    assert(not dtls.on_an_aliases_node(ctx))
+                end
+            end)
         end)
 
         describe("in_a_memory_node()", function()
@@ -266,6 +273,13 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:373:9")
                 assert(not dtls.on_a_chosen_node(ctx))
             end)
+
+            it("returns false on whitespace before a /chosen node", function()
+                for col = 1, 4 do
+                    ctx.row, ctx.col = 52, col
+                    assert(not dtls.on_a_chosen_node(ctx))
+                end
+            end)
         end)
 
         describe("in_a_cpus_node()", function()
@@ -317,6 +331,13 @@ for _, location in ipairs(dts_locations) do
                 -- on /child/cpus's 'c'
                 ctx.row, ctx.col = row_col("tests/custom.dts:377:9")
                 assert(not dtls.on_a_cpus_node(ctx))
+            end)
+
+            it("returns false on whitespace before a /cpus node", function()
+                for col = 1, 4 do
+                    ctx.row, ctx.col = 172, col
+                    assert(not dtls.on_a_cpus_node(ctx))
+                end
             end)
         end)
 
@@ -378,6 +399,13 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:119:5")
                 assert(not dtls.on_a_cpu_node(ctx))
             end)
+
+            it("returns false on whitespace before a cpu node", function()
+                for col = 1, 8 do
+                    ctx.row, ctx.col = 175, col
+                    assert(not dtls.on_a_cpu_node(ctx))
+                end
+            end)
         end)
 
         describe("in_a_cache_node()", function()
@@ -434,6 +462,13 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:119:5")
                 assert(not dtls.on_a_cache_node(ctx))
             end)
+
+            it("returns false on whitespace before a cache node", function()
+                for col = 1, 12 do
+                    ctx.row, ctx.col = 184, col
+                    assert(not dtls.on_a_cache_node(ctx))
+                end
+            end)
         end)
 
         describe("in_a_reserved_memory_node()", function()
@@ -481,6 +516,13 @@ for _, location in ipairs(dts_locations) do
                 -- inside /reserved-memory
                 ctx.row, ctx.col = row_col("tests/custom.dts:133:9")
                 assert(not dtls.on_a_reserved_memory_node(ctx))
+            end)
+
+            it("returns false on whitespace before a /reserved-memory node", function()
+                for col = 1, 4 do
+                    ctx.row, ctx.col = 132, col
+                    assert(not dtls.on_a_reserved_memory_node(ctx))
+                end
             end)
         end)
 
@@ -545,6 +587,13 @@ for _, location in ipairs(dts_locations) do
                 -- on /memory's 'm'
                 ctx.row, ctx.col = row_col("tests/custom.dts:119:5")
                 assert(not dtls.on_a_reserved_memory_region_node(ctx))
+            end)
+
+            it("returns false on whitespace before a reserved-memory region node", function()
+                for col = 1, 8 do
+                    ctx.row, ctx.col = 138, col
+                    assert(not dtls.on_a_reserved_memory_region_node(ctx))
+                end
             end)
         end)
 
