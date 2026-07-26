@@ -2257,8 +2257,35 @@ for _, location in ipairs(dts_locations) do
     end)
 end
 
+describe("out_of_tree_without_config()", function()
+    it("returns true for an out-of-tree file with no .anakins-dtls at the workspace root", function()
+        local ctx = {
+            file = ("%s/tests/out-of-tree-no-config/one/path/to/devicetree.dts"):format(cwd),
+            workspace_root = ("%s/tests/out-of-tree-no-config"):format(cwd),
+        }
+        assert(dtls.out_of_tree_without_config(ctx))
+    end)
+
+    it("returns false when .anakins-dtls is present at the workspace root", function()
+        local ctx = {
+            file = ("%s/tests/out-of-tree/custom.dts"):format(cwd),
+            workspace_root = ("%s/tests/out-of-tree"):format(cwd),
+        }
+        assert(not dtls.out_of_tree_without_config(ctx))
+    end)
+
+    it("returns false for an in-tree file (recognizable kernel layout)", function()
+        local ctx = {
+            file = ("%s/tests/in-tree/arch/arm64/boot/dts/freescale/custom.dts"):format(cwd),
+            workspace_root = ("%s/tests/in-tree"):format(cwd),
+        }
+        assert(not dtls.out_of_tree_without_config(ctx))
+    end)
+end)
+
 describe("missing file", function()
     local function_names = {
+        "out_of_tree_without_config",
         "in_a_root_node",
         "on_a_root_node",
         "in_an_aliases_node",

@@ -312,6 +312,59 @@ describe("workspace/didChangeWorkspaceFolders notification", function()
     end)
 end)
 
+describe("out-of-tree devicetree with no .anakins-dtls", function()
+    it("warns via showMessage on didOpen", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+
+        local server = dtls.new_server(dtls.new_memory_channel())
+
+        server.channel:push_input(frame({
+            method = "initialize",
+            id = 1,
+            params = {
+                workspaceFolders = {
+                    { uri = ("file://%s/tests/out-of-tree-no-config"):format(cwd), name = "repo" },
+                },
+            },
+        }))
+        dtls.server_step(server)
+        server.channel:take_output()
+
+        server.channel:push_input(frame({ method = "initialized", params = {} }))
+        dtls.server_step(server)
+        server.channel:take_output()
+
+        server.channel:push_input(frame({
+            method = "textDocument/didOpen",
+            params = {
+                textDocument = {
+                    uri = ("file://%s/tests/out-of-tree-no-config/one/path/to/devicetree.dts"):format(cwd),
+                },
+            },
+        }))
+
+        local continues = dtls.server_step(server)
+
+        assert(continues)
+        assert.are.equal("initialized", server.state)
+
+        local output = parse_output(server.channel)
+        assert.are.equal(1, #output)
+        assert.are.equal("window/showMessage", output[1].method)
+        assert.are.equal(2, output[1].params.type)
+        assert.are.equal(
+            "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n"
+                .. "In a Yocto project you can generate one with:\n"
+                .. "```sh\n"
+                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
+                .. "```",
+            output[1].params.message
+        )
+    end)
+end)
+
 describe("textDocument/hover", function()
     it("advertises hoverProvider in the initialize response capabilities", function()
         local server = dtls.new_server(dtls.new_memory_channel())
