@@ -611,30 +611,52 @@ for _, location in ipairs(dts_locations) do
             end)
         end)
 
-        -- describe("list_node_properties()", function()
-        --     it("returns all properties inside the iio-hwmon node", function()
-        --         ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
-        --         local properties = dtls.list_node_properties(ctx)
-        --
-        --         assert.are.same({
-        --             "compatible",
-        --             "iio-channels",
-        --         }, properties)
-        --     end)
-        --
-        --     it("returns all properties inside a node referenced in dtsi and dts", function()
-        --         ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
-        --         local properties = dtls.list_node_properties(ctx)
-        --
-        --         assert.are.same({
-        --             "vbus-supply",
-        --             "compatible",
-        --             "#phy-cells",
-        --             "clocks",
-        --             "clock-names",
-        --         }, properties)
-        --     end)
-        -- end)
+        describe("list_node_properties()", function()
+            it("returns all properties inside the iio-hwmon node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
+                local properties = dtls.list_node_properties(ctx)
+
+                assert.are.same(table.sort({
+                    "compatible",
+                    "iio-channels",
+                }), table.sort(properties))
+            end)
+
+            it("returns all properties inside a node reference dts", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
+                local properties = dtls.list_node_properties(ctx)
+
+                assert.are.same(table.sort({
+                    "vbus-supply",
+                    "compatible",
+                    "#phy-cells",
+                    "clocks",
+                    "clock-names",
+                }), table.sort(properties))
+            end)
+
+            it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
+                local old_file = ctx.file
+                ctx = {
+                    row = 114,
+                    col = 3,
+                    file = ("%s/tests/%s/%s"):format(
+                        cwd, location.name,
+                        "arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
+                    )
+                }
+
+                local properties = dtls.list_node_properties(ctx)
+                assert.are.same(table.sort({
+                    "compatible",
+                    "#phy-cells",
+                    "clocks",
+                    "clock-names",
+                }), table.sort(properties))
+
+                ctx.file = old_file
+            end)
+        end)
 
         -- describe("in_a_serial_device_node()", function()
         --     it("returns true if in a serial device node", function()
