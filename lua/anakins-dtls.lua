@@ -956,6 +956,49 @@ function M.on_a_network_device_node(ctx)
     return false
 end
 
+local function is_open_pic_node(ctx)
+    for _, values in ipairs(compatible_strings(ctx)) do
+        for compatible in values:gmatch('"([^"]+)"') do
+            if compatible == "open-pic" then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function M.in_an_open_pic_node(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
+        return false
+    end
+
+    return is_open_pic_node(ctx)
+end
+
+function M.on_an_open_pic_node(ctx)
+    if M.on_a_label_definition(ctx) then
+        return false
+    end
+
+    for _, bounds in
+        ipairs(find_all_node_bounds(ctx.file, function()
+            return true
+        end))
+    do
+        local on_opening = ctx.row == bounds.open_row and ctx.col >= bounds.start_col and ctx.col <= bounds.open_col
+        local on_closing = ctx.row == bounds.close_row
+            and ctx.col >= bounds.close_col
+            and ctx.col <= bounds.close_col + 1
+        if (on_opening or on_closing) and is_open_pic_node({ file = ctx.file, row = bounds.open_row }) then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function in_node(ctx, criteria)
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row > bounds.open_row and ctx.row < bounds.close_row then
