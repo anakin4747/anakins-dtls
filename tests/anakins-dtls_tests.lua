@@ -1368,6 +1368,87 @@ describe("hover()", function()
         assert.spy(in_an_aliases_node).returned_with(true)
     end)
 
+    local cpus_node_markdown = dtls.dedent([[
+        # Devicetree Specification:
+
+        ## `/cpus` node
+
+        A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
+
+        The `/cpus` node may contain properties that are common across `cpu` nodes.
+    ]])
+
+    it("returns hover markdown for /cpus node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:172:5")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpus_node_markdown, actual)
+    end)
+
+    it("calls on_a_cpus_node() to determine the type of node", function()
+        local on_a_cpus_node = spy.on(dtls, "on_a_cpus_node")
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:172:5")
+        dtls.hover(ctx)
+
+        assert.spy(on_a_cpus_node).was_called()
+        assert.spy(on_a_cpus_node).returned_with(true)
+    end)
+
+    local cpus_property_markdown = {
+        ["#address-cells"] = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: #address-cells
+
+            ## Path: /cpus/#address-cells
+
+            ## Usage: Required
+
+            ## Definition:
+
+            The value specifies how many cells each element of the `reg` property array takes in children of this node.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32"),
+        ["#size-cells"] = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: #size-cells
+
+            ## Path: /cpus/#size-cells
+
+            ## Usage: Required
+
+            ## Definition:
+
+            Value shall be 0. Specifies that no size is required in the `reg` property in children of this node.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32"),
+    }
+
+    it("returns hover markdown for /cpus `#address-cells` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:173:9")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpus_property_markdown["#address-cells"], actual)
+    end)
+
+    it("returns hover markdown for /cpus `#size-cells` property name", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:174:9")
+        local actual = dtls.hover(ctx)
+        assert.are.same(cpus_property_markdown["#size-cells"], actual)
+    end)
+
+    it("calls in_a_cpus_node() to determine the type of node", function()
+        local in_a_cpus_node = spy.on(dtls, "in_a_cpus_node")
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:173:9")
+        dtls.hover(ctx)
+
+        assert.spy(in_a_cpus_node).was_called()
+        assert.spy(in_a_cpus_node).returned_with(true)
+    end)
+
     local memory_node_markdown = dtls.dedent([[
         # Devicetree Specification:
 
