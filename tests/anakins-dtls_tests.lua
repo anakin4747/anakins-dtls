@@ -201,6 +201,15 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:369:9")
                 assert(not dtls.on_a_memory_node(ctx))
             end)
+
+            it("returns false on whitespace before a /memory node", function()
+                for _, row in ipairs({ 119, 126 }) do
+                    for col = 1, 4 do
+                        ctx.row, ctx.col = row, col
+                        assert(not dtls.on_a_memory_node(ctx))
+                    end
+                end
+            end)
         end)
 
         describe("in_a_chosen_node()", function()
@@ -1179,6 +1188,134 @@ for _, location in ipairs(dts_locations) do
 
                 assert.spy(in_an_aliases_node).was_called()
                 assert.spy(in_an_aliases_node).returned_with(true)
+            end)
+
+            local memory_node_markdown = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## `/memory` node
+
+                A memory device node is required for all devicetrees and describes the physical memory layout for the system. If a system has multiple ranges of memory, multiple memory nodes can be created, or the ranges can be specified in the `reg` property of a single memory node.
+
+                The `unit-name` component of the node name shall be `memory`.
+
+                The client program may access memory not covered by any memory reservations using any storage attributes it chooses. However, before changing the storage attributes used to access a real page, the client program is responsible for performing actions required by the architecture and implementation, possibly including flushing the real page from the caches. The boot program is responsible for ensuring that, without taking any action associated with a change in storage attributes, the client program can safely access all memory (including memory covered by memory reservations) as WIMG = 0b001x. That is:
+
+                - not Write Through Required
+                - not Caching Inhibited
+                - Memory Coherence
+                - Required either not Guarded or Guarded
+
+                If the VLE storage attribute is supported, with VLE=0.
+
+                ## `/memory` node and UEFI
+
+                When booting via UEFI, the system memory map is obtained via the GetMemoryMap() UEFI boot time service as defined in the Unified Extensible Firmware Interface Specification, and if present, the OS must ignore any `/memory` nodes.
+
+                ## `/memory` Examples
+
+                Given a 64-bit Power system with the following physical memory layout:
+
+                - RAM: starting address 0x0, length 0x80000000 (2 GB)
+                - RAM: starting address 0x100000000, length 0x100000000 (4 GB)
+
+                Memory nodes could be defined as follows, assuming `#address-cells = <2>` and `#size-cells = <2>`.
+
+                ### Example #1
+
+                ```dts
+                memory@0 {
+                    device_type = "memory";
+                    reg = <0x000000000 0x00000000 0x00000000 0x80000000
+                           0x000000001 0x00000000 0x00000001 0x00000000>;
+                };
+                ```
+
+                ### Example #2
+
+                ```dts
+                memory@0 {
+                    device_type = "memory";
+                    reg = <0x000000000 0x00000000 0x00000000 0x80000000>;
+                };
+                memory@100000000 {
+                    device_type = "memory";
+                    reg = <0x000000001 0x00000000 0x00000001 0x00000000>;
+                };
+                ```
+
+                The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.
+            ]])
+
+            it("returns hover markdown for /memory and /memory@unit-address nodes", function()
+                local positions = {
+                    "tests/custom.dts:119:5", -- memory
+                    "tests/custom.dts:124:5", -- memory closing brace
+                    "tests/custom.dts:126:5", -- memory@0
+                    "tests/custom.dts:130:5", -- memory@0 closing brace
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.are.same(memory_node_markdown, dtls.hover(ctx))
+                end
+            end)
+
+            it("returns /memory hover markdown across node declarations", function()
+                for col = 5, 12 do
+                    ctx.row, ctx.col = 119, col
+                    assert.are.same(memory_node_markdown, dtls.hover(ctx))
+                end
+
+                for col = 5, 14 do
+                    ctx.row, ctx.col = 126, col
+                    assert.are.same(memory_node_markdown, dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /memory hover markdown outside node declaration boundaries", function()
+                local positions = {
+                    "tests/custom.dts:119:13",
+                    "tests/custom.dts:124:4",
+                    "tests/custom.dts:124:7",
+                    "tests/custom.dts:126:15",
+                    "tests/custom.dts:130:4",
+                    "tests/custom.dts:130:7",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /memory node hover markdown inside or between memory nodes", function()
+                local positions = {
+                    "tests/custom.dts:120:9", -- property in memory
+                    "tests/custom.dts:123:9", -- property in memory
+                    "tests/custom.dts:125:1", -- blank line between memory nodes
+                    "tests/custom.dts:127:9", -- property in memory@0
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /memory hover markdown for descendant memory nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:369:9")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls on_a_memory_node() to determine the type of node", function()
+                local on_a_memory_node = spy.on(dtls, "on_a_memory_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:119:5")
+                dtls.hover(ctx)
+
+                assert.spy(on_a_memory_node).was_called()
+                assert.spy(on_a_memory_node).returned_with(true)
             end)
         end)
     end)

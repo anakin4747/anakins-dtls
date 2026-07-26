@@ -584,7 +584,11 @@ local function find_all_node_bounds(file, criteria)
                 local name = node_name_before_brace(line, col)
                 stack[#stack + 1] = name
                 if matches(stack) then
-                    pending_by_depth[#stack] = { open_row = row, open_col = col }
+                    pending_by_depth[#stack] = {
+                        open_row = row,
+                        open_col = col,
+                        start_col = line:find("%S"),
+                    }
                 end
             elseif char == "}" then
                 local depth = #stack
@@ -617,7 +621,7 @@ end
 local function on_node(ctx, criteria)
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row == bounds.open_row then
-            if ctx.col >= 1 and ctx.col <= bounds.open_col then
+            if ctx.col >= bounds.start_col and ctx.col <= bounds.open_col then
                 return true
             end
         elseif ctx.row == bounds.close_row then
@@ -816,6 +820,62 @@ aliases {
 
 Given the alias `serial0`, a client program can look at the `/aliases` node and determine the alias refers to the device path `/simple-bus@fe000000/serial@llc500`.]] -- luacheck: ignore 631
 
+local memory_node_markdown = [[
+# Devicetree Specification:
+
+## `/memory` node
+
+A memory device node is required for all devicetrees and describes the physical memory layout for the system. If a system has multiple ranges of memory, multiple memory nodes can be created, or the ranges can be specified in the `reg` property of a single memory node.
+
+The `unit-name` component of the node name shall be `memory`.
+
+The client program may access memory not covered by any memory reservations using any storage attributes it chooses. However, before changing the storage attributes used to access a real page, the client program is responsible for performing actions required by the architecture and implementation, possibly including flushing the real page from the caches. The boot program is responsible for ensuring that, without taking any action associated with a change in storage attributes, the client program can safely access all memory (including memory covered by memory reservations) as WIMG = 0b001x. That is:
+
+- not Write Through Required
+- not Caching Inhibited
+- Memory Coherence
+- Required either not Guarded or Guarded
+
+If the VLE storage attribute is supported, with VLE=0.
+
+## `/memory` node and UEFI
+
+When booting via UEFI, the system memory map is obtained via the GetMemoryMap() UEFI boot time service as defined in the Unified Extensible Firmware Interface Specification, and if present, the OS must ignore any `/memory` nodes.
+
+## `/memory` Examples
+
+Given a 64-bit Power system with the following physical memory layout:
+
+- RAM: starting address 0x0, length 0x80000000 (2 GB)
+- RAM: starting address 0x100000000, length 0x100000000 (4 GB)
+
+Memory nodes could be defined as follows, assuming `#address-cells = <2>` and `#size-cells = <2>`.
+
+### Example #1
+
+```dts
+memory@0 {
+    device_type = "memory";
+    reg = <0x000000000 0x00000000 0x00000000 0x80000000
+           0x000000001 0x00000000 0x00000001 0x00000000>;
+};
+```
+
+### Example #2
+
+```dts
+memory@0 {
+    device_type = "memory";
+    reg = <0x000000000 0x00000000 0x00000000 0x80000000>;
+};
+memory@100000000 {
+    device_type = "memory";
+    reg = <0x000000001 0x00000000 0x00000001 0x00000000>;
+};
+```
+
+The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.]] -- luacheck: ignore 631
+
 local model_property_markdown = [[
 # Devicetree Specification:
 
@@ -962,6 +1022,10 @@ function M.hover(ctx)
 
     if M.on_an_aliases_node(ctx) then
         return aliases_node_markdown
+    end
+
+    if M.on_a_memory_node(ctx) then
+        return memory_node_markdown
     end
 
     if M.in_an_aliases_node(ctx) then
