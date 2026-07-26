@@ -876,6 +876,13 @@ memory@100000000 {
 
 The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.]] -- luacheck: ignore 631
 
+local reserved_memory_node_markdown = [[
+# Devicetree Specification:
+
+## `/reserved-memory` node
+
+Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.]] -- luacheck: ignore 631
+
 local memory_property_markdown = {
     device_type = [[
 # Devicetree Specification:
@@ -940,6 +947,54 @@ All other standard properties are allowed but are optional.]] .. M.get_type_defi
 Specifies an explicit hint to the operating system that this memory may potentially be removed later.
 
 All other standard properties are allowed but are optional.]] .. M.get_type_definition("empty"),
+}
+
+local reserved_memory_property_markdown = {
+    ["#address-cells"] = [[
+# Devicetree Specification:
+
+## Property Name: #address-cells
+
+## Path: /reserved-memory/#address-cells
+
+## Usage: Required
+
+## Definition:
+
+Specifies the number of `<u32>` cells to represent the address in the `reg` property in children of root.
+
+`#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.]]
+        .. M.get_type_definition("u32"),
+    ["#size-cells"] = [[
+# Devicetree Specification:
+
+## Property Name: #size-cells
+
+## Path: /reserved-memory/#size-cells
+
+## Usage: Required
+
+## Definition:
+
+Specifies the number of `<u32>` cells to represent the size in the `reg` property in children of root.
+
+`#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.]]
+        .. M.get_type_definition("u32"),
+    ranges = [[
+# Devicetree Specification:
+
+## Property Name: ranges
+
+## Path: /reserved-memory/ranges
+
+## Usage: Required
+
+## Definition:
+
+This property represents the mapping between parent address to child address spaces.
+
+`#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.]]
+        .. M.get_type_definition("prop_encoded_array"),
 }
 
 local model_property_markdown = [[
@@ -1094,6 +1149,10 @@ function M.hover(ctx)
         return memory_node_markdown
     end
 
+    if M.on_a_reserved_memory_node(ctx) then
+        return reserved_memory_node_markdown
+    end
+
     if M.in_an_aliases_node(ctx) then
         local alias = property_name_at_cursor(ctx)
         if alias then
@@ -1106,6 +1165,11 @@ function M.hover(ctx)
     if M.in_a_memory_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
         return memory_property_markdown[property_name]
+    end
+
+    if M.in_a_reserved_memory_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return reserved_memory_property_markdown[property_name]
     end
 
     local in_descendant_node = in_node(ctx, function(stack)

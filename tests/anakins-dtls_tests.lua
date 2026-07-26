@@ -1534,6 +1534,195 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(in_a_memory_node).was_called()
                 assert.spy(in_a_memory_node).returned_with(true)
             end)
+
+            local reserved_memory_node_markdown = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## `/reserved-memory` node
+
+                Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.
+            ]])
+
+            it("returns hover markdown for /reserved-memory node", function()
+                local positions = {
+                    "tests/custom.dts:132:5", -- reserved-memory
+                    "tests/custom.dts:159:5", -- closing brace
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.are.same(reserved_memory_node_markdown, dtls.hover(ctx))
+                end
+            end)
+
+            it("returns /reserved-memory hover markdown across node declarations", function()
+                for col = 5, 21 do
+                    ctx.row, ctx.col = 132, col
+                    assert.are.same(reserved_memory_node_markdown, dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /reserved-memory hover markdown outside node declaration boundaries", function()
+                local positions = {
+                    "tests/custom.dts:132:4",
+                    "tests/custom.dts:132:22",
+                    "tests/custom.dts:159:4",
+                    "tests/custom.dts:159:7",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /reserved-memory hover markdown for descendant reserved-memory nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:381:9")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls on_a_reserved_memory_node() to determine the type of node", function()
+                local on_a_reserved_memory_node = spy.on(dtls, "on_a_reserved_memory_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:132:5")
+                dtls.hover(ctx)
+
+                assert.spy(on_a_reserved_memory_node).was_called()
+                assert.spy(on_a_reserved_memory_node).returned_with(true)
+            end)
+
+            local reserved_memory_property_markdown = {
+                ["#address-cells"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #address-cells
+
+                    ## Path: /reserved-memory/#address-cells
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the number of `<u32>` cells to represent the address in the `reg` property in children of root.
+
+                    `#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.
+                ]]) .. dtls.get_type_definition("u32"),
+                ["#size-cells"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #size-cells
+
+                    ## Path: /reserved-memory/#size-cells
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the number of `<u32>` cells to represent the size in the `reg` property in children of root.
+
+                    `#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.
+                ]]) .. dtls.get_type_definition("u32"),
+                ranges = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: ranges
+
+                    ## Path: /reserved-memory/ranges
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    This property represents the mapping between parent address to child address spaces.
+
+                    `#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.
+                ]]) .. dtls.get_type_definition("prop_encoded_array"),
+            }
+
+            it("returns hover markdown for /reserved-memory `#address-cells` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:133:9")
+                assert.are.same(reserved_memory_property_markdown["#address-cells"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /reserved-memory `#size-cells` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:134:9")
+                assert.are.same(reserved_memory_property_markdown["#size-cells"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /reserved-memory `ranges` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:135:9")
+                assert.are.same(reserved_memory_property_markdown.ranges, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown across reserved-memory property names", function()
+                local properties = {
+                    { name = "#address-cells", row = 133 },
+                    { name = "#size-cells", row = 134 },
+                    { name = "ranges", row = 135 },
+                }
+
+                for _, property in ipairs(properties) do
+                    for col = 9, 8 + #property.name do
+                        ctx.row, ctx.col = property.row, col
+                        assert.are.same(reserved_memory_property_markdown[property.name], dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("does not return reserved-memory property hover markdown outside property names", function()
+                local positions = {
+                    "tests/custom.dts:133:8",
+                    "tests/custom.dts:133:23",
+                    "tests/custom.dts:134:8",
+                    "tests/custom.dts:134:20",
+                    "tests/custom.dts:135:8",
+                    "tests/custom.dts:135:15",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return reserved-memory property hover markdown outside /reserved-memory", function()
+                local positions = {
+                    "tests/custom.dts:19:5", -- root #address-cells
+                    "tests/custom.dts:20:5", -- root #size-cells
+                    "tests/custom.dts:260:5", -- root ranges
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    local actual = dtls.hover(ctx)
+                    assert.are_not.same(reserved_memory_property_markdown["#address-cells"], actual)
+                    assert.are_not.same(reserved_memory_property_markdown["#size-cells"], actual)
+                    assert.are_not.same(reserved_memory_property_markdown.ranges, actual)
+                end
+            end)
+
+            it("does not confuse root cell properties with /reserved-memory cell properties", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:19:5")
+                assert.are_not.same(reserved_memory_property_markdown["#address-cells"], dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:20:5")
+                assert.are_not.same(reserved_memory_property_markdown["#size-cells"], dtls.hover(ctx))
+            end)
+
+            it("does not return reserved-memory property hover markdown in descendant reserved-memory nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:382:13")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls in_a_reserved_memory_node() to determine the type of node", function()
+                local in_a_reserved_memory_node = spy.on(dtls, "in_a_reserved_memory_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:133:9")
+                dtls.hover(ctx)
+
+                assert.spy(in_a_reserved_memory_node).was_called()
+                assert.spy(in_a_reserved_memory_node).returned_with(true)
+            end)
         end)
     end)
 end

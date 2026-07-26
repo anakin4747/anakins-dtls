@@ -379,7 +379,7 @@
         };
 
         reserved-memory { // should not return hover since it is only a root node
-            dummy;
+            #address-cells = <1>;
         };
     };
 
