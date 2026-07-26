@@ -800,13 +800,8 @@ function M.list_node_properties(ctx)
     return properties
 end
 
-function M.in_a_serial_device_node(ctx)
-    local bounds = containing_node(ctx.file, ctx.row)
-    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
-        return false
-    end
-
-    local lines = read_lines(ctx.file)
+local function is_serial_device_node(file, bounds)
+    local lines = read_lines(file)
     for row = bounds.open_row + 1, bounds.close_row - 1 do
         local values = lines[row]:match("^%s*compatible%s*=%s*(.-)%s*;")
         if values then
@@ -815,6 +810,84 @@ function M.in_a_serial_device_node(ctx)
                     return true
                 end
             end
+        end
+    end
+
+    return false
+end
+
+function M.in_a_serial_device_node(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
+        return false
+    end
+
+    return is_serial_device_node(ctx.file, bounds)
+end
+
+function M.on_a_serial_device_node(ctx)
+    if M.on_a_label_definition(ctx) then
+        return false
+    end
+
+    for _, bounds in
+        ipairs(find_all_node_bounds(ctx.file, function()
+            return true
+        end))
+    do
+        local on_opening = ctx.row == bounds.open_row and ctx.col >= bounds.start_col and ctx.col <= bounds.open_col
+        local on_closing = ctx.row == bounds.close_row
+            and ctx.col >= bounds.close_col
+            and ctx.col <= bounds.close_col + 1
+        if (on_opening or on_closing) and is_serial_device_node(ctx.file, bounds) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function is_ns16550_node(file, bounds)
+    local lines = read_lines(file)
+    for row = bounds.open_row + 1, bounds.close_row - 1 do
+        local values = lines[row]:match("^%s*compatible%s*=%s*(.-)%s*;")
+        if values then
+            for compatible in values:gmatch('"([^"]+)"') do
+                if compatible == "ns16550" then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+function M.in_a_ns16550_node(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
+        return false
+    end
+
+    return is_ns16550_node(ctx.file, bounds)
+end
+
+function M.on_a_ns16550_node(ctx)
+    if M.on_a_label_definition(ctx) then
+        return false
+    end
+
+    for _, bounds in
+        ipairs(find_all_node_bounds(ctx.file, function()
+            return true
+        end))
+    do
+        local on_opening = ctx.row == bounds.open_row and ctx.col >= bounds.start_col and ctx.col <= bounds.open_col
+        local on_closing = ctx.row == bounds.close_row
+            and ctx.col >= bounds.close_col
+            and ctx.col <= bounds.close_col + 1
+        if (on_opening or on_closing) and is_ns16550_node(ctx.file, bounds) then
+            return true
         end
     end
 
