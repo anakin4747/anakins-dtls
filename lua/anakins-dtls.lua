@@ -917,7 +917,75 @@ local reserved_memory_node_markdown = [[
 
 ## `/reserved-memory` node
 
-Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.]] -- luacheck: ignore 631
+Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.
+
+## Device node references to reserved memory
+
+Regions in the `/reserved-memory` node may be referenced by other device nodes by adding a `memory-region` property to the device node.
+
+## `/reserved-memory/` and UEFI
+
+When booting via UEFI, static `/reserved-memory` regions must also be listed in the system memory map obtained via the GetMemoryMap() UEFI boot time service as defined in the Unified Extensible Firmware Interface Specification. The reserved memory regions need to be included in the UEFI memory map to protect against allocations by UEFI applications.
+
+Reserved regions with the `no-map` property must be listed in the memory map with type `EfiReservedMemoryType`. All other reserved regions must be listed with type `EfiBootServicesData`.
+
+Dynamic reserved memory regions must not be listed in the UEFI memory map because they are allocated by the OS after exiting firmware boot services.
+
+## `/reserved-memory` Example
+
+This example defines 3 contiguous regions are defined for Linux kernel: one default of all device drivers (named `linux,cma` and 64MiB in size), one dedicated to the framebuffer device (named `framebuffer@78000000`, 8MiB), and one for multimedia processing (named `multimedia@77000000`, 64MiB).
+
+```dts
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    memory {
+        reg = <0x40000000 0x40000000>;
+    };
+
+    reserved-memory {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        /* global autoconfigured region for contiguous allocations */
+        linux,cma {
+            compatible = "shared-dma-pool";
+            reusable;
+            size = <0x4000000>;
+            alignment = <0x2000>;
+            linux,cma-default;
+        };
+
+        display_reserved: framebuffer@78000000 {
+            reg = <0x78000000 0x800000>;
+        };
+
+        multimedia_reserved: multimedia@77000000 {
+            compatible = "acme,multimedia-memory";
+            reg = <0x77000000 0x4000000>;
+        };
+    };
+
+    /* ... */
+
+    fb0: video@12300000 {
+        memory-region = <&display_reserved>;
+        /* ... */
+    };
+
+    scaler: scaler@12500000 {
+        memory-region = <&multimedia_reserved>;
+        /* ... */
+    };
+
+    codec: codec@12600000 {
+        memory-region = <&multimedia_reserved>;
+        /* ... */
+    };
+};
+```]] -- luacheck: ignore 631
 
 local reserved_memory_region_node_markdown = M.dedent([[
     # Devicetree Specification:
@@ -1022,7 +1090,7 @@ Value shall be "memory"
 
 All other standard properties are allowed but are optional.
 
-# Anakin's Advice:
+## Anakin's Advice:
 
 Not to be confused with the /cpus/cpu*/device_type which shall be `"cpu"` and not to be confused with the deprecated standard property `device_type`]]
         .. M.get_type_definition("string"),
