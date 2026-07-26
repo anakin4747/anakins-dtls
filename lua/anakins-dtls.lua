@@ -1282,6 +1282,15 @@ aliases {
 
 Given the alias `serial0`, a client program can look at the `/aliases` node and determine the alias refers to the device path `/simple-bus@fe000000/serial@llc500`.]] -- luacheck: ignore 631
 
+local cpus_node_markdown = [[
+# Devicetree Specification:
+
+## `/cpus` node
+
+A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
+
+The `/cpus` node may contain properties that are common across `cpu` nodes.]]
+
 local memory_node_markdown = [[
 # Devicetree Specification:
 
@@ -1583,6 +1592,37 @@ All other standard properties are allowed but are optional.]] .. M.get_type_defi
 Specifies an explicit hint to the operating system that this memory may potentially be removed later.
 
 All other standard properties are allowed but are optional.]] .. M.get_type_definition("empty"),
+}
+
+local cpus_property_markdown = {
+    ["#address-cells"] = [[
+# Devicetree Specification:
+
+## Property Name: #address-cells
+
+## Path: /cpus/#address-cells
+
+## Usage: Required
+
+## Definition:
+
+The value specifies how many cells each element of the `reg` property array takes in children of this node.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("u32"),
+    ["#size-cells"] = [[
+# Devicetree Specification:
+
+## Property Name: #size-cells
+
+## Path: /cpus/#size-cells
+
+## Usage: Required
+
+## Definition:
+
+Value shall be 0. Specifies that no size is required in the `reg` property in children of this node.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("u32"),
 }
 
 local chosen_property_markdown = {
@@ -2034,6 +2074,10 @@ function M.hover(ctx)
         return aliases_node_markdown
     end
 
+    if M.on_a_cpus_node(ctx) then
+        return cpus_node_markdown
+    end
+
     if M.on_a_memory_node(ctx) then
         return memory_node_markdown
     end
@@ -2057,6 +2101,11 @@ function M.hover(ctx)
                 alias
             )
         end
+    end
+
+    if M.in_a_cpus_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return cpus_property_markdown[property_name]
     end
 
     if M.in_a_memory_node(ctx) then
