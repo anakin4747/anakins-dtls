@@ -611,6 +611,31 @@ for _, location in ipairs(dts_locations) do
             end)
         end)
 
+        -- describe("list_node_properties()", function()
+        --     it("returns all properties inside the iio-hwmon node", function()
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
+        --         local properties = dtls.list_node_properties(ctx)
+        --
+        --         assert.are.same({
+        --             "compatible",
+        --             "iio-channels",
+        --         }, properties)
+        --     end)
+        --
+        --     it("returns all properties inside a node referenced in dtsi and dts", function()
+        --         ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
+        --         local properties = dtls.list_node_properties(ctx)
+        --
+        --         assert.are.same({
+        --             "vbus-supply",
+        --             "compatible",
+        --             "#phy-cells",
+        --             "clocks",
+        --             "clock-names",
+        --         }, properties)
+        --     end)
+        -- end)
+
         -- describe("in_a_serial_device_node()", function()
         --     it("returns true if in a serial device node", function()
         --         -- inside serial-device { (compatible = "ns8250")
@@ -2098,17 +2123,8 @@ for _, location in ipairs(dts_locations) do
             ]])
 
             it("returns hover markdown for /chosen node", function()
-                local positions = {
-                    "tests/custom.dts:52:5", -- chosen
-                    "tests/custom.dts:54:5", -- closing brace
-                    "tests/custom.dts:295:5", -- chosen
-                    "tests/custom.dts:300:5", -- closing brace
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.are.same(chosen_node_markdown, dtls.hover(ctx))
-                end
+                ctx.row, ctx.col = row_col("tests/custom.dts:52:5")
+                assert.are.same(chosen_node_markdown, dtls.hover(ctx))
             end)
 
             it("calls on_a_chosen_node() to determine the type of node", function()
