@@ -120,25 +120,6 @@ to assume the perspective of the dtsi
 
 damn need to handle state with didOpen and didChange and didClose
 
-```lua
-local state = {
-}
-
-while true do
-    local request = wait_for_request(stdin)
-    local response = handle_request(request)
-    send_response(response) > stdout
-end
-
-local function handle_request()
-
-end
-```
-
----
-
-factor out Type Definition in tests
-
 ---
 
 easiest I don't want to manage state when the filesystem already can
