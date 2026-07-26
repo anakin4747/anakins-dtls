@@ -947,6 +947,38 @@ for _, location in ipairs(dts_locations) do
             end)
         end)
 
+        describe("in_possible_memory_region_consumer()", function()
+            it("returns true in a device node with a memory-region property", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:164:9")
+                assert(dtls.in_possible_memory_region_consumer(ctx))
+            end)
+
+            it("returns true in a device node without memory-region properties", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:387:9")
+                assert(dtls.in_possible_memory_region_consumer(ctx))
+            end)
+
+            it("returns true in a nested device node without memory-region properties", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:195:21")
+                assert(dtls.in_possible_memory_region_consumer(ctx))
+            end)
+
+            it("returns false in the root node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:269:5")
+                assert(not dtls.in_possible_memory_region_consumer(ctx))
+            end)
+
+            it("returns false in /reserved-memory", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:133:9")
+                assert(not dtls.in_possible_memory_region_consumer(ctx))
+            end)
+
+            it("returns false in a reserved-memory region node", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:139:13")
+                assert(not dtls.in_possible_memory_region_consumer(ctx))
+            end)
+        end)
+
         describe("hover()", function()
             it("returns hover markdown for root node", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:15:1")
