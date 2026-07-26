@@ -18,6 +18,19 @@ local function sorted(values)
     return values
 end
 
+local function with_node_properties(properties, values, callback)
+    local original = dtls.list_node_properties
+    local list_node_properties = spy.new(function()
+        return properties, values
+    end)
+    dtls.list_node_properties = list_node_properties
+    local result = callback()
+    dtls.list_node_properties = original
+
+    assert.spy(list_node_properties).was_called()
+    return result
+end
+
 local handle = io.popen("pwd")
 local cwd = handle:read("*l")
 handle:close()
@@ -650,7 +663,7 @@ for _, location in ipairs(dts_locations) do
 
         it("returns all properties inside a node reference dts", function()
             ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
-            local properties = dtls.list_node_properties(ctx)
+            local properties, values = dtls.list_node_properties(ctx)
 
             assert.are.same(sorted({
                 "vbus-supply",
@@ -659,6 +672,7 @@ for _, location in ipairs(dts_locations) do
                 "clocks",
                 "clock-names",
             }), sorted(properties))
+            assert.are.same({ '"usb-nop-xceiv"' }, values.compatible)
         end)
 
         it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
@@ -682,6 +696,13 @@ for _, location in ipairs(dts_locations) do
 end
 
 describe("in_a_serial_device_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"ns8250"' } }, function()
+            return dtls.in_a_serial_device_node(ctx)
+        end))
+    end)
+
     it("returns true if in a node with a compatible string is 'ns8250'", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
         assert(dtls.in_a_serial_device_node(ctx))
@@ -704,6 +725,13 @@ describe("in_a_serial_device_node()", function()
 end)
 
 describe("on_a_serial_device_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:415:5")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"vendor,sync-hdlc"' } }, function()
+            return dtls.on_a_serial_device_node(ctx)
+        end))
+    end)
+
     it("returns true if on a serial device node", function()
         local tests = {
             "tests/custom.dts:425:5",  -- serial-device's 's'
@@ -735,6 +763,13 @@ describe("on_a_serial_device_node()", function()
 end)
 
 describe("in_a_ns16550_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"ns16550"' } }, function()
+            return dtls.in_a_ns16550_node(ctx)
+        end))
+    end)
+
     it("returns true if in a node with a compatible string of 'ns16550'", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
         assert(dtls.in_a_ns16550_node(ctx))
@@ -752,6 +787,13 @@ describe("in_a_ns16550_node()", function()
 end)
 
 describe("on_a_ns16550_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:415:5")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"ns16550"' } }, function()
+            return dtls.on_a_ns16550_node(ctx)
+        end))
+    end)
+
     it("returns true if on a ns16550 node", function()
         -- uart@4600's 'u'
         ctx.row, ctx.col = row_col("tests/custom.dts:439:5")

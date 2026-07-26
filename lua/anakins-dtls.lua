@@ -725,14 +725,20 @@ end
 local function properties_in_bounds(file, bounds)
     local lines = read_lines(file)
     local properties = {}
+    local values = {}
     local depth = 0
 
     for row = bounds.open_row + 1, bounds.close_row - 1 do
         local line = lines[row]
         if depth == 0 then
-            local property = line:match("^%s*([%w#?,._+%-]+)%s*[=;]")
+            local property, value = line:match("^%s*([%w#?,._+%-]+)%s*=%s*(.-)%s*;")
+            property = property or line:match("^%s*([%w#?,._+%-]+)%s*;")
             if property then
                 properties[#properties + 1] = property
+                if value then
+                    values[property] = values[property] or {}
+                    values[property][#values[property] + 1] = value
+                end
             end
         end
 
@@ -741,7 +747,7 @@ local function properties_in_bounds(file, bounds)
         end
     end
 
-    return properties
+    return properties, values
 end
 
 local function included_files(file, root, seen, results)
@@ -775,10 +781,10 @@ function M.list_node_properties(ctx)
         return {}
     end
 
-    local properties = properties_in_bounds(ctx.file, bounds)
+    local properties, values = properties_in_bounds(ctx.file, bounds)
     local label = bounds.name:match("^&([%w_]+)$")
     if not label then
-        return properties
+        return properties, values
     end
 
     local root = kernel_root(ctx.file)
@@ -789,26 +795,34 @@ function M.list_node_properties(ctx)
             end))
         do
             if candidate.label == label then
-                for _, property in ipairs(properties_in_bounds(file, candidate)) do
+                local inherited_properties, inherited_values = properties_in_bounds(file, candidate)
+                for _, property in ipairs(inherited_properties) do
                     properties[#properties + 1] = property
                 end
-                return properties
+                for property, property_values in pairs(inherited_values) do
+                    values[property] = values[property] or {}
+                    for _, value in ipairs(property_values) do
+                        values[property][#values[property] + 1] = value
+                    end
+                end
+                return properties, values
             end
         end
     end
 
-    return properties
+    return properties, values
 end
 
-local function is_serial_device_node(file, bounds)
-    local lines = read_lines(file)
-    for row = bounds.open_row + 1, bounds.close_row - 1 do
-        local values = lines[row]:match("^%s*compatible%s*=%s*(.-)%s*;")
-        if values then
-            for compatible in values:gmatch('"([^"]+)"') do
-                if compatible == "ns8250" or compatible:match("%-hdlc$") then
-                    return true
-                end
+local function compatible_strings(ctx)
+    local _, values = M.list_node_properties(ctx)
+    return values.compatible or {}
+end
+
+local function is_serial_device_node(ctx)
+    for _, values in ipairs(compatible_strings(ctx)) do
+        for compatible in values:gmatch('"([^"]+)"') do
+            if compatible == "ns8250" or compatible:match("%-hdlc$") then
+                return true
             end
         end
     end
@@ -822,7 +836,7 @@ function M.in_a_serial_device_node(ctx)
         return false
     end
 
-    return is_serial_device_node(ctx.file, bounds)
+    return is_serial_device_node(ctx)
 end
 
 function M.on_a_serial_device_node(ctx)
@@ -839,7 +853,7 @@ function M.on_a_serial_device_node(ctx)
         local on_closing = ctx.row == bounds.close_row
             and ctx.col >= bounds.close_col
             and ctx.col <= bounds.close_col + 1
-        if (on_opening or on_closing) and is_serial_device_node(ctx.file, bounds) then
+        if (on_opening or on_closing) and is_serial_device_node({ file = ctx.file, row = bounds.open_row }) then
             return true
         end
     end
@@ -847,15 +861,11 @@ function M.on_a_serial_device_node(ctx)
     return false
 end
 
-local function is_ns16550_node(file, bounds)
-    local lines = read_lines(file)
-    for row = bounds.open_row + 1, bounds.close_row - 1 do
-        local values = lines[row]:match("^%s*compatible%s*=%s*(.-)%s*;")
-        if values then
-            for compatible in values:gmatch('"([^"]+)"') do
-                if compatible == "ns16550" then
-                    return true
-                end
+local function is_ns16550_node(ctx)
+    for _, values in ipairs(compatible_strings(ctx)) do
+        for compatible in values:gmatch('"([^"]+)"') do
+            if compatible == "ns16550" then
+                return true
             end
         end
     end
@@ -869,7 +879,7 @@ function M.in_a_ns16550_node(ctx)
         return false
     end
 
-    return is_ns16550_node(ctx.file, bounds)
+    return is_ns16550_node(ctx)
 end
 
 function M.on_a_ns16550_node(ctx)
@@ -886,7 +896,7 @@ function M.on_a_ns16550_node(ctx)
         local on_closing = ctx.row == bounds.close_row
             and ctx.col >= bounds.close_col
             and ctx.col <= bounds.close_col + 1
-        if (on_opening or on_closing) and is_ns16550_node(ctx.file, bounds) then
+        if (on_opening or on_closing) and is_ns16550_node({ file = ctx.file, row = bounds.open_row }) then
             return true
         end
     end
