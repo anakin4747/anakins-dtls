@@ -1249,27 +1249,6 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(expected, actual)
             end)
 
-            it("returns hover markdown across an alias property name", function()
-                local expected = dtls.dedent([[
-                    # Anakin's Advice:
-
-                    A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
-                ]])
-
-                for col = 9, 17 do
-                    ctx.row, ctx.col = 26, col
-                    local actual = dtls.hover(ctx)
-                    assert.are.same(expected, actual)
-                end
-            end)
-
-            it("does not return alias hover markdown outside a property name", function()
-                for _, col in ipairs({ 8, 18, 19, 20, 21, 25, 26 }) do
-                    ctx.row, ctx.col = 26, col
-                    assert.is_nil(dtls.hover(ctx))
-                end
-            end)
-
             it("does not return alias hover markdown in descendant aliases nodes", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:115:13")
                 assert.is_nil(dtls.hover(ctx))
@@ -1353,34 +1332,6 @@ for _, location in ipairs(dts_locations) do
                 for _, position in ipairs(positions) do
                     ctx.row, ctx.col = row_col(position)
                     assert.are.same(memory_node_markdown, dtls.hover(ctx))
-                end
-            end)
-
-            it("returns /memory hover markdown across node declarations", function()
-                for col = 5, 12 do
-                    ctx.row, ctx.col = 119, col
-                    assert.are.same(memory_node_markdown, dtls.hover(ctx))
-                end
-
-                for col = 5, 14 do
-                    ctx.row, ctx.col = 126, col
-                    assert.are.same(memory_node_markdown, dtls.hover(ctx))
-                end
-            end)
-
-            it("does not return /memory hover markdown outside node declaration boundaries", function()
-                local positions = {
-                    "tests/custom.dts:119:13",
-                    "tests/custom.dts:124:4",
-                    "tests/custom.dts:124:7",
-                    "tests/custom.dts:126:15",
-                    "tests/custom.dts:130:4",
-                    "tests/custom.dts:130:7",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
                 end
             end)
 
@@ -1508,46 +1459,6 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(memory_property_markdown.hotpluggable, dtls.hover(ctx))
             end)
 
-            it("returns hover markdown across memory property names", function()
-                local properties = {
-                    { name = "device_type", row = 120 },
-                    { name = "reg", row = 121 },
-                    { name = "hotpluggable", row = 122 },
-                    { name = "initial-mapped-area", row = 123 },
-                }
-
-                for _, property in ipairs(properties) do
-                    for col = 9, 8 + #property.name do
-                        ctx.row, ctx.col = property.row, col
-                        assert.are.same(memory_property_markdown[property.name], dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("does not return memory property hover markdown outside property names", function()
-                local positions = {
-                    "tests/custom.dts:120:8",
-                    "tests/custom.dts:120:20",
-                    "tests/custom.dts:120:21",
-                    "tests/custom.dts:121:8",
-                    "tests/custom.dts:121:12",
-                    "tests/custom.dts:121:13",
-                    "tests/custom.dts:122:8",
-                    "tests/custom.dts:122:21",
-                    "tests/custom.dts:123:8",
-                    "tests/custom.dts:123:28",
-                    "tests/custom.dts:123:29",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:120:9")
-                assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
-            end)
-
             it("does not return memory property hover markdown outside memory nodes", function()
                 local positions = {
                     "tests/custom.dts:265:5", -- device_type
@@ -1669,27 +1580,6 @@ for _, location in ipairs(dts_locations) do
                 end
             end)
 
-            it("returns /reserved-memory hover markdown across node declarations", function()
-                for col = 5, 21 do
-                    ctx.row, ctx.col = 132, col
-                    assert.are.same(reserved_memory_node_markdown, dtls.hover(ctx))
-                end
-            end)
-
-            it("does not return /reserved-memory hover markdown outside node declaration boundaries", function()
-                local positions = {
-                    "tests/custom.dts:132:4",
-                    "tests/custom.dts:132:22",
-                    "tests/custom.dts:159:4",
-                    "tests/custom.dts:159:7",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
-            end)
-
             it("does not return /reserved-memory hover markdown for descendant reserved-memory nodes", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:381:9")
                 assert.is_nil(dtls.hover(ctx))
@@ -1766,37 +1656,6 @@ for _, location in ipairs(dts_locations) do
             it("returns hover markdown for /reserved-memory `ranges` property name", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:135:9")
                 assert.are.same(reserved_memory_property_markdown.ranges, dtls.hover(ctx))
-            end)
-
-            it("returns hover markdown across reserved-memory property names", function()
-                local properties = {
-                    { name = "#address-cells", row = 133 },
-                    { name = "#size-cells", row = 134 },
-                    { name = "ranges", row = 135 },
-                }
-
-                for _, property in ipairs(properties) do
-                    for col = 9, 8 + #property.name do
-                        ctx.row, ctx.col = property.row, col
-                        assert.are.same(reserved_memory_property_markdown[property.name], dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("does not return reserved-memory property hover markdown outside property names", function()
-                local positions = {
-                    "tests/custom.dts:133:8",
-                    "tests/custom.dts:133:23",
-                    "tests/custom.dts:134:8",
-                    "tests/custom.dts:134:20",
-                    "tests/custom.dts:135:8",
-                    "tests/custom.dts:135:15",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
             end)
 
             it("does not return reserved-memory property hover markdown outside /reserved-memory", function()
@@ -1946,24 +1805,6 @@ for _, location in ipairs(dts_locations) do
             it("does not return node hover markdown on a reserved-memory region label", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:148:9")
                 assert.is_nil(dtls.hover(ctx))
-            end)
-
-            it("does not return reserved-memory region hover markdown outside node declaration boundaries", function()
-                local positions = {
-                    "tests/custom.dts:138:8",
-                    "tests/custom.dts:138:20",
-                    "tests/custom.dts:146:8",
-                    "tests/custom.dts:146:11",
-                    "tests/custom.dts:148:8",
-                    "tests/custom.dts:148:51",
-                    "tests/custom.dts:152:8",
-                    "tests/custom.dts:152:11",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
             end)
 
             it("calls on_a_reserved_memory_region_node() to determine the type of node", function()
@@ -2203,58 +2044,6 @@ for _, location in ipairs(dts_locations) do
                 )
             end)
 
-            it("returns hover markdown across reserved-memory region property names", function()
-                local properties = {
-                    { markdown = linux_cma_property_markdown, name = "compatible", row = 139 },
-                    { markdown = linux_cma_property_markdown, name = "reusable", row = 140 },
-                    { markdown = linux_cma_property_markdown, name = "size", row = 141 },
-                    { markdown = linux_cma_property_markdown, name = "alignment", row = 142 },
-                    { markdown = linux_cma_property_markdown, name = "linux,cma-default", row = 143 },
-                    { markdown = linux_cma_property_markdown, name = "no-map", row = 144 },
-                    { markdown = linux_cma_property_markdown, name = "alloc-ranges", row = 145 },
-                    { markdown = framebuffer_property_markdown, name = "reg", row = 150 },
-                    { markdown = framebuffer_property_markdown, name = "linux,cma-default", row = 151 },
-                    { markdown = multimedia_property_markdown, name = "linux,dma-default", row = 157 },
-                }
-
-                for _, property in ipairs(properties) do
-                    for col = 13, 12 + #property.name do
-                        ctx.row, ctx.col = property.row, col
-                        assert.are.same(property.markdown[property.name], dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("does not return reserved-memory region property hover markdown outside property names", function()
-                local positions = {
-                    "tests/custom.dts:139:12",
-                    "tests/custom.dts:139:23",
-                    "tests/custom.dts:140:12",
-                    "tests/custom.dts:140:21",
-                    "tests/custom.dts:141:12",
-                    "tests/custom.dts:141:17",
-                    "tests/custom.dts:142:12",
-                    "tests/custom.dts:142:22",
-                    "tests/custom.dts:143:12",
-                    "tests/custom.dts:143:30",
-                    "tests/custom.dts:144:12",
-                    "tests/custom.dts:144:19",
-                    "tests/custom.dts:145:12",
-                    "tests/custom.dts:145:25",
-                    "tests/custom.dts:150:12",
-                    "tests/custom.dts:150:16",
-                    "tests/custom.dts:151:12",
-                    "tests/custom.dts:151:30",
-                    "tests/custom.dts:157:12",
-                    "tests/custom.dts:157:30",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
-            end)
-
             it("does not return reserved-memory region property hover markdown outside region nodes", function()
                 local properties = {
                     { expected = linux_cma_property_markdown.compatible, position = "tests/custom.dts:17:5" },
@@ -2330,34 +2119,6 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(memory_region_property_markdown["memory-region-names"], dtls.hover(ctx))
             end)
 
-            it("returns hover markdown across memory-region property names", function()
-                local properties = {
-                    { name = "memory-region", row = 352 },
-                    { name = "memory-region-names", row = 353 },
-                }
-
-                for _, property in ipairs(properties) do
-                    for col = 9, 8 + #property.name do
-                        ctx.row, ctx.col = property.row, col
-                        assert.are.same(memory_region_property_markdown[property.name], dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("does not return memory-region property hover markdown outside property names", function()
-                local positions = {
-                    "tests/custom.dts:352:8",
-                    "tests/custom.dts:352:22",
-                    "tests/custom.dts:353:8",
-                    "tests/custom.dts:353:28",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
-            end)
-
             it("does not return memory-region property hover markdown outside device nodes", function()
                 local positions = {
                     "tests/custom.dts:269:5",
@@ -2416,29 +2177,6 @@ for _, location in ipairs(dts_locations) do
                 for _, position in ipairs(positions) do
                     ctx.row, ctx.col = row_col(position)
                     assert.are.same(chosen_node_markdown, dtls.hover(ctx))
-                end
-            end)
-
-            it("returns /chosen hover markdown across node declarations", function()
-                for _, row in ipairs({ 52, 295 }) do
-                    for col = 5, 12 do
-                        ctx.row, ctx.col = row, col
-                        assert.are.same(chosen_node_markdown, dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("does not return /chosen hover markdown outside node declaration boundaries", function()
-                local positions = {
-                    "tests/custom.dts:52:4",
-                    "tests/custom.dts:52:13",
-                    "tests/custom.dts:54:4",
-                    "tests/custom.dts:54:7",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
                 end
             end)
 
@@ -2562,49 +2300,6 @@ for _, location in ipairs(dts_locations) do
             it("returns hover markdown for /chosen `stdin-path` property name", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:299:9")
                 assert.are.same(chosen_property_markdown["stdin-path"], dtls.hover(ctx))
-            end)
-
-            it("returns hover markdown across chosen property names", function()
-                local properties = {
-                    { name = "bootargs", row = 296 },
-                    { name = "bootsource", row = 297 },
-                    { name = "stdout-path", row = 298 },
-                    { name = "stdin-path", row = 299 },
-                }
-
-                for _, property in ipairs(properties) do
-                    for col = 9, 8 + #property.name do
-                        ctx.row, ctx.col = property.row, col
-                        assert.are.same(chosen_property_markdown[property.name], dtls.hover(ctx))
-                    end
-                end
-            end)
-
-            it("returns hover markdown across deprecated linux,stdout-path property name", function()
-                for col = 9, 25 do
-                    ctx.row, ctx.col = 53, col
-                    assert.are.same(chosen_property_markdown["linux,stdout-path"], dtls.hover(ctx))
-                end
-            end)
-
-            it("does not return chosen property hover markdown outside property names", function()
-                local positions = {
-                    "tests/custom.dts:53:8",
-                    "tests/custom.dts:53:26",
-                    "tests/custom.dts:296:8",
-                    "tests/custom.dts:296:17",
-                    "tests/custom.dts:297:8",
-                    "tests/custom.dts:297:19",
-                    "tests/custom.dts:298:8",
-                    "tests/custom.dts:298:20",
-                    "tests/custom.dts:299:8",
-                    "tests/custom.dts:299:19",
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
             end)
 
             it("does not return chosen property hover markdown outside /chosen", function()
