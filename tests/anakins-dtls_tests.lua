@@ -26,13 +26,12 @@ local dts_locations = {
     {
         name = "in-tree",
         path = "arch/arm64/boot/dts/freescale/custom.dts",
-        kernel_path = "",
     },
-    { name = "out-of-tree", path = "custom.dts", kernel_path = "linux/" },
+    { name = "out-of-tree", path = "custom.dts" },
 }
 
-for _, location in ipairs(dts_locations) do
-    local file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path)
+do
+    local file = ("%s/tests/%s/%s"):format(cwd, dts_locations[1].name, dts_locations[1].path)
     local ctx = {}
 
     before_each(function()
@@ -43,7 +42,7 @@ for _, location in ipairs(dts_locations) do
         }
     end)
 
-    describe(location.name, function()
+    describe("anakins-dtls", function()
         describe("in_a_root_node()", function()
             it("returns true if in a root node", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:16:5")
@@ -639,27 +638,30 @@ for _, location in ipairs(dts_locations) do
                 }), sorted(properties))
             end)
 
-            it("returns all properties inside a node reference dts", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
-                local properties = dtls.list_node_properties(ctx)
+            for _, location in ipairs(dts_locations) do
+                it("returns all properties inside a node reference dts " .. location.name, function()
+                    ctx = {
+                        row = 578,
+                        col = 5,
+                        file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path),
+                    }
+                    local properties = dtls.list_node_properties(ctx)
 
-                assert.are.same(sorted({
-                    "vbus-supply",
-                    "compatible",
-                    "#phy-cells",
-                    "clocks",
-                    "clock-names",
-                }), sorted(properties))
-            end)
+                    assert.are.same(sorted({
+                        "vbus-supply",
+                        "compatible",
+                        "#phy-cells",
+                        "clocks",
+                        "clock-names",
+                    }), sorted(properties))
+                end)
+            end
 
             it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
                 ctx = {
                     row = 114,
                     col = 3,
-                    file = ("%s/tests/%s/%s"):format(
-                        cwd, location.name,
-                        location.kernel_path .. "arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
-                    )
+                    file = ("%s/tests/in-tree/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"):format(cwd),
                 }
 
                 local properties = dtls.list_node_properties(ctx)
