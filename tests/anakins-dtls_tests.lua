@@ -26,8 +26,9 @@ local dts_locations = {
     {
         name = "in-tree",
         path = "arch/arm64/boot/dts/freescale/custom.dts",
+        kernel_path = "",
     },
-    { name = "out-of-tree", path = "custom.dts" },
+    { name = "out-of-tree", path = "custom.dts", kernel_path = "linux" },
 }
 
 local file = ("%s/tests/%s/%s"):format(cwd, dts_locations[1].name, dts_locations[1].path)
@@ -625,24 +626,30 @@ describe("on_a_reserved_memory_region_node()", function()
     end)
 end)
 
-describe("list_node_properties()", function()
-    it("returns all properties inside the iio-hwmon node", function()
-        ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
-        local properties = dtls.list_node_properties(ctx)
+for _, location in ipairs(dts_locations) do
+    local layout = location
 
-        assert.are.same(sorted({
-            "compatible",
-            "io-channels",
-        }), sorted(properties))
-    end)
-
-    for _, location in ipairs(dts_locations) do
-        it("returns all properties inside a node reference dts " .. location.name, function()
+    describe("list_node_properties() " .. layout.name, function()
+        before_each(function()
             ctx = {
-                row = 578,
-                col = 5,
-                file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path),
+                row = nil,
+                col = nil,
+                file = ("%s/tests/%s/%s"):format(cwd, layout.name, layout.path),
             }
+        end)
+
+        it("returns all properties inside the iio-hwmon node", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
+            local properties = dtls.list_node_properties(ctx)
+
+            assert.are.same(sorted({
+                "compatible",
+                "io-channels",
+            }), sorted(properties))
+        end)
+
+        it("returns all properties inside a node reference dts", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
             local properties = dtls.list_node_properties(ctx)
 
             assert.are.same(sorted({
@@ -653,24 +660,26 @@ describe("list_node_properties()", function()
                 "clock-names",
             }), sorted(properties))
         end)
-    end
 
-    it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
-        ctx = {
-            row = 114,
-            col = 3,
-            file = ("%s/tests/in-tree/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"):format(cwd),
-        }
+        it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
+            ctx = {
+                row = 114,
+                col = 3,
+                file = ("%s/tests/%s/%s/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"):format(
+                    cwd, layout.name, layout.kernel_path
+                ),
+            }
 
-        local properties = dtls.list_node_properties(ctx)
-        assert.are.same(sorted({
-            "compatible",
-            "#phy-cells",
-            "clocks",
-            "clock-names",
-        }), sorted(properties))
+            local properties = dtls.list_node_properties(ctx)
+            assert.are.same(sorted({
+                "compatible",
+                "#phy-cells",
+                "clocks",
+                "clock-names",
+            }), sorted(properties))
+        end)
     end)
-end)
+end
 
 -- describe("in_a_serial_device_node()", function()
 --     it("returns true if in a serial device node", function()
