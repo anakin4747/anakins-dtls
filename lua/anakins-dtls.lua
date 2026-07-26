@@ -585,6 +585,7 @@ local function find_all_node_bounds(file, criteria)
                 stack[#stack + 1] = name
                 if matches(stack) then
                     pending_by_depth[#stack] = {
+                        name = name,
                         open_row = row,
                         open_col = col,
                         start_col = line:find("%S"),
@@ -720,6 +721,14 @@ end
 
 function M.on_a_reserved_memory_region_node(ctx)
     return on_node(ctx, { "/", "reserved-memory", any_name })
+end
+
+local function reserved_memory_region_path(ctx)
+    for _, bounds in ipairs(find_all_node_bounds(ctx.file, { "/", "reserved-memory", any_name })) do
+        if ctx.row >= bounds.open_row and ctx.row <= bounds.close_row then
+            return "/reserved-memory/" .. bounds.name
+        end
+    end
 end
 
 local function is_top_level_stack(stack)
@@ -883,6 +892,93 @@ local reserved_memory_node_markdown = [[
 
 Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.]] -- luacheck: ignore 631
 
+local reserved_memory_region_node_markdown = M.dedent([[
+    # Devicetree Specification:
+
+    ## `/reserved-memory/` child node
+
+    ## Path: %s
+
+    Each child of the reserved-memory node specifies one or more regions of reserved memory. Each child node may either use a `reg` property to specify a specific range of reserved memory, or a `size` property with optional constraints to request a dynamically allocated block of memory.
+
+    Following the generic-names recommended practice, node names should reflect the purpose of the node (ie. "`framebuffer`" or "`dma-pool`"). Unit address (`@<address>`) should be appended to the name if the node is a static allocation.
+
+    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+    The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+    Linux implementation notes:
+    - If a `linux,cma-default` property is present, then Linux will use the region for the default pool of the contiguous memory allocator.
+    - If a `linux,dma-default` property is present, then Linux will use the region for the default pool of the consistent DMA allocator.
+
+    ## Device node references to reserved memory
+
+    Regions in the `/reserved-memory` node may be referenced by other device nodes by adding a `memory-region` property to the device node.
+
+    ## `/reserved-memory/` and UEFI
+
+    When booting via UEFI, static `/reserved-memory` regions must also be listed in the system memory map obtained via the GetMemoryMap() UEFI boot time service as defined in the Unified Extensible Firmware Interface Specification. The reserved memory regions need to be included in the UEFI memory map to protect against allocations by UEFI applications.
+
+    Reserved regions with the `no-map` property must be listed in the memory map with type `EfiReservedMemoryType`. All other reserved regions must be listed with type `EfiBootServicesData`.
+
+    Dynamic reserved memory regions must not be listed in the UEFI memory map because they are allocated by the OS after exiting firmware boot services.
+
+    ## `/reserved-memory` Example
+
+    This example defines 3 contiguous regions are defined for Linux kernel: one default of all device drivers (named `linux,cma` and 64MiB in size), one dedicated to the framebuffer device (named `framebuffer@78000000`, 8MiB), and one for multimedia processing (named `multimedia@77000000`, 64MiB).
+
+    ```dts
+    / {
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        memory {
+            reg = <0x40000000 0x40000000>;
+        };
+
+        reserved-memory {
+            #address-cells = <1>;
+            #size-cells = <1>;
+            ranges;
+
+            /* global autoconfigured region for contiguous allocations */
+            linux,cma {
+                compatible = "shared-dma-pool";
+                reusable;
+                size = <0x4000000>;
+                alignment = <0x2000>;
+                linux,cma-default;
+            };
+
+            display_reserved: framebuffer@78000000 {
+                reg = <0x78000000 0x800000>;
+            };
+
+            multimedia_reserved: multimedia@77000000 {
+                compatible = "acme,multimedia-memory";
+                reg = <0x77000000 0x4000000>;
+            };
+        };
+
+        /* ... */
+
+        fb0: video@12300000 {
+            memory-region = <&display_reserved>;
+            /* ... */
+        };
+
+        scaler: scaler@12500000 {
+            memory-region = <&multimedia_reserved>;
+            /* ... */
+        };
+
+        codec: codec@12600000 {
+            memory-region = <&multimedia_reserved>;
+            /* ... */
+        };
+    };
+    ```]]) -- luacheck: ignore 631
+
 local memory_property_markdown = {
     device_type = [[
 # Devicetree Specification:
@@ -995,6 +1091,125 @@ This property represents the mapping between parent address to child address spa
 
 `#address-cells` and `#size-cells` should use the same values as for the root node, and `ranges` should be empty so that address translation logic works correctly.]]
         .. M.get_type_definition("prop_encoded_array"),
+}
+
+local reserved_memory_region_property_markdown = {
+    reg = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: reg
+
+        ## Path: %s/reg
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Consists of an arbitrary number of address and size pairs that specify the physical address and size of the memory ranges.
+
+        A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+        All other standard properties are allowed but are optional.]])
+        .. M.get_type_definition("prop_encoded_array"),
+    size = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: size
+
+        ## Path: %s/size
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Size in bytes of memory to reserve for dynamically allocated regions. Size of this property is based on parent node's `#size-cells` property.
+
+        A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+        All other standard properties are allowed but are optional.]])
+        .. M.get_type_definition("prop_encoded_array"),
+    alignment = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: alignment
+
+        ## Path: %s/alignment
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Address boundary for alignment of allocation. Size of this property is based on parent node's `#size-cells` property.
+
+        A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+        All other standard properties are allowed but are optional.]])
+        .. M.get_type_definition("prop_encoded_array"),
+    ["alloc-ranges"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: alloc-ranges
+
+        ## Path: %s/alloc-ranges
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        Specifies regions of memory that are acceptable to allocate from. Format is (address, length pairs) tuples in same format as for `reg` properties.
+
+        A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+        All other standard properties are allowed but are optional.]])
+        .. M.get_type_definition("prop_encoded_array"),
+    compatible = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: compatible
+
+        ## Path: %s/compatible
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        May contain the following strings:
+        - `shared-dma-pool`: This indicates a region of memory meant to be used as a shared pool of DMA buffers for a set of devices. It can be used by an operating system to instantiate the necessary pool management subsystem if necessary.
+        - vendor specific string in the form `<vendor>,[<device>-]<usage>`
+
+        All other standard properties are allowed but are optional.]]) .. M.get_type_definition("stringlist"),
+    ["no-map"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: no-map
+
+        ## Path: %s/no-map
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        If present, indicates the operating system must not create a virtual mapping of the region as part of its standard mapping of system memory, nor permit speculative access to it under any circumstances other than under the control of the device driver using the region.
+
+        The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+        All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
+    reusable = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: reusable
+
+        ## Path: %s/reusable
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        The operating system can use the memory in this region with the limitation that the device driver(s) owning the region need to be able to reclaim it back. Typically that means that the operating system can use that region to store volatile or cached data that can be otherwise regenerated or migrated elsewhere.
+
+        The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+        All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
 }
 
 local model_property_markdown = [[
@@ -1153,6 +1368,10 @@ function M.hover(ctx)
         return reserved_memory_node_markdown
     end
 
+    if M.on_a_reserved_memory_region_node(ctx) then
+        return reserved_memory_region_node_markdown:format(reserved_memory_region_path(ctx))
+    end
+
     if M.in_an_aliases_node(ctx) then
         local alias = property_name_at_cursor(ctx)
         if alias then
@@ -1165,6 +1384,14 @@ function M.hover(ctx)
     if M.in_a_memory_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
         return memory_property_markdown[property_name]
+    end
+
+    if M.in_a_reserved_memory_region_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        local markdown = reserved_memory_region_property_markdown[property_name]
+        if markdown then
+            return markdown:format(reserved_memory_region_path(ctx))
+        end
     end
 
     if M.in_a_reserved_memory_node(ctx) then

@@ -2095,7 +2095,7 @@ for _, location in ipairs(dts_locations) do
 
                 for _, property in ipairs(properties) do
                     ctx.row, ctx.col = row_col(property.position)
-                    assert.are_not.same(property.expected, dtls.hover(ctx))
+                    assert.is_false(property.expected == dtls.hover(ctx))
                 end
             end)
 
