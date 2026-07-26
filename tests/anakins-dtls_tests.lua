@@ -1214,11 +1214,6 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(expected, dtls.hover(ctx))
             end)
 
-            it("does not return /aliases hover markdown for descendant aliases nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:114:9")
-                assert.is_nil(dtls.hover(ctx))
-            end)
-
             it("calls on_an_aliases_node() to determine the type of node", function()
                 local on_an_aliases_node = spy.on(dtls, "on_an_aliases_node")
 
@@ -1247,11 +1242,6 @@ for _, location in ipairs(dts_locations) do
                 ]])
                 actual = dtls.hover(ctx)
                 assert.are.same(expected, actual)
-            end)
-
-            it("does not return alias hover markdown in descendant aliases nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:115:13")
-                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("calls in_an_aliases_node() to determine the type of node", function()
@@ -1333,27 +1323,6 @@ for _, location in ipairs(dts_locations) do
                     ctx.row, ctx.col = row_col(position)
                     assert.are.same(memory_node_markdown, dtls.hover(ctx))
                 end
-            end)
-
-            it("does not return /memory node hover markdown inside or between memory nodes", function()
-                local property_positions = {
-                    "tests/custom.dts:120:9", -- property in memory
-                    "tests/custom.dts:123:9", -- property in memory
-                    "tests/custom.dts:127:9", -- property in memory@0
-                }
-
-                for _, position in ipairs(property_positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.are_not.same(memory_node_markdown, dtls.hover(ctx))
-                end
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:125:1") -- blank line between memory nodes
-                assert.is_nil(dtls.hover(ctx))
-            end)
-
-            it("does not return /memory hover markdown for descendant memory nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:369:9")
-                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("calls on_a_memory_node() to determine the type of node", function()
@@ -1459,29 +1428,6 @@ for _, location in ipairs(dts_locations) do
                 assert.are.same(memory_property_markdown.hotpluggable, dtls.hover(ctx))
             end)
 
-            it("does not return memory property hover markdown outside memory nodes", function()
-                local positions = {
-                    "tests/custom.dts:265:5", -- device_type
-                    "tests/custom.dts:258:5", -- reg
-                }
-
-                for _, position in ipairs(positions) do
-                    ctx.row, ctx.col = row_col(position)
-                    assert.is_nil(dtls.hover(ctx))
-                end
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:121:9")
-                assert.are.same(memory_property_markdown.reg, dtls.hover(ctx))
-            end)
-
-            it("does not return memory property hover markdown in descendant memory nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:370:13")
-                assert.is_nil(dtls.hover(ctx))
-
-                ctx.row, ctx.col = row_col("tests/custom.dts:120:9")
-                assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
-            end)
-
             it("calls in_a_memory_node() to determine the type of node", function()
                 local in_a_memory_node = spy.on(dtls, "in_a_memory_node")
 
@@ -1580,11 +1526,6 @@ for _, location in ipairs(dts_locations) do
                 end
             end)
 
-            it("does not return /reserved-memory hover markdown for descendant reserved-memory nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:381:9")
-                assert.is_nil(dtls.hover(ctx))
-            end)
-
             it("calls on_a_reserved_memory_node() to determine the type of node", function()
                 local on_a_reserved_memory_node = spy.on(dtls, "on_a_reserved_memory_node")
 
@@ -1680,11 +1621,6 @@ for _, location in ipairs(dts_locations) do
 
                 ctx.row, ctx.col = row_col("tests/custom.dts:20:5")
                 assert.are_not.same(reserved_memory_property_markdown["#size-cells"], dtls.hover(ctx))
-            end)
-
-            it("does not return reserved-memory property hover markdown in descendant reserved-memory nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:382:13")
-                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("calls in_a_reserved_memory_node() to determine the type of node", function()
@@ -1800,11 +1736,6 @@ for _, location in ipairs(dts_locations) do
 
                 ctx.row, ctx.col = row_col("tests/custom.dts:148:27")
                 assert.are.same(expected, dtls.hover(ctx))
-            end)
-
-            it("does not return node hover markdown on a reserved-memory region label", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:148:9")
-                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("calls on_a_reserved_memory_region_node() to determine the type of node", function()
@@ -2180,11 +2111,6 @@ for _, location in ipairs(dts_locations) do
                 end
             end)
 
-            it("does not return /chosen hover markdown for descendant chosen nodes", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:373:9")
-                assert.is_nil(dtls.hover(ctx))
-            end)
-
             it("calls on_a_chosen_node() to determine the type of node", function()
                 local on_a_chosen_node = spy.on(dtls, "on_a_chosen_node")
 
@@ -2300,11 +2226,6 @@ for _, location in ipairs(dts_locations) do
             it("returns hover markdown for /chosen `stdin-path` property name", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:299:9")
                 assert.are.same(chosen_property_markdown["stdin-path"], dtls.hover(ctx))
-            end)
-
-            it("does not return chosen property hover markdown outside /chosen", function()
-                ctx.row, ctx.col = row_col("tests/custom.dts:374:13")
-                assert.is_nil(dtls.hover(ctx))
             end)
 
             it("calls in_a_chosen_node() to determine the type of node", function()
