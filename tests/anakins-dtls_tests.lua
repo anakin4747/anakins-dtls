@@ -3,6 +3,7 @@ local assert = require("luassert")
 local spy = require("luassert.spy")
 local describe = busted.describe
 local it = busted.it
+local before_each = busted.before_each
 
 package.path = "./lua/?.lua;" .. package.path
 local dtls = require("anakins-dtls")
@@ -22,9 +23,16 @@ local dts_locations = {
 }
 
 for _, location in ipairs(dts_locations) do
-    local ctx = {
-        file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path),
-    }
+    local file = ("%s/tests/%s/%s"):format(cwd, location.name, location.path)
+    local ctx = {}
+
+    before_each(function()
+        ctx = {
+            row = nil,
+            col = nil,
+            file = file,
+        }
+    end)
 
     describe(location.name, function()
         describe("in_a_root_node()", function()
@@ -636,7 +644,6 @@ for _, location in ipairs(dts_locations) do
             end)
 
             it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
-                local old_file = ctx.file
                 ctx = {
                     row = 114,
                     col = 3,
@@ -653,8 +660,6 @@ for _, location in ipairs(dts_locations) do
                     "clocks",
                     "clock-names",
                 }), table.sort(properties))
-
-                ctx.file = old_file
             end)
         end)
 
