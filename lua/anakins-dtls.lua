@@ -516,6 +516,45 @@ local function read_lines(file)
     return lines
 end
 
+local function path_exists(path)
+    return os.rename(path, path) ~= nil
+end
+
+local function parent_directory(path)
+    local parent = path:match("^(.*)/[^/]+/*$")
+    if parent == "" then
+        return "/"
+    end
+    return parent
+end
+
+function M.out_of_tree_without_config(ctx)
+    local file = io.open(ctx.file, "r")
+    if not file then
+        error("cannot open " .. ctx.file)
+    end
+    file:close()
+
+    local directory = parent_directory(ctx.file)
+    for _ = 1, 10 do
+        if
+            path_exists(directory .. "/arch")
+            and path_exists(directory .. "/include")
+            and path_exists(directory .. "/Documentation")
+        then
+            return false
+        end
+
+        local parent = parent_directory(directory)
+        if not parent or parent == directory then
+            break
+        end
+        directory = parent
+    end
+
+    return not path_exists(ctx.workspace_root .. "/.anakins-dtls")
+end
+
 -- Determine the node name that precedes a '{' found at `open_col` on `line`.
 local function node_name_before_brace(line, open_col)
     local before = line:sub(1, open_col - 1):match("^%s*(.-)%s*$")
@@ -1831,6 +1870,25 @@ default_handlers["initialize"] = function(server, msg)
 end
 
 default_handlers["initialized"] = function(_, _) end
+
+default_handlers["textDocument/didOpen"] = function(server, msg)
+    local params = msg.params or {}
+    local ctx = {
+        file = uri_to_path((params.textDocument or {}).uri),
+        workspace_root = server.workspace_root,
+    }
+
+    if M.out_of_tree_without_config(ctx) then
+        send_notification(server, "window/showMessage", {
+            type = 2,
+            message = "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n"
+                .. "In a Yocto project you can generate one with:\n"
+                .. "```sh\n"
+                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
+                .. "```",
+        })
+    end
+end
 
 default_handlers["shutdown"] = function(server, msg)
     if server.state ~= "initialized" then
