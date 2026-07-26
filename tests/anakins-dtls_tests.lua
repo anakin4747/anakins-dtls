@@ -1186,7 +1186,7 @@ for _, location in ipairs(dts_locations) do
             it("returns hover markdown for /aliases node properties", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:26:9")
                 local expected = dtls.dedent([[
-                    # Anakin's Advice
+                    # Anakin's Advice:
 
                     A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
                 ]])
@@ -1195,7 +1195,7 @@ for _, location in ipairs(dts_locations) do
 
                 ctx.row, ctx.col = row_col("tests/custom.dts:27:9")
                 expected = dtls.dedent([[
-                    # Anakin's Advice
+                    # Anakin's Advice:
 
                     A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `gpio0` to refer to this node.
                 ]])
@@ -1205,7 +1205,7 @@ for _, location in ipairs(dts_locations) do
 
             it("returns hover markdown across an alias property name", function()
                 local expected = dtls.dedent([[
-                    # Anakin's Advice
+                    # Anakin's Advice:
 
                     A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
                 ]])
@@ -1384,6 +1384,10 @@ for _, location in ipairs(dts_locations) do
                     Value shall be "memory"
 
                     All other standard properties are allowed but are optional.
+
+                    # Anakin's Advice:
+
+                    Not to be confused with the /cpus/cpu*/device_type which shall be `"cpu"` and not to be confused with the deprecated standard property `device_type`
                 ]]) .. dtls.get_type_definition("string"),
                 reg = dtls.dedent([[
                     # Devicetree Specification:

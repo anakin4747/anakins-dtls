@@ -890,7 +890,12 @@ local memory_property_markdown = {
 
 Value shall be "memory"
 
-All other standard properties are allowed but are optional.]] .. M.get_type_definition("string"),
+All other standard properties are allowed but are optional.
+
+# Anakin's Advice:
+
+Not to be confused with the /cpus/cpu*/device_type which shall be `"cpu"` and not to be confused with the deprecated standard property `device_type`]]
+        .. M.get_type_definition("string"),
     reg = [[
 # Devicetree Specification:
 
@@ -1092,7 +1097,7 @@ function M.hover(ctx)
     if M.in_an_aliases_node(ctx) then
         local alias = property_name_at_cursor(ctx)
         if alias then
-            return ("# Anakin's Advice\n\nA client program, such as Linux, Zephyr, or U-Boot, can look up the alias `%s` to refer to this node."):format(
+            return ("# Anakin's Advice:\n\nA client program, such as Linux, Zephyr, or U-Boot, can look up the alias `%s` to refer to this node."):format(
                 alias
             )
         end
