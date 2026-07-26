@@ -904,6 +904,58 @@ function M.on_a_ns16550_node(ctx)
     return false
 end
 
+local network_properties = {
+    ["address-bits"] = true,
+    ["local-mac-address"] = true,
+    ["mac-address"] = true,
+    ["max-frame-size"] = true,
+    ["max-speed"] = true,
+    ["phy-connection-type"] = true,
+    ["phy-handle"] = true,
+}
+
+local function is_network_device_node(ctx)
+    local properties = M.list_node_properties(ctx)
+    for _, property in ipairs(properties) do
+        if network_properties[property] then
+            return true
+        end
+    end
+
+    return false
+end
+
+function M.in_a_network_device_node(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds or ctx.row <= bounds.open_row or ctx.row >= bounds.close_row then
+        return false
+    end
+
+    return is_network_device_node(ctx)
+end
+
+function M.on_a_network_device_node(ctx)
+    if M.on_a_label_definition(ctx) then
+        return false
+    end
+
+    for _, bounds in
+        ipairs(find_all_node_bounds(ctx.file, function()
+            return true
+        end))
+    do
+        local on_opening = ctx.row == bounds.open_row and ctx.col >= bounds.start_col and ctx.col <= bounds.open_col
+        local on_closing = ctx.row == bounds.close_row
+            and ctx.col >= bounds.close_col
+            and ctx.col <= bounds.close_col + 1
+        if (on_opening or on_closing) and is_network_device_node({ file = ctx.file, row = bounds.open_row }) then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function in_node(ctx, criteria)
     for _, bounds in ipairs(find_all_node_bounds(ctx.file, criteria)) do
         if ctx.row > bounds.open_row and ctx.row < bounds.close_row then

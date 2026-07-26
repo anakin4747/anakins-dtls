@@ -831,69 +831,63 @@ describe("on_a_ns16550_node()", function()
     end)
 end)
 
--- describe("in_a_network_device_node()", function()
---     it("returns true if in a network device node", function()
---         -- inside ethernet@0
---         ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
---         assert(dtls.in_a_network_device_node(ctx))
---
---         -- inside ethernet@1
---         ctx.row, ctx.col = row_col("tests/custom.dts:457:9")
---         assert(dtls.in_a_network_device_node(ctx))
---     end)
---
---     it("returns false if not in a network device node", function()
---         -- inside uart@4600, an unrelated device
---         ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
---         assert(not dtls.in_a_network_device_node(ctx))
---
---         -- on ethernet@1's 'e'
---         ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
---         assert(not dtls.in_a_network_device_node(ctx))
---     end)
--- end)
---
--- describe("on_a_network_device_node()", function()
---     it("returns true if on a network device node", function()
---         -- ethernet@0's 'e'
---         ctx.row, ctx.col = row_col("tests/custom.dts:449:5")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@0's '{'
---         ctx.row, ctx.col = row_col("tests/custom.dts:449:16")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@0's '}'
---         ctx.row, ctx.col = row_col("tests/custom.dts:454:5")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@0's ';'
---         ctx.row, ctx.col = row_col("tests/custom.dts:454:6")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@0's '@'
---         ctx.row, ctx.col = row_col("tests/custom.dts:449:13")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@0's '0'
---         ctx.row, ctx.col = row_col("tests/custom.dts:449:14")
---         assert(dtls.on_a_network_device_node(ctx))
---
---         -- ethernet@1's 'e'
---         ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
---         assert(dtls.on_a_network_device_node(ctx))
---     end)
---
---     it("returns false if not on a network device node", function()
---         -- on uart@4600's 'u'
---         ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
---         assert(not dtls.on_a_network_device_node(ctx))
---
---         -- inside ethernet@0
---         ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
---         assert(not dtls.on_a_network_device_node(ctx))
---     end)
--- end)
+describe("in_a_network_device_node()", function()
+    it("uses list_node_properties() to determine the node type", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        assert(with_node_properties({ "mac-address" }, {}, function()
+            return dtls.in_a_network_device_node(ctx)
+        end))
+    end)
+
+    it("returns true if in a network device node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
+        assert(dtls.in_a_network_device_node(ctx))
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:457:9")
+        assert(dtls.in_a_network_device_node(ctx))
+    end)
+
+    it("returns false if not in a network device node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        assert(not dtls.in_a_network_device_node(ctx))
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:456:5")
+        assert(not dtls.in_a_network_device_node(ctx))
+    end)
+end)
+
+describe("on_a_network_device_node()", function()
+    it("uses list_node_properties() to determine the node type", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
+        assert(with_node_properties({ "phy-handle" }, {}, function()
+            return dtls.on_a_network_device_node(ctx)
+        end))
+    end)
+
+    it("returns true if on a network device node", function()
+        local tests = {
+            "tests/custom.dts:449:5",
+            "tests/custom.dts:449:16",
+            "tests/custom.dts:454:5",
+            "tests/custom.dts:454:6",
+            "tests/custom.dts:449:13",
+            "tests/custom.dts:449:14",
+            "tests/custom.dts:456:5",
+        }
+        for _, test in ipairs(tests) do
+            ctx.row, ctx.col = row_col(test)
+            assert(dtls.on_a_network_device_node(ctx))
+        end
+    end)
+
+    it("returns false if not on a network device node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:439:5")
+        assert(not dtls.on_a_network_device_node(ctx))
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:450:9")
+        assert(not dtls.on_a_network_device_node(ctx))
+    end)
+end)
 --
 -- describe("in_an_open_pic_node()", function()
 --     it("returns true if in an open-pic node", function()
