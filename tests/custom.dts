@@ -50,7 +50,7 @@
     };
 
     chosen {
-        stdout-path = &lpuart1;
+        linux,stdout-path = &lpuart1;
     };
 
     curr_sens: current-sense {
@@ -371,7 +371,7 @@
         };
 
         chosen { // should not return hover since it is only a root node
-            dummy;
+            bootargs = "invalid-descendant";
         };
 
         cpus { // should not return hover since it is only a root node

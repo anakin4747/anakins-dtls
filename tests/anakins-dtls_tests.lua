@@ -2239,6 +2239,243 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(in_possible_memory_region_consumer).was_called()
                 assert.spy(in_possible_memory_region_consumer).returned_with(true)
             end)
+
+            local chosen_node_markdown = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## `/chosen` node
+
+                ## Path: /chosen
+
+                The `/chosen` node does not represent a real device in the system but describes parameters chosen or specified by the system firmware at run time. It shall be a child of the root node.
+
+                ## Example
+
+                ```dts
+                chosen {
+                    bootargs = "root=/dev/nfs rw nfsroot=192.168.1.1 console=ttyS0,115200";
+                };
+                ```
+
+                Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.
+            ]])
+
+            it("returns hover markdown for /chosen node", function()
+                local positions = {
+                    "tests/custom.dts:52:5", -- chosen
+                    "tests/custom.dts:54:5", -- closing brace
+                    "tests/custom.dts:295:5", -- chosen
+                    "tests/custom.dts:300:5", -- closing brace
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.are.same(chosen_node_markdown, dtls.hover(ctx))
+                end
+            end)
+
+            it("returns /chosen hover markdown across node declarations", function()
+                for _, row in ipairs({ 52, 295 }) do
+                    for col = 5, 12 do
+                        ctx.row, ctx.col = row, col
+                        assert.are.same(chosen_node_markdown, dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("does not return /chosen hover markdown outside node declaration boundaries", function()
+                local positions = {
+                    "tests/custom.dts:52:4",
+                    "tests/custom.dts:52:13",
+                    "tests/custom.dts:54:4",
+                    "tests/custom.dts:54:7",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return /chosen hover markdown for descendant chosen nodes", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:373:9")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls on_a_chosen_node() to determine the type of node", function()
+                local on_a_chosen_node = spy.on(dtls, "on_a_chosen_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:52:5")
+                dtls.hover(ctx)
+
+                assert.spy(on_a_chosen_node).was_called()
+                assert.spy(on_a_chosen_node).returned_with(true)
+            end)
+
+            local chosen_property_markdown = {
+                bootargs = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: bootargs
+
+                    ## Path: /chosen/bootargs
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A string that specifies the boot arguments for the client program. The value could potentially be a null string if no boot arguments are required.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+                bootsource = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: bootsource
+
+                    ## Path: /chosen/bootsource
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A string that specifies the full path to the node representing the device the BootROM used to load the initial boot program. If the initial boot program is split into multiple stages, this represents the storage medium or device (e.g. used by fastboot) from which the very first stage was loaded by the BootROM. It may differ from the device from which later stages of the boot program or client program are loaded from, as this property isn't meant to represent those devices. A later stage of the boot program, or the client program, may use this information to favor the device in this property over others for loading later stages, or know the storage medium to flash an update to.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+                ["stdout-path"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: stdout-path
+
+                    ## Path: /chosen/stdout-path
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A string that specifies the full path to the node representing the device to be used for boot console output. If the character ":" is present in the value it terminates the path. The value may be an alias. If the stdin-path property is not specified, stdout-path should be assumed to define the input device.
+
+                    Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+                ["linux,stdout-path"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: linux,stdout-path
+
+                    ## Path: /chosen/linux,stdout-path
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A string that specifies the full path to the node representing the device to be used for boot console output. If the character ":" is present in the value it terminates the path. The value may be an alias. If the stdin-path property is not specified, stdout-path should be assumed to define the input device.
+
+                    Older versions of devicetrees may be encountered that contain a deprecated form of the `stdout-path` property called `linux,stdout-path`. For compatibility, a client program might want to support `linux,stdout-path` if a `stdout-path` property is not present. The meaning and use of the two properties is identical.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+                ["stdin-path"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: stdin-path
+
+                    ## Path: /chosen/stdin-path
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A string that specifies the full path to the node representing the device to be used for boot console input. If the character ":" is present in the value it terminates the path. The value may be an alias.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("string"),
+            }
+
+            it("returns hover markdown for /chosen `bootargs` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:296:9")
+                assert.are.same(chosen_property_markdown.bootargs, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /chosen `bootsource` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:297:9")
+                assert.are.same(chosen_property_markdown.bootsource, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /chosen `stdout-path` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:298:9")
+                assert.are.same(chosen_property_markdown["stdout-path"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for deprecated /chosen `linux,stdout-path` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:53:9")
+                assert.are.same(chosen_property_markdown["linux,stdout-path"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /chosen `stdin-path` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:299:9")
+                assert.are.same(chosen_property_markdown["stdin-path"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown across chosen property names", function()
+                local properties = {
+                    { name = "bootargs", row = 296 },
+                    { name = "bootsource", row = 297 },
+                    { name = "stdout-path", row = 298 },
+                    { name = "stdin-path", row = 299 },
+                }
+
+                for _, property in ipairs(properties) do
+                    for col = 9, 8 + #property.name do
+                        ctx.row, ctx.col = property.row, col
+                        assert.are.same(chosen_property_markdown[property.name], dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("returns hover markdown across deprecated linux,stdout-path property name", function()
+                for col = 9, 25 do
+                    ctx.row, ctx.col = 53, col
+                    assert.are.same(chosen_property_markdown["linux,stdout-path"], dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return chosen property hover markdown outside property names", function()
+                local positions = {
+                    "tests/custom.dts:53:8",
+                    "tests/custom.dts:53:26",
+                    "tests/custom.dts:296:8",
+                    "tests/custom.dts:296:17",
+                    "tests/custom.dts:297:8",
+                    "tests/custom.dts:297:19",
+                    "tests/custom.dts:298:8",
+                    "tests/custom.dts:298:20",
+                    "tests/custom.dts:299:8",
+                    "tests/custom.dts:299:19",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return chosen property hover markdown outside /chosen", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:374:13")
+                assert.is_nil(dtls.hover(ctx))
+            end)
+
+            it("calls in_a_chosen_node() to determine the type of node", function()
+                local in_a_chosen_node = spy.on(dtls, "in_a_chosen_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:296:9")
+                dtls.hover(ctx)
+
+                assert.spy(in_a_chosen_node).was_called()
+                assert.spy(in_a_chosen_node).returned_with(true)
+            end)
         end)
     end)
 end
