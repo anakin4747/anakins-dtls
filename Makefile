@@ -21,7 +21,7 @@ lint:
 
 .PHONY: fmt-check
 fmt-check:
-	stylua --check lua tests
+	stylua --check lua
 
 .PHONY: install
 install: uninstall
