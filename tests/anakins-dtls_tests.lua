@@ -1723,6 +1723,396 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(in_a_reserved_memory_node).was_called()
                 assert.spy(in_a_reserved_memory_node).returned_with(true)
             end)
+
+            local function reserved_memory_region_node_markdown(region_path)
+                return dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## `/reserved-memory/` child node
+
+                    ## Path: %s
+
+                    Each child of the reserved-memory node specifies one or more regions of reserved memory. Each child node may either use a `reg` property to specify a specific range of reserved memory, or a `size` property with optional constraints to request a dynamically allocated block of memory.
+
+                    Following the generic-names recommended practice, node names should reflect the purpose of the node (ie. "`framebuffer`" or "`dma-pool`"). Unit address (`@<address>`) should be appended to the name if the node is a static allocation.
+
+                    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+                    The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+                    Linux implementation notes:
+                    - If a `linux,cma-default` property is present, then Linux will use the region for the default pool of the contiguous memory allocator.
+                    - If a `linux,dma-default` property is present, then Linux will use the region for the default pool of the consistent DMA allocator.
+
+                    ## Device node references to reserved memory
+
+                    Regions in the `/reserved-memory` node may be referenced by other device nodes by adding a `memory-region` property to the device node.
+
+                    ## `/reserved-memory/` and UEFI
+
+                    When booting via UEFI, static `/reserved-memory` regions must also be listed in the system memory map obtained via the GetMemoryMap() UEFI boot time service as defined in the Unified Extensible Firmware Interface Specification. The reserved memory regions need to be included in the UEFI memory map to protect against allocations by UEFI applications.
+
+                    Reserved regions with the `no-map` property must be listed in the memory map with type `EfiReservedMemoryType`. All other reserved regions must be listed with type `EfiBootServicesData`.
+
+                    Dynamic reserved memory regions must not be listed in the UEFI memory map because they are allocated by the OS after exiting firmware boot services.
+
+                    ## `/reserved-memory` Example
+
+                    This example defines 3 contiguous regions are defined for Linux kernel: one default of all device drivers (named `linux,cma` and 64MiB in size), one dedicated to the framebuffer device (named `framebuffer@78000000`, 8MiB), and one for multimedia processing (named `multimedia@77000000`, 64MiB).
+
+                    ```dts
+                    / {
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+
+                        memory {
+                            reg = <0x40000000 0x40000000>;
+                        };
+
+                        reserved-memory {
+                            #address-cells = <1>;
+                            #size-cells = <1>;
+                            ranges;
+
+                            /* global autoconfigured region for contiguous allocations */
+                            linux,cma {
+                                compatible = "shared-dma-pool";
+                                reusable;
+                                size = <0x4000000>;
+                                alignment = <0x2000>;
+                                linux,cma-default;
+                            };
+
+                            display_reserved: framebuffer@78000000 {
+                                reg = <0x78000000 0x800000>;
+                            };
+
+                            multimedia_reserved: multimedia@77000000 {
+                                compatible = "acme,multimedia-memory";
+                                reg = <0x77000000 0x4000000>;
+                            };
+                        };
+
+                        /* ... */
+
+                        fb0: video@12300000 {
+                            memory-region = <&display_reserved>;
+                            /* ... */
+                        };
+
+                        scaler: scaler@12500000 {
+                            memory-region = <&multimedia_reserved>;
+                            /* ... */
+                        };
+
+                        codec: codec@12600000 {
+                            memory-region = <&multimedia_reserved>;
+                            /* ... */
+                        };
+                    };
+                    ```
+                ]]):format(region_path))
+            end
+
+            it("returns hover markdown for /reserved-memory/linux,cma node", function()
+                local expected = reserved_memory_region_node_markdown("/reserved-memory/linux,cma")
+                ctx.row, ctx.col = row_col("tests/custom.dts:138:9")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /reserved-memory/framebuffer@78000000 node", function()
+                local expected = reserved_memory_region_node_markdown(
+                    "/reserved-memory/framebuffer@78000000"
+                )
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:148:27")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for /reserved-memory/framebuffer@78000000 node with label definition docs", function()
+                local expected = reserved_memory_region_node_markdown(
+                    "/reserved-memory/framebuffer@78000000"
+                )
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:148:9")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("does not return reserved-memory region hover markdown outside node declaration boundaries", function()
+                local positions = {
+                    "tests/custom.dts:138:8",
+                    "tests/custom.dts:138:20",
+                    "tests/custom.dts:146:8",
+                    "tests/custom.dts:146:11",
+                    "tests/custom.dts:148:8",
+                    "tests/custom.dts:148:51",
+                    "tests/custom.dts:152:8",
+                    "tests/custom.dts:152:11",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("calls on_a_reserved_memory_region_node() to determine the type of node", function()
+                local on_a_reserved_memory_region_node = spy.on(dtls, "on_a_reserved_memory_region_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:138:9")
+                dtls.hover(ctx)
+
+                assert.spy(on_a_reserved_memory_region_node).was_called()
+                assert.spy(on_a_reserved_memory_region_node).returned_with(true)
+            end)
+
+            local function reserved_memory_region_property_markdown(region_path)
+                return {
+                    reg = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: reg
+
+                    ## Path: %s/reg
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Consists of an arbitrary number of address and size pairs that specify the physical address and size of the memory ranges.
+
+                    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("prop_encoded_array"),
+                    size = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: size
+
+                    ## Path: %s/size
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Size in bytes of memory to reserve for dynamically allocated regions. Size of this property is based on parent node's `#size-cells` property.
+
+                    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("prop_encoded_array"),
+                    alignment = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: alignment
+
+                    ## Path: %s/alignment
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Address boundary for alignment of allocation. Size of this property is based on parent node's `#size-cells` property.
+
+                    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("prop_encoded_array"),
+                    ["alloc-ranges"] = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: alloc-ranges
+
+                    ## Path: %s/alloc-ranges
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Specifies regions of memory that are acceptable to allocate from. Format is (address, length pairs) tuples in same format as for `reg` properties.
+
+                    A reserved memory node requires either a `reg` property for static allocations, or a `size` property for dynamics allocations. Dynamic allocations may use `alignment` and `alloc-ranges` properties to constrain where the memory is allocated from. If both `reg` and `size` are present, then the region is treated as a static allocation with the `reg` property taking precedence and `size` is ignored.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("prop_encoded_array"),
+                    compatible = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: compatible
+
+                    ## Path: %s/compatible
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    May contain the following strings:
+                    - `shared-dma-pool`: This indicates a region of memory meant to be used as a shared pool of DMA buffers for a set of devices. It can be used by an operating system to instantiate the necessary pool management subsystem if necessary.
+                    - vendor specific string in the form `<vendor>,[<device>-]<usage>`
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("stringlist"),
+                    ["no-map"] = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: no-map
+
+                    ## Path: %s/no-map
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    If present, indicates the operating system must not create a virtual mapping of the region as part of its standard mapping of system memory, nor permit speculative access to it under any circumstances other than under the control of the device driver using the region.
+
+                    The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("empty"),
+                    reusable = dtls.dedent(([[
+                    # Devicetree Specification:
+
+                    ## Property Name: reusable
+
+                    ## Path: %s/reusable
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    The operating system can use the memory in this region with the limitation that the device driver(s) owning the region need to be able to reclaim it back. Typically that means that the operating system can use that region to store volatile or cached data that can be otherwise regenerated or migrated elsewhere.
+
+                    The `no-map` and `reusable` properties are mutually exclusive and both must not be used together in the same node.
+
+                    All other standard properties are allowed but are optional.
+                ]]):format(region_path)) .. dtls.get_type_definition("empty"),
+                }
+            end
+
+            local linux_cma_property_markdown = reserved_memory_region_property_markdown(
+                "/reserved-memory/linux,cma"
+            )
+            local framebuffer_property_markdown = reserved_memory_region_property_markdown(
+                "/reserved-memory/framebuffer@78000000"
+            )
+            local multimedia_property_markdown = reserved_memory_region_property_markdown(
+                "/reserved-memory/multimedia@77000000"
+            )
+
+            it("returns hover markdown for reserved-memory region `reg` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:150:13")
+                assert.are.same(framebuffer_property_markdown.reg, dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:156:13")
+                assert.are.same(multimedia_property_markdown.reg, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `size` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:141:13")
+                assert.are.same(linux_cma_property_markdown.size, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `alignment` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:142:13")
+                assert.are.same(linux_cma_property_markdown.alignment, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `alloc-ranges` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:145:13")
+                assert.are.same(linux_cma_property_markdown["alloc-ranges"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `compatible` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:139:13")
+                assert.are.same(linux_cma_property_markdown.compatible, dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:155:13")
+                assert.are.same(multimedia_property_markdown.compatible, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `no-map` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:144:13")
+                assert.are.same(linux_cma_property_markdown["no-map"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for reserved-memory region `reusable` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:140:13")
+                assert.are.same(linux_cma_property_markdown.reusable, dtls.hover(ctx))
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:149:13")
+                assert.are.same(framebuffer_property_markdown.reusable, dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown across reserved-memory region property names", function()
+                local properties = {
+                    { markdown = linux_cma_property_markdown, name = "compatible", row = 139 },
+                    { markdown = linux_cma_property_markdown, name = "reusable", row = 140 },
+                    { markdown = linux_cma_property_markdown, name = "size", row = 141 },
+                    { markdown = linux_cma_property_markdown, name = "alignment", row = 142 },
+                    { markdown = linux_cma_property_markdown, name = "no-map", row = 144 },
+                    { markdown = linux_cma_property_markdown, name = "alloc-ranges", row = 145 },
+                    { markdown = framebuffer_property_markdown, name = "reg", row = 150 },
+                }
+
+                for _, property in ipairs(properties) do
+                    for col = 13, 12 + #property.name do
+                        ctx.row, ctx.col = property.row, col
+                        assert.are.same(property.markdown[property.name], dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("does not return reserved-memory region property hover markdown outside property names", function()
+                local positions = {
+                    "tests/custom.dts:139:12",
+                    "tests/custom.dts:139:23",
+                    "tests/custom.dts:140:12",
+                    "tests/custom.dts:140:21",
+                    "tests/custom.dts:141:12",
+                    "tests/custom.dts:141:17",
+                    "tests/custom.dts:142:12",
+                    "tests/custom.dts:142:22",
+                    "tests/custom.dts:144:12",
+                    "tests/custom.dts:144:19",
+                    "tests/custom.dts:145:12",
+                    "tests/custom.dts:145:25",
+                    "tests/custom.dts:150:12",
+                    "tests/custom.dts:150:16",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return reserved-memory region property hover markdown outside region nodes", function()
+                local properties = {
+                    { expected = linux_cma_property_markdown.compatible, position = "tests/custom.dts:17:5" },
+                    { expected = framebuffer_property_markdown.reg, position = "tests/custom.dts:258:5" },
+                }
+
+                for _, property in ipairs(properties) do
+                    ctx.row, ctx.col = row_col(property.position)
+                    assert.are_not.same(property.expected, dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return reserved-memory region property hover markdown on /reserved-memory", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:135:9")
+                assert.are_not.same(linux_cma_property_markdown.reg, dtls.hover(ctx))
+            end)
+
+            it("calls in_a_reserved_memory_region_node() to determine the type of node", function()
+                local in_a_reserved_memory_region_node = spy.on(dtls, "in_a_reserved_memory_region_node")
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:139:13")
+                dtls.hover(ctx)
+
+                assert.spy(in_a_reserved_memory_region_node).was_called()
+                assert.spy(in_a_reserved_memory_region_node).returned_with(true)
+            end)
         end)
     end)
 end
