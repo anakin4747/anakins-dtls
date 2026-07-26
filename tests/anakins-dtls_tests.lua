@@ -940,50 +940,55 @@ describe("on_an_open_pic_node()", function()
     end)
 end)
 --
--- describe("in_a_simple_bus_node()", function()
---     it("returns true if in a simple-bus node", function()
---         -- inside the second soc { (compatible = "simple-bus")
---         ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
---         assert(dtls.in_a_simple_bus_node(ctx))
---     end)
---
---     it("returns false if not in a simple-bus node", function()
---         -- inside the first soc {
---         ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
---         assert(not dtls.in_a_simple_bus_node(ctx))
---     end)
--- end)
---
--- describe("on_a_simple_bus_node()", function()
---     it("returns true if on a simple-bus node", function()
---         -- soc's 's'
---         ctx.row, ctx.col = row_col("tests/custom.dts:470:5")
---         assert(dtls.on_a_simple_bus_node(ctx))
---
---         -- soc's '{'
---         ctx.row, ctx.col = row_col("tests/custom.dts:470:9")
---         assert(dtls.on_a_simple_bus_node(ctx))
---
---         -- soc's '}'
---         ctx.row, ctx.col = row_col("tests/custom.dts:474:5")
---         assert(dtls.on_a_simple_bus_node(ctx))
---
---         -- soc's ';'
---         ctx.row, ctx.col = row_col("tests/custom.dts:474:6")
---         assert(dtls.on_a_simple_bus_node(ctx))
---     end)
---
---     it("returns false if not on a simple-bus node", function()
---         -- on the first soc's 's' (no compatible property)
---         ctx.row, ctx.col = row_col("tests/custom.dts:232:5")
---         assert(not dtls.on_a_simple_bus_node(ctx))
---
---         -- inside the second soc
---         ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
---         assert(not dtls.on_a_simple_bus_node(ctx))
---     end)
--- end)
---
+describe("in_a_simple_bus_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"simple-bus"' } }, function()
+            return dtls.in_a_simple_bus_node(ctx)
+        end))
+    end)
+
+    it("returns true if in a simple-bus node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
+        assert(dtls.in_a_simple_bus_node(ctx))
+    end)
+
+    it("returns false if not in a simple-bus node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:234:13")
+        assert(not dtls.in_a_simple_bus_node(ctx))
+    end)
+end)
+
+describe("on_a_simple_bus_node()", function()
+    it("uses list_node_properties() to determine the compatible string", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:232:5")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"simple-bus"' } }, function()
+            return dtls.on_a_simple_bus_node(ctx)
+        end))
+    end)
+
+    it("returns true if on a simple-bus node", function()
+        local tests = {
+            "tests/custom.dts:470:5",
+            "tests/custom.dts:470:9",
+            "tests/custom.dts:474:5",
+            "tests/custom.dts:474:6",
+        }
+        for _, test in ipairs(tests) do
+            ctx.row, ctx.col = row_col(test)
+            assert(dtls.on_a_simple_bus_node(ctx))
+        end
+    end)
+
+    it("returns false if not on a simple-bus node", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:232:5")
+        assert(not dtls.on_a_simple_bus_node(ctx))
+
+        ctx.row, ctx.col = row_col("tests/custom.dts:471:9")
+        assert(not dtls.on_a_simple_bus_node(ctx))
+    end)
+end)
+
 describe("in_top_level()", function()
     it("returns true if at the top level", function()
         -- before /dts-v1/;
