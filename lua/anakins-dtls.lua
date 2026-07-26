@@ -1220,6 +1220,35 @@ local reserved_memory_region_property_markdown = {
         All other standard properties are allowed but are optional.]]) .. M.get_type_definition("empty"),
 }
 
+local memory_region_property_markdown = {
+    ["memory-region"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: memory-region
+
+        ## Path: /child/memory-region
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        phandle, specifier pairs to children of `/reserved-memory`
+    ]]) .. M.get_type_definition("prop_encoded_array"),
+    ["memory-region-names"] = M.dedent([[
+        # Devicetree Specification:
+
+        ## Property Name: memory-region-names
+
+        ## Path: /child/memory-region-names
+
+        ## Usage: Optional
+
+        ## Definition:
+
+        A list of names, one for each corresponding entry in the `memory-region` property
+    ]]) .. M.get_type_definition("stringlist"),
+}
+
 local model_property_markdown = [[
 # Devicetree Specification:
 
@@ -1405,6 +1434,11 @@ function M.hover(ctx)
     if M.in_a_reserved_memory_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
         return reserved_memory_property_markdown[property_name]
+    end
+
+    if M.in_possible_memory_region_consumer(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return memory_region_property_markdown[property_name]
     end
 
     local in_descendant_node = in_node(ctx, function(stack)

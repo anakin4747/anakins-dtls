@@ -2145,6 +2145,100 @@ for _, location in ipairs(dts_locations) do
                 assert.spy(in_a_reserved_memory_region_node).was_called()
                 assert.spy(in_a_reserved_memory_region_node).returned_with(true)
             end)
+
+            local memory_region_property_markdown = {
+                ["memory-region"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: memory-region
+
+                    ## Path: /child/memory-region
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    phandle, specifier pairs to children of `/reserved-memory`
+                ]]) .. dtls.get_type_definition("prop_encoded_array"),
+                ["memory-region-names"] = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: memory-region-names
+
+                    ## Path: /child/memory-region-names
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    A list of names, one for each corresponding entry in the `memory-region` property
+                ]]) .. dtls.get_type_definition("stringlist"),
+            }
+
+            it("returns hover markdown for `memory-region` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:352:9")
+                assert.are.same(memory_region_property_markdown["memory-region"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown for `memory-region-names` property name", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:353:9")
+                assert.are.same(memory_region_property_markdown["memory-region-names"], dtls.hover(ctx))
+            end)
+
+            it("returns hover markdown across memory-region property names", function()
+                local properties = {
+                    { name = "memory-region", row = 352 },
+                    { name = "memory-region-names", row = 353 },
+                }
+
+                for _, property in ipairs(properties) do
+                    for col = 9, 8 + #property.name do
+                        ctx.row, ctx.col = property.row, col
+                        assert.are.same(memory_region_property_markdown[property.name], dtls.hover(ctx))
+                    end
+                end
+            end)
+
+            it("does not return memory-region property hover markdown outside property names", function()
+                local positions = {
+                    "tests/custom.dts:352:8",
+                    "tests/custom.dts:352:22",
+                    "tests/custom.dts:353:8",
+                    "tests/custom.dts:353:28",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("does not return memory-region property hover markdown outside device nodes", function()
+                local positions = {
+                    "tests/custom.dts:269:5",
+                    "tests/custom.dts:270:5",
+                    "tests/custom.dts:290:13",
+                    "tests/custom.dts:291:13",
+                }
+
+                for _, position in ipairs(positions) do
+                    ctx.row, ctx.col = row_col(position)
+                    assert.is_nil(dtls.hover(ctx))
+                end
+            end)
+
+            it("calls in_possible_memory_region_consumer() to determine the type of node", function()
+                local in_possible_memory_region_consumer = spy.on(
+                    dtls,
+                    "in_possible_memory_region_consumer"
+                )
+
+                ctx.row, ctx.col = row_col("tests/custom.dts:352:9")
+                dtls.hover(ctx)
+
+                assert.spy(in_possible_memory_region_consumer).was_called()
+                assert.spy(in_possible_memory_region_consumer).returned_with(true)
+            end)
         end)
     end)
 end
