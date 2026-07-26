@@ -528,6 +528,52 @@ local function parent_directory(path)
     return parent
 end
 
+local function shell_quote(value)
+    return "'" .. value:gsub("'", "'\\''") .. "'"
+end
+
+local function find_file(root, name)
+    local command = ("find %s -type f -name %s -print -quit"):format(shell_quote(root), shell_quote(name))
+    local handle = io.popen(command)
+    local file = handle:read("*l")
+    handle:close()
+    return file
+end
+
+local function kernel_root(file)
+    local directory = parent_directory(file)
+    while directory do
+        if
+            path_exists(directory .. "/arch")
+            and path_exists(directory .. "/include")
+            and path_exists(directory .. "/Documentation")
+        then
+            return directory
+        end
+
+        local config = io.open(directory .. "/.anakins-dtls", "r")
+        if config then
+            for line in config:lines() do
+                local source = line:match('^%s*S%s*=%s*"([^"]+)"')
+                if source then
+                    config:close()
+                    if source:sub(1, 1) == "/" then
+                        return source
+                    end
+                    return directory .. "/" .. source:gsub("^%./", "")
+                end
+            end
+            config:close()
+        end
+
+        local parent = parent_directory(directory)
+        if not parent or parent == directory then
+            break
+        end
+        directory = parent
+    end
+end
+
 function M.out_of_tree_without_config(ctx)
     local file = io.open(ctx.file, "r")
     if not file then
@@ -561,6 +607,10 @@ local function node_name_before_brace(line, open_col)
     local last_token = before:match("(%S+)%s*$") or before
     local after_colon = last_token:match(":([^:]+)$")
     return after_colon or last_token
+end
+
+local function node_label_before_brace(line, open_col)
+    return line:sub(1, open_col - 1):match("^%s*([%w_]+)%s*:")
 end
 
 -- Check whether `name` satisfies `matcher`, which is either an exact node
@@ -635,6 +685,7 @@ local function find_all_node_bounds(file, criteria)
                 if matches(stack) then
                     pending_by_depth[#stack] = {
                         name = name,
+                        label = node_label_before_brace(line, col),
                         path = stack_path(stack),
                         open_row = row,
                         open_col = col,
@@ -657,6 +708,96 @@ local function find_all_node_bounds(file, criteria)
     end
 
     return results
+end
+
+local function containing_node(file, row)
+    for _, bounds in
+        ipairs(find_all_node_bounds(file, function()
+            return true
+        end))
+    do
+        if row >= bounds.open_row and row <= bounds.close_row then
+            return bounds
+        end
+    end
+end
+
+local function properties_in_bounds(file, bounds)
+    local lines = read_lines(file)
+    local properties = {}
+    local depth = 0
+
+    for row = bounds.open_row + 1, bounds.close_row - 1 do
+        local line = lines[row]
+        if depth == 0 then
+            local property = line:match("^%s*([%w#?,._+%-]+)%s*[=;]")
+            if property then
+                properties[#properties + 1] = property
+            end
+        end
+
+        for char in line:gmatch("[{}]") do
+            depth = depth + (char == "{" and 1 or -1)
+        end
+    end
+
+    return properties
+end
+
+local function included_files(file, root, seen, results)
+    seen = seen or {}
+    results = results or {}
+    if seen[file] then
+        return results
+    end
+    seen[file] = true
+    results[#results + 1] = file
+
+    for _, line in ipairs(read_lines(file)) do
+        local include = line:match('^%s*#include%s+"([^"]+)"')
+        if include then
+            local included = parent_directory(file) .. "/" .. include
+            if not path_exists(included) and root then
+                included = find_file(root, include:match("([^/]+)$"))
+            end
+            if included then
+                included_files(included, root, seen, results)
+            end
+        end
+    end
+
+    return results
+end
+
+function M.list_node_properties(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    if not bounds then
+        return {}
+    end
+
+    local properties = properties_in_bounds(ctx.file, bounds)
+    local label = bounds.name:match("^&([%w_]+)$")
+    if not label then
+        return properties
+    end
+
+    local root = kernel_root(ctx.file)
+    for _, file in ipairs(included_files(ctx.file, root)) do
+        for _, candidate in
+            ipairs(find_all_node_bounds(file, function()
+                return true
+            end))
+        do
+            if candidate.label == label then
+                for _, property in ipairs(properties_in_bounds(file, candidate)) do
+                    properties[#properties + 1] = property
+                end
+                return properties
+            end
+        end
+    end
+
+    return properties
 end
 
 local function in_node(ctx, criteria)

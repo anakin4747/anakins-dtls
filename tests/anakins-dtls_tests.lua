@@ -13,13 +13,22 @@ local function row_col(filename_linenumber)
     return tonumber(row), tonumber(col)
 end
 
+local function sorted(values)
+    table.sort(values)
+    return values
+end
+
 local handle = io.popen("pwd")
 local cwd = handle:read("*l")
 handle:close()
 
 local dts_locations = {
-    { name = "in-tree", path = "arch/arm64/boot/dts/freescale/custom.dts" },
-    { name = "out-of-tree", path = "custom.dts" },
+    {
+        name = "in-tree",
+        path = "arch/arm64/boot/dts/freescale/custom.dts",
+        kernel_path = "",
+    },
+    { name = "out-of-tree", path = "custom.dts", kernel_path = "linux/" },
 }
 
 for _, location in ipairs(dts_locations) do
@@ -624,23 +633,23 @@ for _, location in ipairs(dts_locations) do
                 ctx.row, ctx.col = row_col("tests/custom.dts:75:9")
                 local properties = dtls.list_node_properties(ctx)
 
-                assert.are.same(table.sort({
+                assert.are.same(sorted({
                     "compatible",
-                    "iio-channels",
-                }), table.sort(properties))
+                    "io-channels",
+                }), sorted(properties))
             end)
 
             it("returns all properties inside a node reference dts", function()
                 ctx.row, ctx.col = row_col("tests/custom.dts:578:5")
                 local properties = dtls.list_node_properties(ctx)
 
-                assert.are.same(table.sort({
+                assert.are.same(sorted({
                     "vbus-supply",
                     "compatible",
                     "#phy-cells",
                     "clocks",
                     "clock-names",
-                }), table.sort(properties))
+                }), sorted(properties))
             end)
 
             it("returns all properties inside a node in a dtsi file but not the appended dts properties", function()
@@ -649,17 +658,17 @@ for _, location in ipairs(dts_locations) do
                     col = 3,
                     file = ("%s/tests/%s/%s"):format(
                         cwd, location.name,
-                        "arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
+                        location.kernel_path .. "arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
                     )
                 }
 
                 local properties = dtls.list_node_properties(ctx)
-                assert.are.same(table.sort({
+                assert.are.same(sorted({
                     "compatible",
                     "#phy-cells",
                     "clocks",
                     "clock-names",
-                }), table.sort(properties))
+                }), sorted(properties))
             end)
         end)
 
