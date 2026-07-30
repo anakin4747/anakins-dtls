@@ -1376,6 +1376,27 @@ describe("hover()", function()
         A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
 
         The `/cpus` node may contain properties that are common across `cpu` nodes.
+
+        ## Example
+
+        Here is an example of a `/cpus` node with one child cpu node:
+
+        ```dts
+        cpus {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            cpu@0 {
+                device_type = "cpu";
+                reg = <0>;
+                d-cache-block-size = <32>; // L1 - 32 bytes
+                i-cache-block-size = <32>; // L1 - 32 bytes
+                d-cache-size = <0x8000>; // L1, 32K
+                i-cache-size = <0x8000>; // L1, 32K
+                timebase-frequency = <82500000>; // 82.5 MHz
+                clock-frequency = <825000000>; // 825 MHz
+            };
+        };
+        ```
     ]])
 
     it("returns hover markdown for /cpus node", function()
