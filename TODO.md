@@ -61,6 +61,10 @@ diagnostic rules:
 - warnings if required root node properties do not exist
 - hints if optional but recommended root node properties do not exist
 
+grep for the words shall, must, required, for warnings or errors diagnostics
+grep for the words should, recommended for hints diagnostics
+
+---
 
 Do rule checking on didOpen, didChange, and didSave
 
