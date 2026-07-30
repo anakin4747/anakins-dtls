@@ -337,7 +337,7 @@
             d-cache-block-size = <32>;
             d-cache-line-size = <32>;
             next-level-cache = <&L2_0>;
-
+            l2-cache = <&L2_0>;
             L2_0: cache-controller {
                 compatible = "cache";
                 cache-level = <2>;

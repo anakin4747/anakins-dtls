@@ -1987,6 +1987,340 @@ describe("hover()", function()
         end)
     end)
 
+    describe("power isa cache properties", function()
+        local cpu_cache_unified_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-unified
+
+            ## Path: /cpus/cpu@0/cache-unified
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            If present, specifies the cache has a unified organization. If not present, specifies that the cache has a Harvard architecture with separate caches for instructions and data.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("empty")
+
+        it("returns hover markdown for /cpus/cpu* `cache-unified` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:326:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_cache_unified_markdown, actual)
+        end)
+
+        local cpu_cache_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-size
+
+            ## Path: /cpus/cpu@0/cache-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the size in bytes of a unified cache. Required if the cache is unified (combined instructions and data).
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `cache-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:327:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_cache_size_markdown, actual)
+        end)
+
+        local cpu_cache_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-sets
+
+            ## Path: /cpus/cpu@0/cache-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of associativity sets in a unified cache. Required if the cache is unified (combined instructions and data).
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `cache-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:328:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_cache_sets_markdown, actual)
+        end)
+
+        local cpu_cache_block_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-block-size
+
+            ## Path: /cpus/cpu@0/cache-block-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the block size in bytes of a unified cache. Required if the processor has a unified cache (combined instructions and data).
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `cache-block-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:329:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_cache_block_size_markdown, actual)
+        end)
+
+        local cpu_cache_line_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-line-size
+
+            ## Path: /cpus/cpu@0/cache-line-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the line size in bytes of a unified cache, if different than the cache block size. Required if the processor has a unified cache (combined instructions and data).
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `cache-line-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:330:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_cache_line_size_markdown, actual)
+        end)
+
+        local cpu_i_cache_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-cache-size
+
+            ## Path: /cpus/cpu@0/i-cache-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the size in bytes of the instruction cache. Required if the cpu has a separate cache for instructions.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-cache-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:331:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_cache_size_markdown, actual)
+        end)
+
+        local cpu_i_cache_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-cache-sets
+
+            ## Path: /cpus/cpu@0/i-cache-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of associativity sets in the instruction cache. Required if the cpu has a separate cache for instructions.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-cache-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:332:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_cache_sets_markdown, actual)
+        end)
+
+        local cpu_i_cache_block_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-cache-block-size
+
+            ## Path: /cpus/cpu@0/i-cache-block-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the block size in bytes of the instruction cache. Required if the cpu has a separate cache for instructions.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-cache-block-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:333:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_cache_block_size_markdown, actual)
+        end)
+
+        local cpu_i_cache_line_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-cache-line-size
+
+            ## Path: /cpus/cpu@0/i-cache-line-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the line size in bytes of the instruction cache, if different than the cache block size. Required if the cpu has a separate cache for instructions.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-cache-line-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:334:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_cache_line_size_markdown, actual)
+        end)
+
+        local cpu_d_cache_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-cache-size
+
+            ## Path: /cpus/cpu@0/d-cache-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the size in bytes of the data cache. Required if the cpu has a separate cache for data.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-cache-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:335:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_cache_size_markdown, actual)
+        end)
+
+        local cpu_d_cache_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-cache-sets
+
+            ## Path: /cpus/cpu@0/d-cache-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of associativity sets in the data cache. Required if the cpu has a separate cache for data.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-cache-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:336:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_cache_sets_markdown, actual)
+        end)
+
+        local cpu_d_cache_block_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-cache-block-size
+
+            ## Path: /cpus/cpu@0/d-cache-block-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the block size in bytes of the data cache. Required if the cpu has a separate cache for data.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-cache-block-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:337:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_cache_block_size_markdown, actual)
+        end)
+
+        local cpu_d_cache_line_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-cache-line-size
+
+            ## Path: /cpus/cpu@0/d-cache-line-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the line size in bytes of the data cache, if different than the cache block size. Required if the cpu has a separate cache for data.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-cache-line-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:338:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_cache_line_size_markdown, actual)
+        end)
+
+        local cpu_next_level_cache_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: next-level-cache
+
+            ## Path: /cpus/cpu@0/next-level-cache
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            If present, indicates that another level of cache exists. The value is the phandle of the next level of cache.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("phandle")
+
+        it("returns hover markdown for /cpus/cpu* `next-level-cache` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:339:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_next_level_cache_markdown, actual)
+        end)
+
+        local cpu_l2_cache_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: l2-cache
+
+            ## Path: /cpus/cpu@0/l2-cache
+
+            ## Usage: Deprecated
+
+            ## Definition:
+
+            Older versions of devicetrees may be encountered that contain a deprecated form of the next-level-cache property called `l2-cache`. For compatibility, a client-program may wish to support `l2-cache` if a next-level-cache property is not present. The meaning and use of the two properties is identical.
+
+            If present, indicates that another level of cache exists. The value is the phandle of the next level of cache.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("phandle")
+
+        it("returns hover markdown for deprecated /cpus/cpu* `l2-cache` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:340:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_l2_cache_markdown, actual)
+        end)
+    end)
+
     local memory_node_markdown = dtls.dedent([[
         # Devicetree Specification:
 
