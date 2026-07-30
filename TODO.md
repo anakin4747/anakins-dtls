@@ -175,3 +175,7 @@ devicetree specification typos/mistakes:
     Double >> on stringlist
 - devicetree-specification/source/chapter4-device-bindings.rst:142:.. table:: ``clock-frequecy`` Property
     frequency is spelled without an n
+- .. table:: ``/cpus/cpu*`` Node General Properties has array instead of
+  prop_encoded_array
+
+
