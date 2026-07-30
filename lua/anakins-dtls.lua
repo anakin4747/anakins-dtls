@@ -1289,7 +1289,28 @@ local cpus_node_markdown = [[
 
 A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
 
-The `/cpus` node may contain properties that are common across `cpu` nodes.]]
+The `/cpus` node may contain properties that are common across `cpu` nodes.
+
+## Example
+
+Here is an example of a `/cpus` node with one child cpu node:
+
+```dts
+cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    cpu@0 {
+        device_type = "cpu";
+        reg = <0>;
+        d-cache-block-size = <32>; // L1 - 32 bytes
+        i-cache-block-size = <32>; // L1 - 32 bytes
+        d-cache-size = <0x8000>; // L1, 32K
+        i-cache-size = <0x8000>; // L1, 32K
+        timebase-frequency = <82500000>; // 82.5 MHz
+        clock-frequency = <825000000>; // 825 MHz
+    };
+};
+```]]
 
 local cpu_node_markdown = [[
 # Devicetree Specification:
@@ -1305,6 +1326,79 @@ CPUs and threads are numbered through a unified number-space that should match a
 Properties that have identical values across `cpu` nodes may be placed in the `/cpus` node instead. A client program must first examine a specific `cpu` node, but if an expected property is not found then it should look at the parent `/cpus` node. This results in a less verbose representation of properties which are identical across all CPUs.
 
 The node name for every CPU node should be `cpu`.]]
+
+local cache_node_markdown = [[
+# Devicetree Specification:
+
+## `/cpus/cpu@0/l2-cache` node
+
+Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
+
+A device node with a compatible value of `"cache"` describes these types of caches.
+
+The cache node shall define a phandle property, and all cpu nodes or cache nodes that are associated with or share the cache each shall contain a next-level-cache property that specifies the phandle to the cache node.
+
+A cache node may be represented under a CPU node or any other appropriate location in the devicetree.
+
+## Example
+
+See the following example of a devicetree representation of two CPUs, each with their own on-chip L2 and a shared L3.
+
+```dts
+cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    cpu@0 {
+        device_type = "cpu";
+        reg = <0>;
+        cache-unified;
+        cache-size = <0x8000>; // L1, 32 KB
+        cache-block-size = <32>;
+        timebase-frequency = <82500000>; // 82.5 MHz
+        next-level-cache = <&L2_0>; // phandle to L2
+
+        L2_0:l2-cache {
+            compatible = "cache";
+            cache-unified;
+            cache-size = <0x40000>; // 256 KB
+
+            cache-sets = <1024>;
+            cache-block-size = <32>;
+            cache-level = <2>;
+            next-level-cache = <&L3>; // phandle to L3
+
+            L3:l3-cache {
+                compatible = "cache";
+                cache-unified;
+                cache-size = <0x40000>; // 256 KB
+                cache-sets = <0x400>; // 1024
+                cache-block-size = <32>;
+                cache-level = <3>;
+            };
+        };
+    };
+
+    cpu@1 {
+        device_type = "cpu";
+        reg = <1>;
+        cache-unified;
+        cache-block-size = <32>;
+        cache-size = <0x8000>; // L1, 32 KB
+        timebase-frequency = <82500000>; // 82.5 MHz
+        clock-frequency = <825000000>; // 825 MHz
+        next-level-cache = <&L2_1>; // phandle to L2
+        L2_1:l2-cache {
+            compatible = "cache";
+            cache-unified;
+            cache-level = <2>;
+            cache-size = <0x40000>; // 256 KB
+            cache-sets = <0x400>; // 1024
+            cache-line-size = <32>; // 32 bytes
+            next-level-cache = <&L3>; // phandle to L3
+        };
+    };
+};
+```]] -- luacheck: ignore 631
 
 local memory_node_markdown = [[
 # Devicetree Specification:
@@ -1693,6 +1787,24 @@ Specifies the clock speed of the CPU in Hertz, if that is constant. The value is
 - A 64-bit integer represented as a `<u64>` specifying the frequency.
 
 All other standard properties are allowed but are optional.]] .. M.get_type_definition("prop_encoded_array"),
+    ["bus-frequency"] = [[
+# Devicetree Specification:
+
+## Property Name: bus-frequency
+
+## Path: /cpus/cpu@0/bus-frequency
+
+## Usage: Deprecated
+
+## Definition:
+
+Older versions of devicetree may be encountered that contain a bus-frequency property on CPU nodes. For compatibility, a client-program might want to support bus-frequency. The format of the value is identical to that of clock-frequency. The recommended practice is to represent the frequency of a bus on the bus node using a clock-frequency property.
+
+Specifies the clock speed of the CPU in Hertz, if that is constant. The value is a `<prop-encoded-array>` in one of two forms:
+- A 32-bit integer consisting of one `<u32>` specifying the frequency.
+- A 64-bit integer represented as a `<u64>` specifying the frequency.
+
+All other standard properties are allowed but are optional.]] .. M.get_type_definition("prop_encoded_array"),
     ["timebase-frequency"] = [[
 # Devicetree Specification:
 
@@ -1771,6 +1883,128 @@ All other standard properties are allowed but are optional.]] .. M.get_type_defi
 The cpu-release-addr property is required for cpu nodes that have an enable-method property value of `"spin-table"`. The value specifies the physical address of a spin table entry that releases a secondary CPU from its spin loop.
 
 All other standard properties are allowed but are optional.]] .. M.get_type_definition("u64"),
+}
+
+local function cpu_property(name, usage, definition, type_name)
+    return ("# Devicetree Specification:\n\n## Property Name: %s\n\n## Path: /cpus/cpu@0/%s\n\n## Usage: %s\n\n## Definition:\n\n%s\n\nAll other standard properties are allowed but are optional."):format(
+        name,
+        name,
+        usage,
+        definition
+    ) .. M.get_type_definition(type_name)
+end
+
+cpu_property_markdown["power-isa-version"] = cpu_property(
+    "power-isa-version",
+    "Optional",
+    'A string that specifies the numerical portion of the Power ISA version string. For example, for an implementation complying with Power ISA Version 2.06, the value of this property would be `"2.06"`.',
+    "string"
+)
+cpu_property_markdown["cache-op-block-size"] = cpu_property(
+    "cache-op-block-size",
+    "See definition",
+    "Specifies the block size in bytes upon which cache block instructions operate (e.g., dcbz). Required if different than the L1 cache block size.",
+    "u32"
+)
+cpu_property_markdown["reservation-granule-size"] = cpu_property(
+    "reservation-granule-size",
+    "See definition",
+    "Specifies the reservation granule size supported by this processor in bytes.",
+    "u32"
+)
+cpu_property_markdown["mmu-type"] = cpu_property(
+    "mmu-type",
+    "Optional",
+    M.dedent([[
+        Specifies the CPU’s MMU type.
+
+        Valid values are shown below:
+        - `"mpc8xx"`
+        - `"ppc40x"`
+        - `"ppc440"`
+        - `"ppc476"`
+        - `"power-embedded"`
+        - `"powerpc-classic"`
+        - `"power-server-stab"`
+        - `"power-server-slb"`
+        - `"none"`]]),
+    "string"
+)
+
+local cpu_u32_properties = {
+    ["tlb-size"] = "Specifies the number of entries in the TLB. Required for a CPU with a unified TLB for instruction and data addresses.",
+    ["tlb-sets"] = "Specifies the number of associativity sets in the TLB. Required for a CPU with a unified TLB for instruction and data addresses.",
+    ["d-tlb-size"] = "Specifies the number of entries in the data TLB. Required for a CPU with a split TLB configuration.",
+    ["d-tlb-sets"] = "Specifies the number of entries in the data TLB. Required for a CPU with a split TLB configuration.",
+    ["i-tlb-size"] = "Specifies the number of entries in the instruction TLB. Required for a CPU with a split TLB configuration.",
+    ["i-tlb-sets"] = "Specifies the number of associativity sets in the instruction TLB. Required for a CPU with a split TLB configuration.",
+    ["cache-size"] = "Specifies the size in bytes of a unified cache. Required if the cache is unified (combined instructions and data).",
+    ["cache-sets"] = "Specifies the number of associativity sets in a unified cache. Required if the cache is unified (combined instructions and data).",
+    ["cache-block-size"] = "Specifies the block size in bytes of a unified cache. Required if the processor has a unified cache (combined instructions and data).",
+    ["cache-line-size"] = "Specifies the line size in bytes of a unified cache, if different than the cache block size. Required if the processor has a unified cache (combined instructions and data).",
+    ["i-cache-size"] = "Specifies the size in bytes of the instruction cache. Required if the cpu has a separate cache for instructions.",
+    ["i-cache-sets"] = "Specifies the number of associativity sets in the instruction cache. Required if the cpu has a separate cache for instructions.",
+    ["i-cache-block-size"] = "Specifies the block size in bytes of the instruction cache. Required if the cpu has a separate cache for instructions.",
+    ["i-cache-line-size"] = "Specifies the line size in bytes of the instruction cache, if different than the cache block size. Required if the cpu has a separate cache for instructions.",
+    ["d-cache-size"] = "Specifies the size in bytes of the data cache. Required if the cpu has a separate cache for data.",
+    ["d-cache-sets"] = "Specifies the number of associativity sets in the data cache. Required if the cpu has a separate cache for data.",
+    ["d-cache-block-size"] = "Specifies the block size in bytes of the data cache. Required if the cpu has a separate cache for data.",
+    ["d-cache-line-size"] = "Specifies the line size in bytes of the data cache, if different than the cache block size. Required if the cpu has a separate cache for data.",
+}
+for name, definition in pairs(cpu_u32_properties) do
+    cpu_property_markdown[name] = cpu_property(name, "See definition", definition, "u32")
+end
+
+cpu_property_markdown["tlb-split"] = cpu_property(
+    "tlb-split",
+    "See definition",
+    "If present specifies that the TLB has a split configuration, with separate TLBs for instructions and data. If absent, specifies that the TLB has a unified configuration. Required for a CPU with a TLB in a split configuration.",
+    "empty"
+)
+cpu_property_markdown["cache-unified"] = cpu_property(
+    "cache-unified",
+    "See definition",
+    "If present, specifies the cache has a unified organization. If not present, specifies that the cache has a Harvard architecture with separate caches for instructions and data.",
+    "empty"
+)
+cpu_property_markdown["next-level-cache"] = cpu_property(
+    "next-level-cache",
+    "See definition",
+    "If present, indicates that another level of cache exists. The value is the phandle of the next level of cache.",
+    "phandle"
+)
+cpu_property_markdown["l2-cache"] = cpu_property(
+    "l2-cache",
+    "Deprecated",
+    M.dedent(
+        [[
+        Older versions of devicetrees may be encountered that contain a deprecated form of the next-level-cache property called `l2-cache`. For compatibility, a client-program may wish to support `l2-cache` if a next-level-cache property is not present. The meaning and use of the two properties is identical.
+
+        If present, indicates that another level of cache exists. The value is the phandle of the next level of cache.]]
+    ),
+    "phandle"
+)
+
+local power_isa_category_definition = M.dedent(
+    [[
+    If the `power-isa-version` property exists, then for each category from the Categories section of Book I of the Power ISA version indicated, the existence of a property named `power-isa-[CAT]`, where `[CAT]` is the abbreviated category name with all uppercase letters converted to lowercase, indicates that the category is supported by the implementation.
+
+    For example, if the power-isa-version property exists and its value is `"2.06"` and the power-isa-e.hv property exists, then the implementation supports [Category:Embedded.Hypervisor] as defined in Power ISA Version 2.06.]]
+)
+
+local cache_property_markdown = {
+    compatible = cpu_property(
+        "compatible",
+        "Required",
+        'A standard property. The value shall include the string `"cache"`.',
+        "string"
+    ):gsub("/cpus/cpu@0/compatible", "/cpus/cpu@0/l2-cache/compatible"),
+    ["cache-level"] = cpu_property(
+        "cache-level",
+        "Required",
+        "Specifies the level in the cache hierarchy. For example, a level 2 cache has a value of 2.",
+        "u32"
+    ):gsub("/cpus/cpu@0/cache%-level", "/cpus/cpu@0/l2-cache/cache-level"),
 }
 
 local chosen_property_markdown = {
@@ -2226,6 +2460,10 @@ function M.hover(ctx)
         return cpus_node_markdown
     end
 
+    if M.on_a_cache_node(ctx) then
+        return cache_node_markdown
+    end
+
     if M.on_a_cpu_node(ctx) then
         return cpu_node_markdown
     end
@@ -2255,8 +2493,16 @@ function M.hover(ctx)
         end
     end
 
+    if M.in_a_cache_node(ctx) then
+        local property_name = property_name_at_cursor(ctx)
+        return cache_property_markdown[property_name] or cpu_property_markdown[property_name]
+    end
+
     if M.in_a_cpu_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
+        if property_name and property_name:match("^power%-isa%-.+") and property_name ~= "power-isa-version" then
+            return cpu_property(property_name, "Optional", power_isa_category_definition, "empty")
+        end
         return cpu_property_markdown[property_name]
     end
 
