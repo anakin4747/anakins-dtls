@@ -1829,7 +1829,162 @@ describe("hover()", function()
             local actual = dtls.hover(ctx)
             assert.are.same(cpu_mmu_type_markdown, actual)
         end)
+    end)
 
+    describe("power isa tlb properties", function()
+        local cpu_tlb_split_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: tlb-split
+
+            ## Path: /cpus/cpu@0/tlb-split
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            If present specifies that the TLB has a split configuration, with separate TLBs for instructions and data. If absent, specifies that the TLB has a unified configuration. Required for a CPU with a TLB in a split configuration.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("empty")
+
+        it("returns hover markdown for /cpus/cpu* `tlb-split` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:319:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_tlb_split_markdown, actual)
+        end)
+
+        local cpu_tlb_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: tlb-size
+
+            ## Path: /cpus/cpu@0/tlb-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of entries in the TLB. Required for a CPU with a unified TLB for instruction and data addresses.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `tlb-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:320:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_tlb_size_markdown, actual)
+        end)
+
+        local cpu_tlb_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: tlb-sets
+
+            ## Path: /cpus/cpu@0/tlb-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of associativity sets in the TLB. Required for a CPU with a unified TLB for instruction and data addresses.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `tlb-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:321:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_tlb_sets_markdown, actual)
+        end)
+
+        local cpu_d_tlb_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-tlb-size
+
+            ## Path: /cpus/cpu@0/d-tlb-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of entries in the data TLB. Required for a CPU with a split TLB configuration.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-tlb-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:322:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_tlb_size_markdown, actual)
+        end)
+
+        local cpu_d_tlb_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: d-tlb-sets
+
+            ## Path: /cpus/cpu@0/d-tlb-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of entries in the data TLB. Required for a CPU with a split TLB configuration.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `d-tlb-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:323:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_d_tlb_sets_markdown, actual)
+        end)
+
+        local cpu_i_tlb_size_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-tlb-size
+
+            ## Path: /cpus/cpu@0/i-tlb-size
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of entries in the instruction TLB. Required for a CPU with a split TLB configuration.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-tlb-size` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:324:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_tlb_size_markdown, actual)
+        end)
+
+        local cpu_i_tlb_sets_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: i-tlb-sets
+
+            ## Path: /cpus/cpu@0/i-tlb-sets
+
+            ## Usage: See definition
+
+            ## Definition:
+
+            Specifies the number of associativity sets in the instruction TLB. Required for a CPU with a split TLB configuration.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu* `i-tlb-sets` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:325:13")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cpu_i_tlb_sets_markdown, actual)
+        end)
     end)
 
     local memory_node_markdown = dtls.dedent([[
