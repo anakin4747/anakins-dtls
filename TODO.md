@@ -151,6 +151,23 @@ too big for some reason
 
 ---
 
+support default kernel source code locations for Yocto and buildroot
+for yocto:
+
+    build*/tmp/work-shared/*/kernel-sources/
+
+for buildroot
+
+    output/build/linux-*/
+
+For buildroot have the message if the kernel sources is not found also say:
+
+    For buildroot run the following command:
+
+    make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls
+
+---
+
 devicetree specification typos/mistakes:
 - devicetree-specification/source/chapter3-devicenodes.rst:131:The *unit-name* component of the node name
     Shouldn't it say the *node-name* of the node shall be ``memory``.
