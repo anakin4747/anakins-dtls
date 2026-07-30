@@ -2342,6 +2342,152 @@ describe("hover()", function()
         end)
     end)
 
+    describe("multi-level and shared cache nodes", function()
+        local cache_node_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## `/cpus/cpu@0/l2-cache` node
+
+            Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
+
+            A device node with a compatible value of `"cache"` describes these types of caches.
+
+            The cache node shall define a phandle property, and all cpu nodes or cache nodes that are associated with or share the cache each shall contain a next-level-cache property that specifies the phandle to the cache node.
+
+            A cache node may be represented under a CPU node or any other appropriate location in the devicetree.
+
+            ## Example
+
+            See the following example of a devicetree representation of two CPUs, each with their own on-chip L2 and a shared L3.
+
+            ```dts
+            cpus {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                cpu@0 {
+                    device_type = "cpu";
+                    reg = <0>;
+                    cache-unified;
+                    cache-size = <0x8000>; // L1, 32 KB
+                    cache-block-size = <32>;
+                    timebase-frequency = <82500000>; // 82.5 MHz
+                    next-level-cache = <&L2_0>; // phandle to L2
+
+                    L2_0:l2-cache {
+                        compatible = "cache";
+                        cache-unified;
+                        cache-size = <0x40000>; // 256 KB
+
+                        cache-sets = <1024>;
+                        cache-block-size = <32>;
+                        cache-level = <2>;
+                        next-level-cache = <&L3>; // phandle to L3
+
+                        L3:l3-cache {
+                            compatible = "cache";
+                            cache-unified;
+                            cache-size = <0x40000>; // 256 KB
+                            cache-sets = <0x400>; // 1024
+                            cache-block-size = <32>;
+                            cache-level = <3>;
+                        };
+                    };
+                };
+
+                cpu@1 {
+                    device_type = "cpu";
+                    reg = <1>;
+                    cache-unified;
+                    cache-block-size = <32>;
+                    cache-size = <0x8000>; // L1, 32 KB
+                    timebase-frequency = <82500000>; // 82.5 MHz
+                    clock-frequency = <825000000>; // 825 MHz
+                    next-level-cache = <&L2_1>; // phandle to L2
+                    L2_1:l2-cache {
+                        compatible = "cache";
+                        cache-unified;
+                        cache-level = <2>;
+                        cache-size = <0x40000>; // 256 KB
+                        cache-sets = <0x400>; // 1024
+                        cache-line-size = <32>; // 32 bytes
+                        next-level-cache = <&L3>; // phandle to L3
+                    };
+                };
+            };
+            ```
+        ]])
+
+        it("returns hover markdown for /cpus/cpu*/l?-cache node", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:341:19")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cache_node_markdown, actual)
+        end)
+
+        it("calls on_a_cache_node() to determine the type of node", function()
+            local on_a_cache_node = spy.on(dtls, "on_a_cache_node")
+
+            ctx.row, ctx.col = row_col("tests/custom.dts:341:19")
+            dtls.hover(ctx)
+
+            assert.spy(on_a_cache_node).was_called()
+            assert.spy(on_a_cache_node).returned_with(true)
+        end)
+
+        local cache_compatible_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: compatible
+
+            ## Path: /cpus/cpu@0/l2-cache/compatible
+
+            ## Usage: Required
+
+            ## Definition:
+
+            A standard property. The value shall include the string `"cache"`.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("string")
+
+        it("returns hover markdown for /cpus/cpu*/l?-cache `compatible` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:342:17")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cache_compatible_markdown, actual)
+        end)
+
+        local cache_level_markdown = dtls.dedent([[
+            # Devicetree Specification:
+
+            ## Property Name: cache-level
+
+            ## Path: /cpus/cpu@0/l2-cache/cache-level
+
+            ## Usage: Required
+
+            ## Definition:
+
+            Specifies the level in the cache hierarchy. For example, a level 2 cache has a value of 2.
+
+            All other standard properties are allowed but are optional.
+        ]]) .. dtls.get_type_definition("u32")
+
+        it("returns hover markdown for /cpus/cpu*/l?-cache `cache-level` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:343:17")
+            local actual = dtls.hover(ctx)
+            assert.are.same(cache_level_markdown, actual)
+        end)
+
+        it("calls in_a_cache_node() to determine the type of node", function()
+            local in_a_cache_node = spy.on(dtls, "in_a_cache_node")
+
+            ctx.row, ctx.col = row_col("tests/custom.dts:342:17")
+            dtls.hover(ctx)
+
+            assert.spy(in_a_cache_node).was_called()
+            assert.spy(in_a_cache_node).returned_with(true)
+        end)
+    end)
+
     local memory_node_markdown = dtls.dedent([[
         # Devicetree Specification:
 
