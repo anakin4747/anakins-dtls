@@ -191,6 +191,10 @@ update all hovers to have the source of the info:
     Devicetree Specification: Standard Properties
     Devicetree Specification: Root Node Properties
     ...
+---
+
+Add more ## Anakin's Advice to provide laymans explanations for devicetree
+nodes/properties as you come across them and understand them better
 
 ---
 
