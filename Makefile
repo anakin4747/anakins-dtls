@@ -12,7 +12,7 @@ make:
 
 .PHONY: test
 test: .luarc.json
-	busted --pattern="_tests%.lua$$" tests
+	busted --output=gtest --pattern="_tests%.lua$$" tests
 
 .PHONY: lint
 lint:
