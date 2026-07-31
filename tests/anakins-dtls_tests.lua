@@ -2873,7 +2873,7 @@ describe("hover()", function()
         local positions = {
             "tests/custom.dts:19:5", -- root #address-cells
             "tests/custom.dts:20:5", -- root #size-cells
-            "tests/custom.dts:260:5", -- root ranges
+            "tests/custom.dts:258:9", -- ordinary device ranges
         }
 
         for _, position in ipairs(positions) do
@@ -3248,7 +3248,7 @@ describe("hover()", function()
     it("does not return reserved-memory region property hover markdown outside region nodes", function()
         local properties = {
             { expected = linux_cma_property_markdown.compatible, position = "tests/custom.dts:17:5" },
-            { expected = framebuffer_property_markdown.reg, position = "tests/custom.dts:258:5" },
+            { expected = framebuffer_property_markdown.reg, position = "tests/custom.dts:256:9" },
         }
 
         for _, property in ipairs(properties) do
@@ -3497,6 +3497,496 @@ describe("hover()", function()
 
         assert.spy(in_a_chosen_node).was_called()
         assert.spy(in_a_chosen_node).returned_with(true)
+    end)
+
+    describe("standard properties", function()
+        it("returns hover markdown for standard `compatible` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: compatible
+
+                ## Definition:
+
+                The `compatible` property value consists of one or more strings that define the specific programming model for the device. This list of strings should be used by a client program for device driver selection. The property value consists of a concatenated list of null-terminated strings, from most specific to most general. They allow a device to express its compatibility with a family of similar devices, potentially allowing a single device driver to match against several devices.
+
+                The recommended format is `"manufacturer,model"`, where `manufacturer` is a string describing the name of the manufacturer (such as a stock ticker symbol), and `model` specifies the model number.
+
+                The compatible string should consist only of lowercase letters, digits, and dashes, and should start with a letter. A single comma is typically only used following a vendor prefix. Underscores should not be used.
+
+                ## Example:
+
+                `compatible = "fsl,mpc8641", "ns16550";`
+
+                In this example, an operating system would first try to locate a device driver that supported fsl,mpc8641. If a driver was not found, it would then try to locate a driver that supported the more general ns16550 device type.
+            ]]) .. dtls.get_type_definition("stringlist")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `model` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:417:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: model
+
+                ## Definition:
+
+                The model property value is a `<string>` that specifies the manufacturer’s model number of the device.
+
+                The recommended format is: `"manufacturer,model"`, where `manufacturer` is a string describing the name of the manufacturer (such as a stock ticker symbol), and model specifies the model number.
+
+                ## Example:
+
+                `model = "fsl,MPC8349EMITX";`
+
+            ]]) .. dtls.get_type_definition("string")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `phandle` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:254:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: phandle
+
+                ## Definition:
+
+                The `phandle` property specifies a numerical identifier for a node that is unique within the devicetree. The `phandle` property value is used by other nodes that need to refer to the node associated with the property.
+
+                ## Example:
+
+                See the following devicetree excerpt:
+
+                ```dts
+                pic@10000000 {
+                    phandle = <1>;
+                    interrupt-controller;
+                    reg = <0x10000000 0x100>;
+                };
+                ```
+
+                A `phandle` value of 1 is defined. Another device node could reference the pic node with a phandle value of 1:
+
+                ```dts
+                another-device-node {
+                    interrupt-parent = <1>;
+                };
+                ```
+
+                Note: Older versions of devicetrees may be encountered that contain a deprecated form of this property called `linux,phandle`. For compatibility, a client program might want to support `linux,phandle` if a `phandle` property is not present. The meaning and use of the two properties is identical.
+
+                Note: Most devicetrees in `DTS (Device Tree Syntax)` will not contain explicit phandle properties. The DTC tool automatically inserts the `phandle` properties when the DTS is compiled into the binary DTB format.
+            ]]) .. dtls.get_type_definition("u32")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for deprecated standard `linux,phandle` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:264:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: linux,phandle
+
+                ## Definition:
+
+                The `phandle` property specifies a numerical identifier for a node that is unique within the devicetree. The `phandle` property value is used by other nodes that need to refer to the node associated with the property.
+
+                ## Example:
+
+                See the following devicetree excerpt:
+
+                ```dts
+                pic@10000000 {
+                    phandle = <1>;
+                    interrupt-controller;
+                    reg = <0x10000000 0x100>;
+                };
+                ```
+
+                A `phandle` value of 1 is defined. Another device node could reference the pic node with a phandle value of 1:
+
+                ```dts
+                another-device-node {
+                    interrupt-parent = <1>;
+                };
+                ```
+
+                Note: Older versions of devicetrees may be encountered that contain a deprecated form of this property called `linux,phandle`. For compatibility, a client program might want to support `linux,phandle` if a `phandle` property is not present. The meaning and use of the two properties is identical.
+
+                Note: Most devicetrees in `DTS (Device Tree Syntax)` will not contain explicit phandle properties. The DTC tool automatically inserts the `phandle` properties when the DTS is compiled into the binary DTB format.
+            ]]) .. dtls.get_type_definition("u32")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:255:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: status
+
+                ## Definition:
+
+                The `status` property indicates the operational status of a device.  The lack of a `status` property should be treated as if the property existed with the value of `"okay"`.
+
+                Valid values are:
+                - `"okay"`: Indicates the device is operational.
+                - `"disabled"`: Indicates that the device is not presently operational, but it might become operational in the future (for example, something is not plugged in, or switched off). Refer to the device binding for details on what disabled means for a given device.
+                - `"reserved"`: Indicates that the device is operational, but should not be used. Typically this is used for devices that are controlled by another software component, such as platform firmware.
+                - `"fail"`: Indicates that the device is not operational. A serious error was detected in the device, and it is unlikely to become operational without repair.
+                - `"fail-sss"`: Indicates that the device is not operational. A serious error was detected in the device and it is unlikely to become operational without repair. The `sss` portion of the value is specific to the device and indicates the error condition detected.
+            ]]) .. dtls.get_type_definition("string")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property value `okay`", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:354:19")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Value: okay
+
+                ## Definition:
+
+                Indicates the device is operational.
+            ]])
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property value `disabled`", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:355:19")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Value: disabled
+
+                ## Definition:
+
+                Indicates that the device is not presently operational, but it might become operational in the future (for example, something is not plugged in, or switched off). Refer to the device binding for details on what disabled means for a given device.
+            ]])
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property value `reserved`", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:356:19")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Value: reserved
+
+                ## Definition:
+
+                Indicates that the device is operational, but should not be used. Typically this is used for devices that are controlled by another software component, such as platform firmware.
+            ]])
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property value `fail`", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:357:19")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Value: fail
+
+                ## Definition:
+
+                Indicates that the device is not operational. A serious error was detected in the device, and it is unlikely to become operational without repair.
+            ]])
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `status` property value `fail-sss`", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:358:19")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Value: fail-sss
+
+                ## Definition:
+
+                Indicates that the device is not operational. A serious error was detected in the device and it is unlikely to become operational without repair. The `sss` portion of the value is specific to the device and indicates the error condition detected.
+            ]])
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `#address-cells` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:418:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: #address-cells
+
+                ## Definition:
+
+                The `#address-cells` and `#size-cells` properties may be used in any device node that has children in the devicetree hierarchy and describes how child device nodes should be addressed. The `#address-cells` property defines the number of `<u32>` cells used to encode the address field in a child node's `reg` property. The `#size-cells` property defines the number of `<u32>` cells used to encode the size field in a child node’s `reg` property.
+
+                The `#address-cells` and `#size-cells` properties are not inherited from ancestors in the devicetree. They shall be explicitly defined.
+
+                A DTSpec-compliant boot program shall supply `#address-cells` and `#size-cells` on all nodes that have children.
+
+                If missing, a client program should assume a default value of 2 for `#address-cells`, and a value of 1 for `#size-cells`.
+
+                ## Example:
+
+                See the following devicetree excerpt:
+
+                ```dts
+                soc {
+                    #address-cells = <1>;
+                    #size-cells = <1>;
+
+                    serial@4600 {
+                        compatible = "ns16550";
+                        reg = <0x4600 0x100>;
+                        clock-frequency = <0>;
+                        interrupts = <0xA 0x8>;
+                        interrupt-parent = <&ipic>;
+                    };
+                };
+                ```
+
+                In this example, the `#address-cells` and `#size-cells` properties of the `soc` node are both set to 1. This setting specifies that one cell is required to represent an address and one cell is required to represent the size of nodes that are children of this node.
+
+                The serial device `reg` property necessarily follows this specification set in the parent (`soc`) node—the address is represented by a single cell (0x4600), and the size is represented by a single cell (0x100).
+            ]]) .. dtls.get_type_definition("u32")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `#size-cells` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:419:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: #size-cells
+
+                ## Definition:
+
+                The `#address-cells` and `#size-cells` properties may be used in any device node that has children in the devicetree hierarchy and describes how child device nodes should be addressed. The `#address-cells` property defines the number of `<u32>` cells used to encode the address field in a child node's `reg` property. The `#size-cells` property defines the number of `<u32>` cells used to encode the size field in a child node’s `reg` property.
+
+                The `#address-cells` and `#size-cells` properties are not inherited from ancestors in the devicetree. They shall be explicitly defined.
+
+                A DTSpec-compliant boot program shall supply `#address-cells` and `#size-cells` on all nodes that have children.
+
+                If missing, a client program should assume a default value of 2 for `#address-cells`, and a value of 1 for `#size-cells`.
+
+                ## Example:
+
+                See the following devicetree excerpt:
+
+                ```dts
+                soc {
+                    #address-cells = <1>;
+                    #size-cells = <1>;
+
+                    serial@4600 {
+                        compatible = "ns16550";
+                        reg = <0x4600 0x100>;
+                        clock-frequency = <0>;
+                        interrupts = <0xA 0x8>;
+                        interrupt-parent = <&ipic>;
+                    };
+                };
+                ```
+
+                In this example, the `#address-cells` and `#size-cells` properties of the `soc` node are both set to 1. This setting specifies that one cell is required to represent an address and one cell is required to represent the size of nodes that are children of this node.
+
+                The serial device `reg` property necessarily follows this specification set in the parent (`soc`) node—the address is represented by a single cell (0x4600), and the size is represented by a single cell (0x100).
+            ]]) .. dtls.get_type_definition("u32")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `reg` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:256:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: reg
+
+                ## Property value: `<prop-encoded-array>` encoded as an arbitrary number of (`address`, `length`) pairs.
+
+                ## Definition:
+
+                The `reg` property describes the address of the device’s resources within the address space defined by its parent bus. Most commonly this means the offsets and lengths of memory-mapped IO register blocks, but may have a different meaning on some bus types. Addresses in the address space defined by the root node are CPU real addresses.
+
+                The value is a `<prop-encoded-array>`, composed of an arbitrary number of pairs of address and length, `<address length>`. The number of `<u32>` cells required to specify the address and length are bus-specific and are specified by the `#address-cells` and `#size-cells` properties in the parent of the device node. If the parent node specifies a value of 0 for `#size-cells`, the length field in the value of `reg` shall be omitted.
+
+                ## Example:
+
+                Suppose a device within a system-on-a-chip had two blocks of registers, a 32-byte block at offset 0x3000 in the SOC and a 256-byte block at offset 0xFE00. The `reg` property would be encoded as follows (assuming `#address-cells` and `#size-cells` values of 1):
+
+                `reg = <0x3000 0x20 0xFE00 0x100>;`
+            ]]) .. dtls.get_type_definition("prop_encoded_array")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `virtual-reg` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:257:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: virtual-reg
+
+                ## Definition:
+
+                The `virtual-reg` property specifies an effective address that maps to the first physical address specified in the `reg` property of the device node. This property enables boot programs to provide client programs with virtual-to-physical mappings that have been set up.
+            ]]) .. dtls.get_type_definition("u32")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `ranges` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:258:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: ranges
+
+                ## Value type: `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of (`child-bus-address`, `parent-bus-address`, `length`) triplets.
+
+                ## Definition:
+
+                The `ranges` property provides a means of defining a mapping or translation between the address space of the bus (the child address space) and the address space of the bus node’s parent (the parent address space).
+
+                The format of the value of the `ranges` property is an arbitrary number of triplets of (`child-bus-address`, `parent-bus-address`, `length`)
+                - The `child-bus-address` is a physical address within the child bus' address space. The number of cells to represent the address is bus dependent and can be determined from the `#address-cells` of this node (the node in which the `ranges` property appears).
+                - The `parent-bus-address` is a physical address within the parent bus' address space. The number of cells to represent the parent address is bus dependent and can be determined from the `#address-cells` property of the node that defines the parent’s address space.
+                - The `length` specifies the size of the range in the child’s address space. The number of cells to represent the size can be determined from the `#size-cells` of this node (the node in which the `ranges` property appears).
+
+                If the property is defined with an `<empty>` value, it specifies that the parent and child address space is identical, and no address translation is required.
+
+                If the property is not present in a bus node, it is assumed that no mapping exists between children of the node and the parent address space.
+
+                ## Address Translation Example:
+
+                ```dts
+                soc {
+                    compatible = "simple-bus";
+                    #address-cells = <1>;
+                    #size-cells = <1>;
+                    ranges = <0x0 0xe0000000 0x00100000>;
+
+                    serial@4600 {
+                        device_type = "serial";
+                        compatible = "ns16550";
+                        reg = <0x4600 0x100>;
+                        clock-frequency = <0>;
+                        interrupts = <0xA 0x8>;
+                        interrupt-parent = <&ipic>;
+                    };
+                };
+                ```
+
+                The `soc` node specifies a `ranges` property of
+
+                `<0x0 0xe0000000 0x00100000>;`
+
+                This property value specifies that for a 1024 KB range of address space, a child node addressed at physical 0x0 maps to a parent address of physical 0xe0000000. With this mapping, the `serial` device node can be addressed by a load or store at address 0xe0004600, an offset of 0x4600 (specified in `reg`) plus the 0xe0000000 mapping specified in `ranges`.
+            ]]) .. dtls.get_type_definition("empty") .. dtls.get_type_definition("prop_encoded_array")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `dma-ranges` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:259:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: dma-ranges
+
+                ## Value type: `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of (`child-bus-address`, `parent-bus-address`, `length`) triplets.
+
+                ## Definition:
+
+                The `dma-ranges` property is used to describe the direct memory access (DMA) structure of a memory-mapped bus whose devicetree parent can be accessed from DMA operations originating from the bus. It provides a means of defining a mapping or translation between the physical address space of the bus and the physical address space of the parent of the bus.
+
+                The format of the value of the `dma-ranges` property is an arbitrary number of triplets of (`child-bus-address`, `parent-bus-address`, `length`). Each triplet specified describes a contiguous DMA address range.
+                - The `child-bus-address` is a physical address within the child bus' address space. The number of cells to represent the address depends on the bus and can be determined from the `#address-cells` of this node (the node in which the `dma-ranges` property appears).
+                - The `parent-bus-address` is a physical address within the parent bus' address space. The number of cells to represent the parent address is bus dependent and can be determined from the `#address-cells` property of the node that defines the parent’s address space.
+                - The `length` specifies the size of the range in the child’s address space. The number of cells to represent the size can be determined from the `#size-cells` of this node (the node in which the dma-ranges property appears).
+            ]]) .. dtls.get_type_definition("empty") .. dtls.get_type_definition("prop_encoded_array")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `dma-coherent` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:260:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: dma-coherent
+
+                ## Definition:
+
+                For architectures which are by default non-coherent for I/O, the `dma-coherent` property is used to indicate a device is capable of coherent DMA operations. Some architectures have coherent DMA by default and this property is not applicable.
+            ]]) .. dtls.get_type_definition("empty")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for standard `dma-noncoherent` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:261:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: dma-noncoherent
+
+                ## Definition:
+
+                For architectures which are by default coherent for I/O, the `dma-noncoherent` property is used to indicate a device is not capable of coherent DMA operations. Some architectures have non-coherent DMA by default and this property is not applicable.
+            ]]) .. dtls.get_type_definition("empty")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for deprecated standard `name` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:262:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: name
+
+                ## Usage: Deprecated
+
+                ## Definition:
+
+                The `name` property is a string specifying the name of the node. This property is deprecated, and its use is not recommended. However, it might be used in older non-DTSpec-compliant devicetrees. Operating system should determine a node’s name based on the `node-name` component of the node name.
+            ]]) .. dtls.get_type_definition("string")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
+
+        it("returns hover markdown for deprecated standard `device_type` property name", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:263:9")
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: device_type
+
+                ## Usage: Deprecated
+
+                ## Definition:
+
+                The `device_type` property was used in IEEE 1275 to describe the device’s FCode programming model. Because DTSpec does not have FCode, new use of the property is deprecated, and it should be included only on `cpu` and `memory` nodes for compatibility with IEEE 1275–derived devicetrees.
+            ]]) .. dtls.get_type_definition("string")
+            local actual = dtls.hover(ctx)
+            assert.are.same(expected, actual)
+        end)
     end)
 end)
 

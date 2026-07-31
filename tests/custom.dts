@@ -251,19 +251,19 @@
 
     expansion_device {
         reset-gpios = <&connector 2 GPIO_ACTIVE_LOW>;
+        phandle = <1>;
+        status = "disabled";
+        reg = <0x3000 0x20 0xFE00 0x100>;
+        virtual-reg;
+        ranges = <0x0 0xe0000000 0x00100000>;
+        dma-ranges;
+        dma-coherent;
+        dma-noncoherent;
+        name = "cpu";
+        device_type = "cpu";
+        linux,phandle = <1>;
     };
 
-    phandle = <1>;
-    status = "disabled";
-    reg = <0x3000 0x20 0xFE00 0x100>;
-    virtual-reg;
-    ranges = <0x0 0xe0000000 0x00100000>;
-    dma-ranges;
-    dma-coherent;
-    dma-noncoherent;
-    name = "cpu";
-    device_type = "cpu";
-    linux,phandle = <1>;
     serial-number = "123456";
     chassis-type = "embedded";
     memory-region = <&display_reserved>; // should not return hover since it is only valid on device nodes
