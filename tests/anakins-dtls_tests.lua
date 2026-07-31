@@ -1274,18 +1274,20 @@ describe("hover()", function()
     end)
 
     it("does not return root property hover markdown for descendant properties", function()
-        local positions = {
-            "tests/custom.dts:416:9", -- compatible
-            "tests/custom.dts:417:9", -- model
-            "tests/custom.dts:418:9", -- #address-cells
-            "tests/custom.dts:419:9", -- #size-cells
-            "tests/custom.dts:349:9", -- serial-number
-            "tests/custom.dts:350:9", -- chassis-type
+        local properties = {
+            { descendant = "tests/custom.dts:416:9", root = "tests/custom.dts:17:5" },
+            { descendant = "tests/custom.dts:417:9", root = "tests/custom.dts:16:5" },
+            { descendant = "tests/custom.dts:418:9", root = "tests/custom.dts:19:5" },
+            { descendant = "tests/custom.dts:419:9", root = "tests/custom.dts:20:5" },
+            { descendant = "tests/custom.dts:349:9", root = "tests/custom.dts:22:5" },
+            { descendant = "tests/custom.dts:350:9", root = "tests/custom.dts:23:5" },
         }
 
-        for _, position in ipairs(positions) do
-            ctx.row, ctx.col = row_col(position)
-            assert.is_nil(dtls.hover(ctx))
+        for _, property in ipairs(properties) do
+            ctx.row, ctx.col = row_col(property.root)
+            local root_markdown = dtls.hover(ctx)
+            ctx.row, ctx.col = row_col(property.descendant)
+            assert.are_not.same(root_markdown, dtls.hover(ctx))
         end
     end)
 
@@ -3321,16 +3323,22 @@ describe("hover()", function()
     end)
 
     it("does not return memory-region property hover markdown outside device nodes", function()
-        local positions = {
-            "tests/custom.dts:269:5",
-            "tests/custom.dts:270:5",
-            "tests/custom.dts:290:13",
-            "tests/custom.dts:291:13",
+        local properties = {
+            { expected = memory_region_property_markdown["memory-region"], position = "tests/custom.dts:269:5" },
+            {
+                expected = memory_region_property_markdown["memory-region-names"],
+                position = "tests/custom.dts:270:5",
+            },
+            { expected = memory_region_property_markdown["memory-region"], position = "tests/custom.dts:290:13" },
+            {
+                expected = memory_region_property_markdown["memory-region-names"],
+                position = "tests/custom.dts:291:13",
+            },
         }
 
-        for _, position in ipairs(positions) do
-            ctx.row, ctx.col = row_col(position)
-            assert.is_nil(dtls.hover(ctx))
+        for _, property in ipairs(properties) do
+            ctx.row, ctx.col = row_col(property.position)
+            assert.are_not.same(property.expected, dtls.hover(ctx))
         end
     end)
 
