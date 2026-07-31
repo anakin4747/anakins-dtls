@@ -2343,10 +2343,11 @@ describe("hover()", function()
     end)
 
     describe("multi-level and shared cache nodes", function()
-        local cache_node_markdown = dtls.dedent([[
+        local function cache_node_markdown(path)
+            return dtls.dedent(([[
             # Devicetree Specification:
 
-            ## `/cpus/cpu@0/l2-cache` node
+            ## `%s` node
 
             Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
 
@@ -2415,12 +2416,23 @@ describe("hover()", function()
                 };
             };
             ```
-        ]])
+        ]]):format(path))
+        end
 
         it("returns hover markdown for /cpus/cpu*/l?-cache node", function()
-            ctx.row, ctx.col = row_col("tests/custom.dts:341:19")
-            local actual = dtls.hover(ctx)
-            assert.are.same(cache_node_markdown, actual)
+            local caches = {
+                { path = "/cpus/cpu@0/l2-cache", position = "tests/custom.dts:184:19" },
+                {
+                    path = "/cpus/cpu@0/l2-cache/l3-cache",
+                    position = "tests/custom.dts:194:21",
+                },
+                { path = "/cpus/cpu@1/l2-cache", position = "tests/custom.dts:214:19" },
+            }
+
+            for _, cache in ipairs(caches) do
+                ctx.row, ctx.col = row_col(cache.position)
+                assert.are.same(cache_node_markdown(cache.path), dtls.hover(ctx))
+            end
         end)
 
         it("calls on_a_cache_node() to determine the type of node", function()
@@ -2433,48 +2445,72 @@ describe("hover()", function()
             assert.spy(on_a_cache_node).returned_with(true)
         end)
 
-        local cache_compatible_markdown = dtls.dedent([[
-            # Devicetree Specification:
+        local function cache_compatible_markdown(path)
+            return dtls.dedent(([[
+                # Devicetree Specification:
 
-            ## Property Name: compatible
+                ## Property Name: compatible
 
-            ## Path: /cpus/cpu@0/l2-cache/compatible
+                ## Path: %s/compatible
 
-            ## Usage: Required
+                ## Usage: Required
 
-            ## Definition:
+                ## Definition:
 
-            A standard property. The value shall include the string `"cache"`.
+                A standard property. The value shall include the string `"cache"`.
 
-            All other standard properties are allowed but are optional.
-        ]]) .. dtls.get_type_definition("string")
+                All other standard properties are allowed but are optional.
+            ]]):format(path)) .. dtls.get_type_definition("string")
+        end
 
         it("returns hover markdown for /cpus/cpu*/l?-cache `compatible` property name", function()
-            ctx.row, ctx.col = row_col("tests/custom.dts:342:17")
-            local actual = dtls.hover(ctx)
-            assert.are.same(cache_compatible_markdown, actual)
+            local caches = {
+                { path = "/cpus/cpu@0/l2-cache", position = "tests/custom.dts:185:17" },
+                {
+                    path = "/cpus/cpu@0/l2-cache/l3-cache",
+                    position = "tests/custom.dts:195:21",
+                },
+                { path = "/cpus/cpu@1/l2-cache", position = "tests/custom.dts:215:17" },
+            }
+
+            for _, cache in ipairs(caches) do
+                ctx.row, ctx.col = row_col(cache.position)
+                assert.are.same(cache_compatible_markdown(cache.path), dtls.hover(ctx))
+            end
         end)
 
-        local cache_level_markdown = dtls.dedent([[
-            # Devicetree Specification:
+        local function cache_level_markdown(path)
+            return dtls.dedent(([[
+                # Devicetree Specification:
 
-            ## Property Name: cache-level
+                ## Property Name: cache-level
 
-            ## Path: /cpus/cpu@0/l2-cache/cache-level
+                ## Path: %s/cache-level
 
-            ## Usage: Required
+                ## Usage: Required
 
-            ## Definition:
+                ## Definition:
 
-            Specifies the level in the cache hierarchy. For example, a level 2 cache has a value of 2.
+                Specifies the level in the cache hierarchy. For example, a level 2 cache has a value of 2.
 
-            All other standard properties are allowed but are optional.
-        ]]) .. dtls.get_type_definition("u32")
+                All other standard properties are allowed but are optional.
+            ]]):format(path)) .. dtls.get_type_definition("u32")
+        end
 
         it("returns hover markdown for /cpus/cpu*/l?-cache `cache-level` property name", function()
-            ctx.row, ctx.col = row_col("tests/custom.dts:343:17")
-            local actual = dtls.hover(ctx)
-            assert.are.same(cache_level_markdown, actual)
+            local caches = {
+                { path = "/cpus/cpu@0/l2-cache", position = "tests/custom.dts:191:17" },
+                {
+                    path = "/cpus/cpu@0/l2-cache/l3-cache",
+                    position = "tests/custom.dts:200:21",
+                },
+                { path = "/cpus/cpu@1/l2-cache", position = "tests/custom.dts:217:17" },
+            }
+
+            for _, cache in ipairs(caches) do
+                ctx.row, ctx.col = row_col(cache.position)
+                assert.are.same(cache_level_markdown(cache.path), dtls.hover(ctx))
+            end
         end)
 
         it("calls in_a_cache_node() to determine the type of node", function()

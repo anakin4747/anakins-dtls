@@ -1140,6 +1140,11 @@ function M.on_a_cache_node(ctx)
     return on_node(ctx, any_depth(is_cache_name))
 end
 
+local function cache_node_path(ctx)
+    local bounds = containing_node(ctx.file, ctx.row)
+    return bounds and bounds.path
+end
+
 function M.in_a_reserved_memory_node(ctx)
     return in_node(ctx, { "/", "reserved-memory" })
 end
@@ -1330,7 +1335,7 @@ The node name for every CPU node should be `cpu`.]]
 local cache_node_markdown = [[
 # Devicetree Specification:
 
-## `/cpus/cpu@0/l2-cache` node
+## `%s` node
 
 Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
 
@@ -1992,19 +1997,23 @@ local power_isa_category_definition = M.dedent(
     For example, if the power-isa-version property exists and its value is `"2.06"` and the power-isa-e.hv property exists, then the implementation supports [Category:Embedded.Hypervisor] as defined in Power ISA Version 2.06.]]
 )
 
+local function cache_property(name, usage, definition, type_name)
+    return cpu_property(name, usage, definition, type_name):gsub("/cpus/cpu@0", "%%s")
+end
+
 local cache_property_markdown = {
-    compatible = cpu_property(
+    compatible = cache_property(
         "compatible",
         "Required",
         'A standard property. The value shall include the string `"cache"`.',
         "string"
-    ):gsub("/cpus/cpu@0/compatible", "/cpus/cpu@0/l2-cache/compatible"),
-    ["cache-level"] = cpu_property(
+    ),
+    ["cache-level"] = cache_property(
         "cache-level",
         "Required",
         "Specifies the level in the cache hierarchy. For example, a level 2 cache has a value of 2.",
         "u32"
-    ):gsub("/cpus/cpu@0/cache%-level", "/cpus/cpu@0/l2-cache/cache-level"),
+    ),
 }
 
 local chosen_property_markdown = {
@@ -2461,7 +2470,7 @@ function M.hover(ctx)
     end
 
     if M.on_a_cache_node(ctx) then
-        return cache_node_markdown
+        return cache_node_markdown:format(cache_node_path(ctx))
     end
 
     if M.on_a_cpu_node(ctx) then
@@ -2495,7 +2504,11 @@ function M.hover(ctx)
 
     if M.in_a_cache_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
-        return cache_property_markdown[property_name] or cpu_property_markdown[property_name]
+        local markdown = cache_property_markdown[property_name]
+        if markdown then
+            return markdown:format(cache_node_path(ctx))
+        end
+        return cpu_property_markdown[property_name]
     end
 
     if M.in_a_cpu_node(ctx) then
