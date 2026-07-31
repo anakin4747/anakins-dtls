@@ -1224,18 +1224,18 @@ function M.on_a_label_definition(ctx)
     return ctx.col >= start_col and ctx.col <= colon_col
 end
 
-function M.on_a_label_reference(ctx)
+local function label_reference_at_cursor(ctx)
     local lines = read_lines(ctx.file)
     local line = lines[ctx.row]
     if not line then
-        return false
+        return nil
     end
 
     local search_from = 1
     while true do
         local amp_col = line:find("&", search_from)
         if not amp_col then
-            return false
+            return nil
         end
 
         local end_col = amp_col
@@ -1244,10 +1244,45 @@ function M.on_a_label_reference(ctx)
         end
 
         if ctx.col >= amp_col and ctx.col <= end_col then
-            return true
+            return line:sub(amp_col + 1, end_col)
         end
 
         search_from = amp_col + 1
+    end
+end
+
+function M.on_a_label_reference(ctx)
+    return label_reference_at_cursor(ctx) ~= nil
+end
+
+function M.find_node_label_definition(ctx)
+    local label = label_reference_at_cursor(ctx)
+    if not label then
+        return nil
+    end
+
+    local root = kernel_root(ctx.file)
+    for _, file in ipairs(included_files(ctx.file, root)) do
+        for _, bounds in
+            ipairs(find_all_node_bounds(file, function()
+                return true
+            end))
+        do
+            if bounds.label == label then
+                return {
+                    file = file,
+                    row = bounds.open_row,
+                    start_col = bounds.start_col,
+                    end_col = bounds.start_col + #label - 1,
+                }
+            end
+        end
+    end
+end
+
+function M.goto_definition(ctx)
+    if M.on_a_label_reference(ctx) then
+        return M.find_node_label_definition(ctx)
     end
 end
 
@@ -3261,7 +3296,9 @@ default_handlers["initialize"] = function(server, msg)
     local params = msg.params or {}
     server.workspace_root = workspace_root_from_params(params)
     server.state = "initialized"
-    send_response(server, msg.id, { capabilities = { textDocumentSync = 1, hoverProvider = true } })
+    send_response(server, msg.id, {
+        capabilities = { textDocumentSync = 1, hoverProvider = true, definitionProvider = true },
+    })
 end
 
 default_handlers["initialized"] = function(_, _) end
@@ -3312,6 +3349,28 @@ default_handlers["textDocument/hover"] = function(server, msg)
     local markdown = M.hover(ctx)
     if markdown then
         send_response(server, msg.id, { contents = { kind = "markdown", value = markdown } })
+    else
+        send_response(server, msg.id, json.NULL)
+    end
+end
+
+default_handlers["textDocument/definition"] = function(server, msg)
+    local params = msg.params or {}
+    local position = params.position or {}
+    local definition = M.goto_definition({
+        file = uri_to_path((params.textDocument or {}).uri),
+        row = (position.line or 0) + 1,
+        col = (position.character or 0) + 1,
+    })
+
+    if definition then
+        send_response(server, msg.id, {
+            uri = "file://" .. definition.file,
+            range = {
+                start = { line = definition.row - 1, character = definition.start_col - 1 },
+                ["end"] = { line = definition.row - 1, character = definition.end_col },
+            },
+        })
     else
         send_response(server, msg.id, json.NULL)
     end

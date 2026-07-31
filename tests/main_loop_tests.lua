@@ -438,6 +438,67 @@ The devicetree has a single root node of which all other device nodes are descen
     end)
 end)
 
+describe("textDocument/definition", function()
+    it("advertises definitionProvider in the initialize response capabilities", function()
+        local server = dtls.new_server(dtls.new_memory_channel())
+        server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.is_true(output[1].result.capabilities.definitionProvider)
+    end)
+
+    it("responds with the location of a node label definition", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+        local file = ("%s/tests/in-tree/arch/arm64/boot/dts/freescale/custom.dts"):format(cwd)
+
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/definition",
+            id = 4,
+            params = {
+                textDocument = { uri = "file://" .. file },
+                position = { line = 75, character = 25 },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.are.same({
+            uri = "file://" .. file,
+            range = {
+                start = { line = 55, character = 4 },
+                ["end"] = { line = 55, character = 13 },
+            },
+        }, output[1].result)
+    end)
+
+    it("responds with a null result outside a node label reference", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/definition",
+            id = 5,
+            params = {
+                textDocument = { uri = ("file://%s/tests/custom.dts"):format(cwd) },
+                position = { line = 0, character = 0 },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.same(json.NULL, output[1].result)
+    end)
+end)
+
 describe("error handling", function()
     it("catches a Lua error thrown while handling a message and keeps running", function()
         local server = new_server_in_state("initialized")

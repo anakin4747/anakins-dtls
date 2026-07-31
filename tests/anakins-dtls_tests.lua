@@ -1075,6 +1075,75 @@ describe("on_a_label_reference()", function()
     end)
 end)
 
+for _, location in ipairs(dts_locations) do
+    local layout = location
+
+    describe("find_node_label_definition() " .. layout.name, function()
+        before_each(function()
+            ctx = {
+                row = nil,
+                col = nil,
+                file = ("%s/tests/%s/%s"):format(cwd, layout.name, layout.path),
+            }
+        end)
+
+        it("finds a node label definition in the current file", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
+
+            assert.are.same({
+                file = ctx.file,
+                row = 56,
+                start_col = 5,
+                end_col = 13,
+            }, dtls.find_node_label_definition(ctx))
+        end)
+
+        it("finds a node label definition in a recursively included file", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:26:22")
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"):format(
+                    cwd, layout.name, kernel_path
+                ),
+                row = 977,
+                start_col = 4,
+                end_col = 7,
+            }, dtls.find_node_label_definition(ctx))
+        end)
+    end)
+end
+
+describe("goto_definition()", function()
+    it("returns the node label definition at a label reference", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
+
+        assert.are.same({
+            file = ctx.file,
+            row = 56,
+            start_col = 5,
+            end_col = 13,
+        }, dtls.goto_definition(ctx))
+    end)
+
+    it("uses on_a_label_reference() and find_node_label_definition()", function()
+        local on_a_label_reference = spy.on(dtls, "on_a_label_reference")
+        local find_node_label_definition = spy.on(dtls, "find_node_label_definition")
+        ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
+
+        dtls.goto_definition(ctx)
+
+        assert.spy(on_a_label_reference).was_called_with(ctx)
+        assert.spy(on_a_label_reference).returned_with(true)
+        assert.spy(find_node_label_definition).was_called_with(ctx)
+    end)
+
+    it("returns nil outside a label reference", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:76:9")
+        assert.is_nil(dtls.goto_definition(ctx))
+    end)
+end)
+
 describe("in_possible_memory_region_consumer()", function()
     it("returns true in a device node with a memory-region property", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:164:9")
@@ -4535,6 +4604,8 @@ describe("missing file", function()
         "in_top_level",
         "on_a_label_definition",
         "on_a_label_reference",
+        "find_node_label_definition",
+        "goto_definition",
     }
 
     for _, name in ipairs(function_names) do
