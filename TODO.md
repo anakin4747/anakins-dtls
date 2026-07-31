@@ -184,6 +184,16 @@ So the helper will need to implement this logic
 
 ---
 
+update all hovers to have ## Path:
+
+update all hovers to have the source of the info:
+
+    Devicetree Specification: Standard Properties
+    Devicetree Specification: Root Node Properties
+    ...
+
+---
+
 devicetree specification typos/mistakes:
 - devicetree-specification/source/chapter3-devicenodes.rst:131:The *unit-name* component of the node name
     Shouldn't it say the *node-name* of the node shall be ``memory``.
