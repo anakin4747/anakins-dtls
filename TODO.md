@@ -172,6 +172,18 @@ For buildroot have the message if the kernel sources is not found also say:
 
 ---
 
+Need helper functions for inside nexus nodes
+
+so if a node has a property which has a `#<specifier>-cells` property where
+specifier isn't address or size
+
+    A nexus node shall have a *#<specifier>-cells* property, where <specifier> is
+    some specifier space such as 'gpio', 'clock', 'reset', etc.
+
+So the helper will need to implement this logic
+
+---
+
 devicetree specification typos/mistakes:
 - devicetree-specification/source/chapter3-devicenodes.rst:131:The *unit-name* component of the node name
     Shouldn't it say the *node-name* of the node shall be ``memory``.
