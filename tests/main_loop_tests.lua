@@ -402,6 +402,8 @@ describe("textDocument/hover", function()
             [[
 # Devicetree Specification:
 
+## Path: /
+
 The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
 
 All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:

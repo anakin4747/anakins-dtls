@@ -1145,6 +1145,15 @@ local function cache_node_path(ctx)
     return bounds and bounds.path
 end
 
+local function property_path(ctx, property_name)
+    local bounds = containing_node(ctx.file, ctx.row)
+    return bounds and bounds.path .. "/" .. property_name
+end
+
+local function with_path(markdown, path)
+    return markdown:gsub("(## Property [^\n]+\n)", "%1\n## Path: " .. path .. "\n", 1)
+end
+
 function M.in_a_reserved_memory_node(ctx)
     return in_node(ctx, { "/", "reserved-memory" })
 end
@@ -1245,6 +1254,8 @@ end
 local root_node_markdown = [[
 # Devicetree Specification:
 
+## Path: /
+
 The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
 
 All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:
@@ -1257,6 +1268,8 @@ local aliases_node_markdown = [[
 # Devicetree Specification:
 
 ## `/aliases` node
+
+## Path: /aliases
 
 A devicetree may have an aliases node (`/aliases`) that defines one or more alias properties. The alias node shall be at the root of the devicetree and have the node name `/aliases`.
 
@@ -1292,6 +1305,8 @@ local cpus_node_markdown = [[
 
 ## `/cpus` node
 
+## Path: /cpus
+
 A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
 
 The `/cpus` node may contain properties that are common across `cpu` nodes.
@@ -1322,6 +1337,8 @@ local cpu_node_markdown = [[
 
 ## `/cpus/cpu@0` node
 
+## Path: /cpus/cpu@0
+
 A `cpu` node represents a hardware execution block that is sufficiently independent that it is capable of running an operating system without interfering with other CPUs possibly running other operating systems.
 
 Hardware threads that share an MMU would generally be represented under one `cpu` node. If other more complex CPU topographies are designed, the binding for the CPU must describe the topography (e.g. threads that don’t share an MMU).
@@ -1336,6 +1353,8 @@ local cache_node_markdown = [[
 # Devicetree Specification:
 
 ## `%s` node
+
+## Path: %s
 
 Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
 
@@ -1409,6 +1428,8 @@ local memory_node_markdown = [[
 # Devicetree Specification:
 
 ## `/memory` node
+
+## Path: %s
 
 A memory device node is required for all devicetrees and describes the physical memory layout for the system. If a system has multiple ranges of memory, multiple memory nodes can be created, or the ranges can be specified in the `reg` property of a single memory node.
 
@@ -1484,6 +1505,8 @@ local reserved_memory_node_markdown = [[
 # Devicetree Specification:
 
 ## `/reserved-memory` node
+
+## Path: /reserved-memory
 
 Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.
 
@@ -2952,7 +2975,8 @@ function M.hover(ctx)
     end
 
     if M.on_a_cache_node(ctx) then
-        return cache_node_markdown:format(cache_node_path(ctx))
+        local path = cache_node_path(ctx)
+        return cache_node_markdown:format(path, path)
     end
 
     if M.on_a_cpu_node(ctx) then
@@ -2960,7 +2984,7 @@ function M.hover(ctx)
     end
 
     if M.on_a_memory_node(ctx) then
-        return memory_node_markdown
+        return memory_node_markdown:format(cache_node_path(ctx))
     end
 
     if M.on_a_chosen_node(ctx) then
@@ -2978,7 +3002,8 @@ function M.hover(ctx)
     if M.in_an_aliases_node(ctx) then
         local alias = property_name_at_cursor(ctx)
         if alias then
-            return ("# Anakin's Advice:\n\nA client program, such as Linux, Zephyr, or U-Boot, can look up the alias `%s` to refer to this node."):format(
+            return ("# Anakin's Advice:\n\n## Path: /aliases/%s\n\nA client program, such as Linux, Zephyr, or U-Boot, can look up the alias `%s` to refer to this node."):format(
+                alias,
                 alias
             )
         end
@@ -3008,7 +3033,8 @@ function M.hover(ctx)
 
     if M.in_a_memory_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
-        return memory_property_markdown[property_name]
+        local markdown = memory_property_markdown[property_name]
+        return markdown and markdown:gsub("/memory/", cache_node_path(ctx) .. "/", 1)
     end
 
     if M.in_a_chosen_node(ctx) then
@@ -3051,8 +3077,9 @@ function M.hover(ctx)
     local status_value = string_property_value_at_cursor(ctx, "status")
     local status_definition = status_value_definitions[status_value]
     if status_definition then
-        return ("# Devicetree Specification:\n\n## Property Value: %s\n\n## Definition:\n\n%s"):format(
+        return ("# Devicetree Specification:\n\n## Property Value: %s\n\n## Path: %s\n\n## Definition:\n\n%s"):format(
             status_value,
+            property_path(ctx, "status"),
             status_definition
         )
     end
@@ -3061,29 +3088,30 @@ function M.hover(ctx)
     local nexus_markdown = nexus_property_markdown[property_name]
     local standard_markdown = standard_property_markdown[property_name]
     if standard_markdown and not nexus_markdown then
-        return standard_markdown
+        return with_path(standard_markdown, property_path(ctx, property_name))
     end
 
     for _, node_property in ipairs(M.list_node_properties(ctx)) do
         local specifier = node_property:match("^#([^#]+)%-cells$")
         if specifier and specifier ~= "address" and specifier ~= "size" then
             if nexus_markdown then
-                return nexus_markdown
+                return with_path(nexus_markdown, property_path(ctx, property_name))
             end
 
             if property_name == node_property then
-                return specifier_cells_markdown:format(specifier)
+                return with_path(specifier_cells_markdown:format(specifier), property_path(ctx, property_name))
             elseif property_name == specifier .. "-map" then
-                return specifier_map_markdown:format(specifier)
+                return with_path(specifier_map_markdown:format(specifier), property_path(ctx, property_name))
             elseif property_name == specifier .. "-map-mask" then
-                return specifier_map_mask_markdown:format(specifier)
+                return with_path(specifier_map_mask_markdown:format(specifier), property_path(ctx, property_name))
             elseif property_name == specifier .. "-map-pass-thru" then
-                return specifier_map_pass_thru_markdown:format(specifier)
+                return with_path(specifier_map_pass_thru_markdown:format(specifier), property_path(ctx, property_name))
             end
         end
     end
 
-    return standard_property_markdown[property_name]
+    local markdown = standard_property_markdown[property_name]
+    return markdown and with_path(markdown, property_path(ctx, property_name))
 end
 
 -------------------------------------------------------------------------------

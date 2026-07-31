@@ -172,8 +172,6 @@ For buildroot have the message if the kernel sources is not found also say:
 
 ---
 
-update all hovers to have ## Path:
-
 update all hovers to have the source of the info:
 
     Devicetree Specification: Standard Properties

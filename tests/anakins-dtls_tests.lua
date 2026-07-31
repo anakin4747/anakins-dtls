@@ -1113,6 +1113,8 @@ describe("hover()", function()
         local expected = dtls.dedent([[
             # Devicetree Specification:
 
+            ## Path: /
+
             The root node does not have a `node-name` or `unit-address`. It is identified by a forward slash (/).
 
             All devicetrees shall have a root node and the following nodes shall be present at the root of all devicetrees:
@@ -1298,6 +1300,8 @@ describe("hover()", function()
 
             ## `/aliases` node
 
+            ## Path: /aliases
+
             A devicetree may have an aliases node (`/aliases`) that defines one or more alias properties. The alias node shall be at the root of the devicetree and have the node name `/aliases`.
 
             Each property of the `/aliases` node defines an alias. The property name specifies the alias name. The property value specifies the full path to a node in the devicetree. For example, the property serial0 = `"/simple-bus@fe000000/serial@llc500"` defines the alias `serial0`.
@@ -1345,6 +1349,8 @@ describe("hover()", function()
         local expected = dtls.dedent([[
             # Anakin's Advice:
 
+            ## Path: /aliases/ethernet1
+
             A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `ethernet1` to refer to this node.
         ]])
         local actual = dtls.hover(ctx)
@@ -1353,6 +1359,8 @@ describe("hover()", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:27:9")
         expected = dtls.dedent([[
             # Anakin's Advice:
+
+            ## Path: /aliases/gpio0
 
             A client program, such as Linux, Zephyr, or U-Boot, can look up the alias `gpio0` to refer to this node.
         ]])
@@ -1374,6 +1382,8 @@ describe("hover()", function()
         # Devicetree Specification:
 
         ## `/cpus` node
+
+        ## Path: /cpus
 
         A `/cpus` node is required for all devicetrees. It does not represent a real device in the system, but acts as a container for child `cpu` nodes which represent the systems CPUs.
 
@@ -1476,6 +1486,8 @@ describe("hover()", function()
         # Devicetree Specification:
 
         ## `/cpus/cpu@0` node
+
+        ## Path: /cpus/cpu@0
 
         A `cpu` node represents a hardware execution block that is sufficiently independent that it is capable of running an operating system without interfering with other CPUs possibly running other operating systems.
 
@@ -2351,6 +2363,8 @@ describe("hover()", function()
 
             ## `%s` node
 
+            ## Path: %s
+
             Processors and systems may implement additional levels of cache hierarchy. For example, second-level (L2) or third-level (L3) caches. These caches can potentially be tightly integrated to the CPU or possibly shared between multiple CPUs.
 
             A device node with a compatible value of `"cache"` describes these types of caches.
@@ -2418,7 +2432,7 @@ describe("hover()", function()
                 };
             };
             ```
-        ]]):format(path))
+        ]]):format(path, path))
         end
 
         it("returns hover markdown for /cpus/cpu*/l?-cache node", function()
@@ -2526,10 +2540,13 @@ describe("hover()", function()
         end)
     end)
 
-    local memory_node_markdown = dtls.dedent([[
+    local function memory_node_markdown(path)
+        return dtls.dedent(([=[
         # Devicetree Specification:
 
         ## `/memory` node
+
+        ## Path: %s
 
         A memory device node is required for all devicetrees and describes the physical memory layout for the system. If a system has multiple ranges of memory, multiple memory nodes can be created, or the ranges can be specified in the `reg` property of a single memory node.
 
@@ -2581,19 +2598,20 @@ describe("hover()", function()
         ```
 
         The `reg` property is used to define the address and size of the two memory ranges. The 2 GB I/O region is skipped. Note that the `#address-cells` and `#size-cells` properties of the root node specify a value of 2, which means that two 32-bit cells are required to define the address and length for the `reg` property of the memory node.
-    ]])
+    ]=]):format(path))
+    end
 
     it("returns hover markdown for /memory and /memory@unit-address nodes", function()
         local positions = {
-            "tests/custom.dts:119:5", -- memory
-            "tests/custom.dts:124:5", -- memory closing brace
-            "tests/custom.dts:126:5", -- memory@0
-            "tests/custom.dts:130:5", -- memory@0 closing brace
+            { path = "/memory", position = "tests/custom.dts:119:5" },
+            { path = "/memory", position = "tests/custom.dts:124:5" },
+            { path = "/memory@0", position = "tests/custom.dts:126:5" },
+            { path = "/memory@0", position = "tests/custom.dts:130:5" },
         }
 
-        for _, position in ipairs(positions) do
-            ctx.row, ctx.col = row_col(position)
-            assert.are.same(memory_node_markdown, dtls.hover(ctx))
+        for _, case in ipairs(positions) do
+            ctx.row, ctx.col = row_col(case.position)
+            assert.are.same(memory_node_markdown(case.path), dtls.hover(ctx))
         end
     end)
 
@@ -2677,16 +2695,26 @@ describe("hover()", function()
     }
 
     it("returns hover markdown for /memory `device_type` property name", function()
-        for _, row in ipairs({ 120, 127 }) do
-            ctx.row, ctx.col = row, 9
-            assert.are.same(memory_property_markdown.device_type, dtls.hover(ctx))
+        local cases = {
+            { path = "/memory/device_type", row = 120 },
+            { path = "/memory@0/device_type", row = 127 },
+        }
+        for _, case in ipairs(cases) do
+            ctx.row, ctx.col = case.row, 9
+            local expected = memory_property_markdown.device_type:gsub("/memory/device_type", case.path)
+            assert.are.same(expected, dtls.hover(ctx))
         end
     end)
 
     it("returns hover markdown for /memory `reg` property name", function()
-        for _, row in ipairs({ 121, 128 }) do
-            ctx.row, ctx.col = row, 9
-            assert.are.same(memory_property_markdown.reg, dtls.hover(ctx))
+        local cases = {
+            { path = "/memory/reg", row = 121 },
+            { path = "/memory@0/reg", row = 128 },
+        }
+        for _, case in ipairs(cases) do
+            ctx.row, ctx.col = case.row, 9
+            local expected = memory_property_markdown.reg:gsub("/memory/reg", case.path)
+            assert.are.same(expected, dtls.hover(ctx))
         end
     end)
 
@@ -2714,6 +2742,8 @@ describe("hover()", function()
         # Devicetree Specification:
 
         ## `/reserved-memory` node
+
+        ## Path: /reserved-memory
 
         Reserved memory is specified as a node under the `/reserved-memory` node. The operating system shall exclude reserved memory from normal usage. One can create child nodes describing particular reserved (excluded from normal use) memory regions. Such memory regions are usually designed for the special usage by various device drivers.
 
@@ -3515,6 +3545,8 @@ describe("hover()", function()
 
                 ## Property Name: compatible
 
+                ## Path: /miscellaneous-device/compatible
+
                 ## Definition:
 
                 The `compatible` property value consists of one or more strings that define the specific programming model for the device. This list of strings should be used by a client program for device driver selection. The property value consists of a concatenated list of null-terminated strings, from most specific to most general. They allow a device to express its compatibility with a family of similar devices, potentially allowing a single device driver to match against several devices.
@@ -3540,6 +3572,8 @@ describe("hover()", function()
 
                 ## Property Name: model
 
+                ## Path: /miscellaneous-device/model
+
                 ## Definition:
 
                 The model property value is a `<string>` that specifies the manufacturer’s model number of the device.
@@ -3561,6 +3595,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: phandle
+
+                ## Path: /expansion_device/phandle
 
                 ## Definition:
 
@@ -3601,6 +3637,8 @@ describe("hover()", function()
 
                 ## Property Name: linux,phandle
 
+                ## Path: /expansion_device/linux,phandle
+
                 ## Definition:
 
                 The `phandle` property specifies a numerical identifier for a node that is unique within the devicetree. The `phandle` property value is used by other nodes that need to refer to the node associated with the property.
@@ -3640,6 +3678,8 @@ describe("hover()", function()
 
                 ## Property Name: status
 
+                ## Path: /expansion_device/status
+
                 ## Definition:
 
                 The `status` property indicates the operational status of a device.  The lack of a `status` property should be treated as if the property existed with the value of `"okay"`.
@@ -3662,6 +3702,8 @@ describe("hover()", function()
 
                 ## Property Value: okay
 
+                ## Path: /child/status
+
                 ## Definition:
 
                 Indicates the device is operational.
@@ -3676,6 +3718,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Value: disabled
+
+                ## Path: /child/status
 
                 ## Definition:
 
@@ -3692,6 +3736,8 @@ describe("hover()", function()
 
                 ## Property Value: reserved
 
+                ## Path: /child/status
+
                 ## Definition:
 
                 Indicates that the device is operational, but should not be used. Typically this is used for devices that are controlled by another software component, such as platform firmware.
@@ -3706,6 +3752,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Value: fail
+
+                ## Path: /child/status
 
                 ## Definition:
 
@@ -3722,6 +3770,8 @@ describe("hover()", function()
 
                 ## Property Value: fail-sss
 
+                ## Path: /child/status
+
                 ## Definition:
 
                 Indicates that the device is not operational. A serious error was detected in the device and it is unlikely to become operational without repair. The `sss` portion of the value is specific to the device and indicates the error condition detected.
@@ -3736,6 +3786,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: #address-cells
+
+                ## Path: /miscellaneous-device/#address-cells
 
                 ## Definition:
 
@@ -3781,6 +3833,8 @@ describe("hover()", function()
 
                 ## Property Name: #size-cells
 
+                ## Path: /miscellaneous-device/#size-cells
+
                 ## Definition:
 
                 The `#address-cells` and `#size-cells` properties may be used in any device node that has children in the devicetree hierarchy and describes how child device nodes should be addressed. The `#address-cells` property defines the number of `<u32>` cells used to encode the address field in a child node's `reg` property. The `#size-cells` property defines the number of `<u32>` cells used to encode the size field in a child node’s `reg` property.
@@ -3825,6 +3879,8 @@ describe("hover()", function()
 
                 ## Property Name: reg
 
+                ## Path: /expansion_device/reg
+
                 ## Property value: `<prop-encoded-array>` encoded as an arbitrary number of (`address`, `length`) pairs.
 
                 ## Definition:
@@ -3850,6 +3906,8 @@ describe("hover()", function()
 
                 ## Property Name: virtual-reg
 
+                ## Path: /expansion_device/virtual-reg
+
                 ## Definition:
 
                 The `virtual-reg` property specifies an effective address that maps to the first physical address specified in the `reg` property of the device node. This property enables boot programs to provide client programs with virtual-to-physical mappings that have been set up.
@@ -3864,6 +3922,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: ranges
+
+                ## Path: /expansion_device/ranges
 
                 ## Value type: `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of (`child-bus-address`, `parent-bus-address`, `length`) triplets.
 
@@ -3917,6 +3977,8 @@ describe("hover()", function()
 
                 ## Property Name: dma-ranges
 
+                ## Path: /expansion_device/dma-ranges
+
                 ## Value type: `<empty>` or `<prop-encoded-array>` encoded as an arbitrary number of (`child-bus-address`, `parent-bus-address`, `length`) triplets.
 
                 ## Definition:
@@ -3939,6 +4001,8 @@ describe("hover()", function()
 
                 ## Property Name: dma-coherent
 
+                ## Path: /expansion_device/dma-coherent
+
                 ## Definition:
 
                 For architectures which are by default non-coherent for I/O, the `dma-coherent` property is used to indicate a device is capable of coherent DMA operations. Some architectures have coherent DMA by default and this property is not applicable.
@@ -3954,6 +4018,8 @@ describe("hover()", function()
 
                 ## Property Name: dma-noncoherent
 
+                ## Path: /expansion_device/dma-noncoherent
+
                 ## Definition:
 
                 For architectures which are by default coherent for I/O, the `dma-noncoherent` property is used to indicate a device is not capable of coherent DMA operations. Some architectures have non-coherent DMA by default and this property is not applicable.
@@ -3968,6 +4034,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: name
+
+                ## Path: /expansion_device/name
 
                 ## Usage: Deprecated
 
@@ -3985,6 +4053,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: device_type
+
+                ## Path: /expansion_device/device_type
 
                 ## Usage: Deprecated
 
@@ -4004,6 +4074,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: interrupts
+
+                ## Path: /child/interrupts
 
                 ## Value type: `<prop-encoded-array>` encoded as arbitrary number of interrupt specifiers
 
@@ -4030,6 +4102,8 @@ describe("hover()", function()
 
                 ## Property Name: interrupt-parent
 
+                ## Path: /child/interrupt-parent
+
                 ## Definition:
 
                 Because the hierarchy of the nodes in the interrupt tree might not match the devicetree, the `interrupt-parent` property is available to make the definition of an interrupt parent explicit. The value is the phandle to the interrupt parent. If this property is missing from a device, its interrupt parent is assumed to be its devicetree parent.
@@ -4044,6 +4118,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: interrupts-extended
+
+                ## Path: /child/interrupts-extended
 
                 ## Definition:
 
@@ -4068,6 +4144,8 @@ describe("hover()", function()
 
                 ## Property Name: #interrupt-cells
 
+                ## Path: /child/#interrupt-cells
+
                 ## Definition:
 
                 The `#interrupt-cells` property defines the number of cells required to encode an interrupt specifier for an interrupt domain.
@@ -4083,6 +4161,8 @@ describe("hover()", function()
 
                 ## Property Name: interrupt-controller
 
+                ## Path: /child/interrupt-controller
+
                 ## Definition:
 
                 The presence of an `interrupt-controller` property defines a node as an interrupt controller node.
@@ -4097,6 +4177,8 @@ describe("hover()", function()
                 # Devicetree Specification:
 
                 ## Property Name: interrupt-map
+
+                ## Path: /pci/interrupt-map
 
                 ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of interrupt mapping entries.
 
@@ -4141,6 +4223,8 @@ describe("hover()", function()
 
                 ## Property Name: interrupt-map-mask
 
+                ## Path: /pci/interrupt-map-mask
+
                 ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
                 ## Definition:
@@ -4163,6 +4247,8 @@ describe("hover()", function()
 
                     ## Property Name: #widget-cells
 
+                    ## Path: /widget-nexus/#widget-cells
+
                     ## Definition:
 
                     The `#<specifier>-cells` property defines the number of cells required to encode a specifier for a domain.
@@ -4179,6 +4265,8 @@ describe("hover()", function()
                     # Devicetree Specification:
 
                     ## Property Name: widget-map
+
+                    ## Path: /widget-nexus/widget-map
 
                     ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of specifier mapping entries.
 
@@ -4219,6 +4307,8 @@ describe("hover()", function()
 
                     ## Property Name: widget-map-mask
 
+                    ## Path: /widget-nexus/widget-map-mask
+
                     ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
                     ## Definition:
@@ -4237,6 +4327,8 @@ describe("hover()", function()
                     # Devicetree Specification:
 
                     ## Property Name: widget-map-pass-thru
+
+                    ## Path: /widget-nexus/widget-map-pass-thru
 
                     ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
@@ -4257,6 +4349,8 @@ describe("hover()", function()
 
                     ## Property Name: #signal-cells
 
+                    ## Path: /signal-nexus/#signal-cells
+
                     ## Definition:
 
                     The `#<specifier>-cells` property defines the number of cells required to encode a specifier for a domain.
@@ -4272,6 +4366,8 @@ describe("hover()", function()
                     # Devicetree Specification:
 
                     ## Property Name: signal-map
+
+                    ## Path: /signal-nexus/signal-map
 
                     ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of specifier mapping entries.
 
@@ -4311,6 +4407,8 @@ describe("hover()", function()
 
                     ## Property Name: signal-map-mask
 
+                    ## Path: /signal-nexus/signal-map-mask
+
                     ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
                     ## Definition:
@@ -4328,6 +4426,8 @@ describe("hover()", function()
                     # Devicetree Specification:
 
                     ## Property Name: signal-map-pass-thru
+
+                    ## Path: /signal-nexus/signal-map-pass-thru
 
                     ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
