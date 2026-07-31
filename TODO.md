@@ -184,6 +184,48 @@ nodes/properties as you come across them and understand them better
 
 ---
 
+replace in_/on_ helpers with:
+
+    get_node_location() -> in_an_aliases_node
+    get_node_location() -> on_an_aliases_node
+
+Or
+
+gets the path of the node or property which can be used to determine what type of node the user is on
+
+Need to think about all the ways of identifying nodes, for many devices it has
+to do with th precence of specific properties or compatible strings
+
+    get_node_or_prop_info() -> {
+        is_property_name = false
+        is_property_value = false
+        path = "/path/to/node"
+        properties = { dictionary of node properties }
+    }
+
+    get_node_or_prop_info() -> {
+        is_property_name = true
+        is_property_value = false
+        path = "/path/to/node/property"
+        properties = { dictionary of node properties }
+    }
+
+if it is not a property name or value then it is a node this will be used to
+determine whether its a property or a node and whether its on the property name
+or property value. Since the list of properties of that node is also always
+gathered, this function can be used to determine node type for all those
+serial, ethernet, etc devices as well as those which determine type based on
+compatible string
+
+Returns nothing on whitespace
+Returns the node path on opening and closing node brackets
+
+This way you don't have to iterate through all the helpers that all reparse the
+same file over and over you just parse once and determine the type of node and
+whether or not you are on or in the node
+
+---
+
 devicetree specification typos/mistakes:
 - devicetree-specification/source/chapter3-devicenodes.rst:131:The *unit-name* component of the node name
     Shouldn't it say the *node-name* of the node shall be ``memory``.
