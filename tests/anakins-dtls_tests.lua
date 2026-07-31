@@ -4150,6 +4150,215 @@ describe("hover()", function()
             local actual = dtls.hover(ctx)
             assert.are.same(expected, actual)
         end)
+
+        describe("Nexus Node Properties", function()
+            local nexus_file = ("%s/tests/nexus-node-properties.dts"):format(cwd)
+
+            it("returns hover markdown for `#widget-cells` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:5:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #widget-cells
+
+                    ## Definition:
+
+                    The `#<specifier>-cells` property defines the number of cells required to encode a specifier for a domain.
+                ]]) .. dtls.get_type_definition("u32")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `widget-map` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:6:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: widget-map
+
+                    ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of specifier mapping entries.
+
+                    ## Definition:
+
+                    A *<specifier>-map* is a property in a nexus node that bridges one specifier domain with a set of parent specifier domains and describes how specifiers in the child domain are mapped to their respective parent domains.
+
+                    The map is a table where each row is a mapping entry consisting of three components: *child specifier*, *specifier parent*, and *parent specifier*.
+
+                    ### child specifier
+
+                    The specifier of the child node being mapped. The number of 32-bit cells required to specify this component is described by the *#<specifier>-cells* property of this node—the nexus node containing the *<specifier>-map* property.
+
+                    ### specifier parent
+
+                    A single *<phandle>* value that points to the specifier parent to which the child domain is being mapped.
+
+                    ### parent specifier
+
+                    The specifier in the parent domain. The number of 32-bit cells required to specify this component is described by the *#<specifier>-cells* property of the specifier parent node.
+
+                    ---
+
+                    Lookups are performed on the mapping table by matching a specifier against the child specifier in the map. Because some fields in the specifier may not be relevant or need to be modified, a mask is applied before the lookup is done. This mask is defined in the *<specifier>-map-mask* property.
+
+                    Similarly, when the specifier is mapped, some fields in the unit specifier may need to be kept unmodified and passed through from the child node to the parent node. In this case, a *<specifier>-map-pass-thru* property may be specified to apply a mask to the child specifier and copy any bits that match to the parent unit specifier.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `widget-map-mask` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:7:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: widget-map-mask
+
+                    ## Value type: `<prop-encoded-array>` encoded as a bit mask
+
+                    ## Definition:
+
+                    A `<specifier>-map-mask` property may be specified for a nexus node. This property specifies a mask that is ANDed with the child unit specifier being looked up in the table specified in the `<specifier>-map` property. If this property is not specified, the mask is assumed to be a mask with all bits set.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `widget-map-pass-thru` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:8:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: widget-map-pass-thru
+
+                    ## Value type: `<prop-encoded-array>` encoded as a bit mask
+
+                    ## Definition:
+
+                    A `<specifier>-map-pass-thru` property may be specified for a nexus node. This property specifies a mask that is applied to the child unit specifier being looked up in the table specified in the `<specifier>-map` property. Any matching bits in the child unit specifier are copied over to the parent specifier. If this property is not specified, the mask is assumed to be a mask with no bits set.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `#signal-cells` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:12:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: #signal-cells
+
+                    ## Definition:
+
+                    The `#<specifier>-cells` property defines the number of cells required to encode a specifier for a domain.
+                ]]) .. dtls.get_type_definition("u32")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `signal-map` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:13:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: signal-map
+
+                    ## Definition:
+
+                    # Devicetree Specification:
+
+                    ## Property Name: widget-map
+
+                    ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of specifier mapping entries.
+
+                    ## Definition:
+
+                    A *<specifier>-map* is a property in a nexus node that bridges one specifier domain with a set of parent specifier domains and describes how specifiers in the child domain are mapped to their respective parent domains.
+
+                    The map is a table where each row is a mapping entry consisting of three components: *child specifier*, *specifier parent*, and *parent specifier*.
+
+                    ### child specifier
+
+                    The specifier of the child node being mapped. The number of 32-bit cells required to specify this component is described by the *#<specifier>-cells* property of this node—the nexus node containing the *<specifier>-map* property.
+
+                    ### specifier parent
+
+                    A single *<phandle>* value that points to the specifier parent to which the child domain is being mapped.
+
+                    ### parent specifier
+
+                    The specifier in the parent domain. The number of 32-bit cells required to specify this component is described by the *#<specifier>-cells* property of the specifier parent node.
+
+                    ---
+
+                    Lookups are performed on the mapping table by matching a specifier against the child specifier in the map. Because some fields in the specifier may not be relevant or need to be modified, a mask is applied before the lookup is done. This mask is defined in the *<specifier>-map-mask* property.
+
+                    Similarly, when the specifier is mapped, some fields in the unit specifier may need to be kept unmodified and passed through from the child node to the parent node. In this case, a *<specifier>-map-pass-thru* property may be specified to apply a mask to the child specifier and copy any bits that match to the parent unit specifier.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `signal-map-mask` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:14:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: signal-map-mask
+
+                    ## Value type: `<prop-encoded-array>` encoded as a bit mask
+
+                    ## Definition:
+
+                    A `<specifier>-map-mask` property may be specified for a nexus node. This property specifies a mask that is ANDed with the child unit specifier being looked up in the table specified in the `<specifier>-map` property. If this property is not specified, the mask is assumed to be a mask with all bits set.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            it("returns hover markdown for `signal-map-pass-thru` property name", function()
+                ctx.file = nexus_file
+                ctx.row, ctx.col = row_col("tests/nexus-node-properties.dts:15:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification:
+
+                    ## Property Name: signal-map-pass-thru
+
+                    ## Definition:
+
+                    ## Value type: `<prop-encoded-array>` encoded as a bit mask
+
+                    ## Definition:
+
+                    A `<specifier>-map-pass-thru` property may be specified for a nexus node. This property specifies a mask that is applied to the child unit specifier being looked up in the table specified in the `<specifier>-map` property. Any matching bits in the child unit specifier are copied over to the parent specifier. If this property is not specified, the mask is assumed to be a mask with no bits set.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                local actual = dtls.hover(ctx)
+                assert.are.same(expected, actual)
+            end)
+
+            local excluded_specifier_properties = {
+                "tests/nexus-node-properties.dts:21:9",
+                "tests/nexus-node-properties.dts:22:9",
+                "tests/nexus-node-properties.dts:23:9",
+                "tests/nexus-node-properties.dts:24:9",
+                "tests/nexus-node-properties.dts:25:9",
+                "tests/nexus-node-properties.dts:26:9",
+            }
+
+            for _, location in ipairs(excluded_specifier_properties) do
+                it(("does not return Nexus Node Property hover markdown at %s"):format(location), function()
+                    ctx.file = nexus_file
+                    ctx.row, ctx.col = row_col(location)
+                    assert.is_nil(dtls.hover(ctx))
+                end)
+            end
+        end)
     end)
 end)
 

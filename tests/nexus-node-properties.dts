@@ -1,0 +1,28 @@
+/dts-v1/;
+
+/ {
+    widget-nexus {
+        #widget-cells = <2>;
+        widget-map = <0 0 1 1>;
+        widget-map-mask = <0xff 0xff>;
+        widget-map-pass-thru = <0 0xff>;
+    };
+
+    signal-nexus {
+        #signal-cells = <1>;
+        signal-map = <0 1>;
+        signal-map-mask = <0xff>;
+        signal-map-pass-thru = <0x0f>;
+    };
+
+    address-and-size-node {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        address-map = <0 1>;
+        address-map-mask = <0xff>;
+        address-map-pass-thru = <0x0f>;
+        size-map = <0 1>;
+        size-map-mask = <0xff>;
+        size-map-pass-thru = <0x0f>;
+    };
+};
