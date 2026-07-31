@@ -172,18 +172,6 @@ For buildroot have the message if the kernel sources is not found also say:
 
 ---
 
-Need helper functions for inside nexus nodes
-
-so if a node has a property which has a `#<specifier>-cells` property where
-specifier isn't address or size
-
-    A nexus node shall have a *#<specifier>-cells* property, where <specifier> is
-    some specifier space such as 'gpio', 'clock', 'reset', etc.
-
-So the helper will need to implement this logic
-
----
-
 update all hovers to have ## Path:
 
 update all hovers to have the source of the info:

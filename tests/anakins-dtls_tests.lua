@@ -4153,6 +4153,7 @@ describe("hover()", function()
 
         describe("Nexus Node Properties", function()
             local nexus_file = ("%s/tests/nexus-node-properties.dts"):format(cwd)
+            local widget_expected = {}
 
             it("returns hover markdown for `#widget-cells` property name", function()
                 ctx.file = nexus_file
@@ -4166,6 +4167,7 @@ describe("hover()", function()
 
                     The `#<specifier>-cells` property defines the number of cells required to encode a specifier for a domain.
                 ]]) .. dtls.get_type_definition("u32")
+                widget_expected.cells = expected
                 local actual = dtls.hover(ctx)
                 assert.are.same(expected, actual)
             end)
@@ -4204,6 +4206,7 @@ describe("hover()", function()
 
                     Similarly, when the specifier is mapped, some fields in the unit specifier may need to be kept unmodified and passed through from the child node to the parent node. In this case, a *<specifier>-map-pass-thru* property may be specified to apply a mask to the child specifier and copy any bits that match to the parent unit specifier.
                 ]]) .. dtls.get_type_definition("prop_encoded_array")
+                widget_expected.map = expected
                 local actual = dtls.hover(ctx)
                 assert.are.same(expected, actual)
             end)
@@ -4222,6 +4225,7 @@ describe("hover()", function()
 
                     A `<specifier>-map-mask` property may be specified for a nexus node. This property specifies a mask that is ANDed with the child unit specifier being looked up in the table specified in the `<specifier>-map` property. If this property is not specified, the mask is assumed to be a mask with all bits set.
                 ]]) .. dtls.get_type_definition("prop_encoded_array")
+                widget_expected.map_mask = expected
                 local actual = dtls.hover(ctx)
                 assert.are.same(expected, actual)
             end)
@@ -4240,6 +4244,7 @@ describe("hover()", function()
 
                     A `<specifier>-map-pass-thru` property may be specified for a nexus node. This property specifies a mask that is applied to the child unit specifier being looked up in the table specified in the `<specifier>-map` property. Any matching bits in the child unit specifier are copied over to the parent specifier. If this property is not specified, the mask is assumed to be a mask with no bits set.
                 ]]) .. dtls.get_type_definition("prop_encoded_array")
+                widget_expected.map_pass_thru = expected
                 local actual = dtls.hover(ctx)
                 assert.are.same(expected, actual)
             end)
@@ -4267,12 +4272,6 @@ describe("hover()", function()
                     # Devicetree Specification:
 
                     ## Property Name: signal-map
-
-                    ## Definition:
-
-                    # Devicetree Specification:
-
-                    ## Property Name: widget-map
 
                     ## Value type: `<prop-encoded-array>` encoded as an arbitrary number of specifier mapping entries.
 
@@ -4330,8 +4329,6 @@ describe("hover()", function()
 
                     ## Property Name: signal-map-pass-thru
 
-                    ## Definition:
-
                     ## Value type: `<prop-encoded-array>` encoded as a bit mask
 
                     ## Definition:
@@ -4342,13 +4339,29 @@ describe("hover()", function()
                 assert.are.same(expected, actual)
             end)
 
+            local channel_properties = {
+                { location = "tests/nexus-node-properties.dts:19:9", suffix = "cells" },
+                { location = "tests/nexus-node-properties.dts:20:9", suffix = "map" },
+                { location = "tests/nexus-node-properties.dts:21:9", suffix = "map_mask" },
+                { location = "tests/nexus-node-properties.dts:22:9", suffix = "map_pass_thru" },
+            }
+
+            for _, case in ipairs(channel_properties) do
+                it(("dynamically returns hover markdown for channel %s property"):format(case.suffix), function()
+                    ctx.file = nexus_file
+                    ctx.row, ctx.col = row_col(case.location)
+                    local expected = widget_expected[case.suffix]:gsub("widget", "channel")
+                    assert.are.same(expected, dtls.hover(ctx))
+                end)
+            end
+
             local excluded_specifier_properties = {
-                "tests/nexus-node-properties.dts:21:9",
-                "tests/nexus-node-properties.dts:22:9",
-                "tests/nexus-node-properties.dts:23:9",
-                "tests/nexus-node-properties.dts:24:9",
-                "tests/nexus-node-properties.dts:25:9",
-                "tests/nexus-node-properties.dts:26:9",
+                "tests/nexus-node-properties.dts:28:9",
+                "tests/nexus-node-properties.dts:29:9",
+                "tests/nexus-node-properties.dts:30:9",
+                "tests/nexus-node-properties.dts:31:9",
+                "tests/nexus-node-properties.dts:32:9",
+                "tests/nexus-node-properties.dts:33:9",
             }
 
             for _, location in ipairs(excluded_specifier_properties) do
