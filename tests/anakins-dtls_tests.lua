@@ -1177,6 +1177,117 @@ describe("in_possible_memory_region_consumer()", function()
 end)
 
 describe("hover()", function()
+    it("returns hover markdown for `/dts-v1/`", function()
+        ctx.file = ("%s/tests/top-level-hover.dts"):format(cwd)
+        ctx.row, ctx.col = row_col("tests/top-level-hover.dts:1:1")
+        local expected = dtls.dedent([[
+            # Devicetree Specification: `/dts-v1/`
+
+            ## Definition:
+
+            `/dts-v1/;` shall be present to identify the file as a version 1 DTS (dts files without this tag will be treated by dtc as being in the obsolete version 0, which uses a different format for integers in addition to other small but incompatible changes).
+        ]])
+        assert.are.same(expected, dtls.hover(ctx))
+    end)
+
+    it("returns hover markdown for `/memreserve/`", function()
+        ctx.file = ("%s/tests/top-level-hover.dts"):format(cwd)
+        ctx.row, ctx.col = row_col("tests/top-level-hover.dts:3:1")
+        local expected = dtls.dedent([[
+            # Devicetree Specification: `/memreserve/`
+
+            ## Definition:
+
+            Memory reservations are represented by lines in the form:
+
+            ```
+            /memreserve/ <address> <length>;
+            ```
+
+            Where `<address>` and `<length>` are 64-bit C-style integers, e.g.:
+
+            ```dts
+            /* Reserve memory region 0x10000000..0x10003fff */
+            /memreserve/ 0x10000000 0x4000;
+            ```
+
+            ## Purpose:
+
+            The `memory reservation block` provides the client program with a list of areas in physical memory which are `reserved`; that is, which shall not be used for general memory allocations. It is used to protect vital data structures from being overwritten by the client program. For example, on some systems with an IOMMU, the TCE (translation control entry) tables initialized by a DTSpec boot program would need to be protected in this manner. Likewise, any boot program code or data used during the client program’s runtime would need to be reserved (e.g., RTAS on Open Firmware platforms). DTSpec does not require the boot program to provide any such runtime components, but it does not prohibit implementations from doing so as an extension.
+
+            More specifically, a client program shall not access memory in a reserved region unless other information provided by the boot program explicitly indicates that it shall do so. The client program may then access the indicated section of the reserved memory in the indicated manner. Methods by which the boot program can indicate to the client program specific uses for reserved memory may appear in this document, in optional extensions to it, or in platform-specific documentation.
+
+            The reserved regions supplied by a boot program may, but are not required to, encompass the devicetree blob itself. The client program shall ensure that it does not overwrite this data structure before it is used, whether or not it is in the reserved areas.
+
+            Any memory that is declared in a memory node and is accessed by the boot program or caused to be accessed by the boot program after client entry must be reserved. Examples of this type of access include (e.g., speculative memory reads through a non-guarded virtual page).
+
+            This requirement is necessary because any memory that is not reserved may be accessed by the client program with arbitrary storage attributes.
+
+            Any accesses to reserved memory by or caused by the boot program must be done as not Caching Inhibited and Memory Coherence Required (i.e., WIMG = 0bx01x), and additionally for Book III-S implementations as not Write Through Required (i.e., WIMG = 0b001x). Further, if the VLE storage attribute is supported, all accesses to reserved memory must be done as VLE=0.
+
+            This requirement is necessary because the client program is permitted to map memory with storage attributes specified as not Write Through Required, not Caching Inhibited, and Memory Coherence Required (i.e., WIMG = 0b001x), and VLE=0 where supported. The client program may use large virtual pages that contain reserved memory. However, the client program may not modify reserved memory, so the boot program may perform accesses to reserved memory as Write Through Required where conflicting values for this storage attribute are architecturally permissible.
+        ]])
+        assert.are.same(expected, dtls.hover(ctx))
+    end)
+
+    it("returns hover markdown for a label definition", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:56:5")
+        local expected = dtls.dedent([[
+            # Devicetree Specification: Label Definitions
+
+            ## Label: curr_sens
+
+            ## Path: /current-sense
+
+            ## Definition:
+
+            The source format allows labels to be attached to any node or property value in the devicetree. Phandle and path references can be automatically generated by referencing a label instead of explicitly specifying a phandle value or the full path to a node. Labels are only used in the devicetree source format and are not encoded into the DTB binary.
+
+            A label shall be between 1 to 31 characters in length, be composed only of the characters in the below set, and must not start with a number.
+
+            Labels are created by appending a colon (':') to the label name. References are created by prefixing the label name with an ampersand ('&').
+
+            ## Valid characters for DTS labels
+
+            | Character | Description |
+            | --- | --- |
+            | 0-9 | digit |
+            | a-z | lowercase letter |
+            | A-Z | uppercase letter |
+            | _ | underscore |
+        ]])
+        assert.are.same(expected, dtls.hover(ctx))
+    end)
+
+    it("returns hover markdown for a label reference", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
+        local expected = dtls.dedent([[
+            # Devicetree Specification: Label References
+
+            ## Label: curr_sens
+
+            ## Path: /current-sense
+
+            ## Definition:
+
+            The source format allows labels to be attached to any node or property value in the devicetree. Phandle and path references can be automatically generated by referencing a label instead of explicitly specifying a phandle value or the full path to a node. Labels are only used in the devicetree source format and are not encoded into the DTB binary.
+
+            A label shall be between 1 to 31 characters in length, be composed only of the characters in the below set, and must not start with a number.
+
+            Labels are created by appending a colon (':') to the label name. References are created by prefixing the label name with an ampersand ('&').
+
+            ## Valid characters for DTS labels
+
+            | Character | Description |
+            | --- | --- |
+            | 0-9 | digit |
+            | a-z | lowercase letter |
+            | A-Z | uppercase letter |
+            | _ | underscore |
+        ]])
+        assert.are.same(expected, dtls.hover(ctx))
+    end)
+
     it("returns hover markdown for root node", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:15:1")
         local expected = dtls.dedent([[

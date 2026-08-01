@@ -1224,6 +1224,18 @@ function M.on_a_label_definition(ctx)
     return ctx.col >= start_col and ctx.col <= colon_col
 end
 
+local function label_definition_at_cursor(ctx)
+    local line = read_lines(ctx.file)[ctx.row]
+    if not line then
+        return nil
+    end
+
+    local leading, label = line:match("^(%s*)([%w_]+):")
+    if label and ctx.col >= #leading + 1 and ctx.col <= #leading + #label + 1 then
+        return label
+    end
+end
+
 local function label_reference_at_cursor(ctx)
     local lines = read_lines(ctx.file)
     local line = lines[ctx.row]
@@ -1253,6 +1265,21 @@ end
 
 function M.on_a_label_reference(ctx)
     return label_reference_at_cursor(ctx) ~= nil
+end
+
+local function find_node_label_bounds(ctx, label)
+    local root = kernel_root(ctx.file)
+    for _, file in ipairs(included_files(ctx.file, root)) do
+        for _, bounds in
+            ipairs(find_all_node_bounds(file, function()
+                return true
+            end))
+        do
+            if bounds.label == label then
+                return bounds
+            end
+        end
+    end
 end
 
 function M.find_node_label_definition(ctx)
@@ -1285,6 +1312,68 @@ function M.goto_definition(ctx)
         return M.find_node_label_definition(ctx)
     end
 end
+
+local dts_v1_markdown = [[# Devicetree Specification: `/dts-v1/`
+
+## Definition:
+
+`/dts-v1/;` shall be present to identify the file as a version 1 DTS (dts files without this tag will be treated by dtc as being in the obsolete version 0, which uses a different format for integers in addition to other small but incompatible changes).]]
+
+local memreserve_markdown = [[# Devicetree Specification: `/memreserve/`
+
+## Definition:
+
+Memory reservations are represented by lines in the form:
+
+```
+/memreserve/ <address> <length>;
+```
+
+Where `<address>` and `<length>` are 64-bit C-style integers, e.g.:
+
+```dts
+/* Reserve memory region 0x10000000..0x10003fff */
+/memreserve/ 0x10000000 0x4000;
+```
+
+## Purpose:
+
+The `memory reservation block` provides the client program with a list of areas in physical memory which are `reserved`; that is, which shall not be used for general memory allocations. It is used to protect vital data structures from being overwritten by the client program. For example, on some systems with an IOMMU, the TCE (translation control entry) tables initialized by a DTSpec boot program would need to be protected in this manner. Likewise, any boot program code or data used during the client program’s runtime would need to be reserved (e.g., RTAS on Open Firmware platforms). DTSpec does not require the boot program to provide any such runtime components, but it does not prohibit implementations from doing so as an extension.
+
+More specifically, a client program shall not access memory in a reserved region unless other information provided by the boot program explicitly indicates that it shall do so. The client program may then access the indicated section of the reserved memory in the indicated manner. Methods by which the boot program can indicate to the client program specific uses for reserved memory may appear in this document, in optional extensions to it, or in platform-specific documentation.
+
+The reserved regions supplied by a boot program may, but are not required to, encompass the devicetree blob itself. The client program shall ensure that it does not overwrite this data structure before it is used, whether or not it is in the reserved areas.
+
+Any memory that is declared in a memory node and is accessed by the boot program or caused to be accessed by the boot program after client entry must be reserved. Examples of this type of access include (e.g., speculative memory reads through a non-guarded virtual page).
+
+This requirement is necessary because any memory that is not reserved may be accessed by the client program with arbitrary storage attributes.
+
+Any accesses to reserved memory by or caused by the boot program must be done as not Caching Inhibited and Memory Coherence Required (i.e., WIMG = 0bx01x), and additionally for Book III-S implementations as not Write Through Required (i.e., WIMG = 0b001x). Further, if the VLE storage attribute is supported, all accesses to reserved memory must be done as VLE=0.
+
+This requirement is necessary because the client program is permitted to map memory with storage attributes specified as not Write Through Required, not Caching Inhibited, and Memory Coherence Required (i.e., WIMG = 0b001x), and VLE=0 where supported. The client program may use large virtual pages that contain reserved memory. However, the client program may not modify reserved memory, so the boot program may perform accesses to reserved memory as Write Through Required where conflicting values for this storage attribute are architecturally permissible.]] -- luacheck: ignore 631
+
+local label_markdown = [[# Devicetree Specification: Label %s
+
+## Label: %s
+
+## Path: %s
+
+## Definition:
+
+The source format allows labels to be attached to any node or property value in the devicetree. Phandle and path references can be automatically generated by referencing a label instead of explicitly specifying a phandle value or the full path to a node. Labels are only used in the devicetree source format and are not encoded into the DTB binary.
+
+A label shall be between 1 to 31 characters in length, be composed only of the characters in the below set, and must not start with a number.
+
+Labels are created by appending a colon (':') to the label name. References are created by prefixing the label name with an ampersand ('&').
+
+## Valid characters for DTS labels
+
+| Character | Description |
+| --- | --- |
+| 0-9 | digit |
+| a-z | lowercase letter |
+| A-Z | uppercase letter |
+| _ | underscore |]]
 
 local root_node_markdown = [[
 # Devicetree Specification:
@@ -3228,6 +3317,33 @@ local function string_property_value_at_cursor(ctx, property_name)
 end
 
 function M.hover(ctx)
+    local line = read_lines(ctx.file)[ctx.row]
+    if M.in_top_level(ctx) and line then
+        local directive_start, directive_end = line:find("/dts%-v1/")
+        if directive_start and ctx.col >= directive_start and ctx.col <= directive_end then
+            return dts_v1_markdown
+        end
+
+        directive_start, directive_end = line:find("/memreserve/")
+        if directive_start and ctx.col >= directive_start and ctx.col <= directive_end then
+            return memreserve_markdown
+        end
+    end
+
+    local label = label_definition_at_cursor(ctx)
+    if label then
+        local bounds = containing_node(ctx.file, ctx.row)
+        return label_markdown:format("Definitions", label, bounds.path)
+    end
+
+    label = label_reference_at_cursor(ctx)
+    if label then
+        local bounds = find_node_label_bounds(ctx, label)
+        if bounds then
+            return label_markdown:format("References", label, bounds.path)
+        end
+    end
+
     if M.on_a_root_node(ctx) then
         return root_node_markdown
     end
