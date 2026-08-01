@@ -2959,6 +2959,237 @@ local root_property_markdown = {
     ["serial-number"] = serial_number_property_markdown,
 }
 
+local function chapter4_property(title, name, details, type_name)
+    local heading = title and " " .. title or ""
+    return ("# Devicetree Specification:%s\n\n## Property Name: %s\n\n## Path: %%s/%s\n\n%s"):format(
+        heading,
+        name,
+        name,
+        details
+    ) .. M.get_type_definition(type_name)
+end
+
+local miscellaneous_property_markdown = {
+    ["clock-frequency"] = chapter4_property(
+        "Miscellaneous Properties",
+        "clock-frequency",
+        "## Definition:\n\nSpecifies the frequency of a clock in Hz. The value is a `<prop-encoded-array>` in one of two forms:\n- a 32-bit integer consisting of one `<u32>` specifying the frequency.\n- a 64-bit integer represented as a `<u64>` specifying the frequency.",
+        "prop_encoded_array"
+    ),
+    ["reg-shift"] = chapter4_property(
+        "Miscellaneous Properties",
+        "reg-shift",
+        '## Definition:\n\nThe `reg-shift` property provides a mechanism to represent devices that are identical in most respects except for the number of bytes between registers. The `reg-shift` property specifies in bytes how far the discrete device registers are separated from each other. The individual register location is calculated by using following formula: "registers address" << reg-shift. If unspecified, the default value is 0.\n\nFor example, in a system where 16540 UART registers are located at addresses 0x0, 0x4, 0x8, 0xC, 0x10, 0x14, 0x18, and 0x1C, a `reg-shift = <2>` property would be used to specify register locations.',
+        "u32"
+    ),
+    label = chapter4_property(
+        "Miscellaneous Properties",
+        "label",
+        "## Definition:\n\nThe label property defines a human-readable string describing a device. The binding for a given device specifies the exact meaning of the property for that device.",
+        "string"
+    ),
+}
+
+local serial_node_markdown = [[# Devicetree Specification: Serial Class Binding
+
+## Serial Class Binding
+
+## Path: %s
+
+The class of serial devices consists of various types of point-to-point serial line devices. Examples of serial line devices include the 8250 UART, 16550 UART, HDLC device, and BISYNC device. In most cases, hardware compatible with the RS-232 standard fits into the serial device class.
+
+I2C and SPI (Serial Peripheral Interface) devices shall not be represented as serial port devices because they have their own specific representation.]]
+local serial_property_markdown = {
+    ["clock-frequency"] = chapter4_property(
+        "Serial Class Binding",
+        "clock-frequency",
+        "## Definition:\n\nSpecifies the frequency in Hertz of the baud rate generator's input clock.\n\n## Example:\n\n`clock-frequency = <100000000>;`",
+        "u32"
+    ),
+    ["current-speed"] = chapter4_property(
+        "Serial Class Binding",
+        "current-speed",
+        "## Definition:\n\nSpecifies the current speed of a serial device in bits per second. A boot program should set this property if it has initialized the serial device.\n\n## Example:\n\n115,200 Baud: `current-speed = <115200>;`",
+        "u32"
+    ),
+}
+
+local ns16550_title = "National Semiconductor 16450/16550 Compatible UART"
+local ns16550_node_markdown = [[# Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+## National Semiconductor 16450/16550 Compatible UART
+
+## Path: %s
+
+Serial devices compatible to the National Semiconductor 16450/16550 UART (Universal Asynchronous Receiver Transmitter).]]
+local ns16550_property_markdown = {
+    compatible = chapter4_property(
+        ns16550_title,
+        "compatible",
+        '## Usage: Required\n\n## Definition:\n\nValue shall include "ns16550".\n\nAll other standard properties are allowed but are optional.',
+        "stringlist"
+    ),
+    ["clock-frequency"] = chapter4_property(
+        ns16550_title,
+        "clock-frequency",
+        "## Usage: Required\n\n## Definition:\n\nSpecifies the frequency (in Hz) of the baud rate generator’s input clock.\n\nAll other standard properties are allowed but are optional.",
+        "u32"
+    ),
+    ["current-speed"] = chapter4_property(
+        ns16550_title,
+        "current-speed",
+        "## Usage: Optional but recommended\n\n## Definition:\n\nSpecifies current serial device speed in bits per second.\n\nAll other standard properties are allowed but are optional.",
+        "u32"
+    ),
+    reg = chapter4_property(
+        ns16550_title,
+        "reg",
+        "## Usage: Required\n\n## Definition:\n\nSpecifies the physical address of the registers device within the address space of the parent bus.\n\nAll other standard properties are allowed but are optional.",
+        "prop_encoded_array"
+    ),
+    interrupts = chapter4_property(
+        ns16550_title,
+        "interrupts",
+        "## Usage: Optional but recommended\n\n## Definition:\n\nSpecifies the interrupts generated by this device. The value of the interrupts property consists of one or more interrupt specifiers. The format of an interrupt specifier is defined by the binding document describing the node’s interrupt parent.\n\nAll other standard properties are allowed but are optional.",
+        "prop_encoded_array"
+    ),
+    ["reg-shift"] = chapter4_property(
+        ns16550_title,
+        "reg-shift",
+        '## Usage: Optional\n\n## Definition:\n\nSpecifies in bytes how far the discrete device registers are separated from each other. The individual register location is calculated by using following formula: `"registers address" << reg-shift`. If unspecified, the default value is 0.\n\nAll other standard properties are allowed but are optional.',
+        "u32"
+    ),
+    ["virtual-reg"] = chapter4_property(
+        ns16550_title,
+        "virtual-reg",
+        "## Usage: See definition\n\n## Definition:\n\nSpecifies an effective address that maps to the first physical address specified in the `reg` property. This property is required if this device node is the system’s console.\n\nAll other standard properties are allowed but are optional.",
+        "u32"
+    ),
+}
+
+local network_node_markdown = [[# Devicetree Specification: Network Class Binding
+
+## Network Class Binding
+
+## Path: %s
+
+Network devices are packet oriented communication devices. Devices in this class are assumed to implement the data link layer (layer 2) of the seven-layer OSI model and use Media Access Control (MAC) addresses. Examples of network devices include Ethernet, FDDI, 802.11, and Token-Ring.]]
+local network_property_markdown = {
+    ["address-bits"] = chapter4_property(
+        "Network Class Binding",
+        "address-bits",
+        "## Definition:\n\nSpecifies number of address bits required to address the device described by this node. This property specifies number of bits in MAC address. If unspecified, the default value is 48.\n\n## Example:\n\n`address-bits = <48>;`",
+        "u32"
+    ),
+    ["local-mac-address"] = "# Devicetree Specification: Network Class Binding\n\n## Property Name: local-mac-address\n\n## Value type: `<prop-encoded-array>` encoded as an array of hex numbers.\n\n## Path: %s/local-mac-address\n\n## Definition:\n\nSpecifies MAC address that was assigned to the network device described by the node containing this property.\n\n## Example:\n\n`local-mac-address = [ 00 00 12 34 56 78 ];`"
+        .. M.get_type_definition("prop_encoded_array"),
+    ["mac-address"] = "# Devicetree Specification: Network Class Binding\n\n## Property Name: mac-address\n\n## Value type: `<prop-encoded-array>` encoded as an array of hex numbers.\n\n## Path: %s/mac-address\n\n## Definition:\n\nSpecifies the MAC address that was last used by the boot program. This property should be used in cases where the MAC address assigned to the device by the boot program is different from the local-mac-address property. This property shall be used only if the value differs from local-mac-address property value.\n\n## Example:\n\n`mac-address = [ 02 03 04 05 06 07 ];`"
+        .. M.get_type_definition("prop_encoded_array"),
+    ["max-frame-size"] = chapter4_property(
+        "Network Class Binding",
+        "max-frame-size",
+        "## Definition:\n\nSpecifies maximum packet length in bytes that the physical interface can send and receive.\n\n## Example:\n\n`max-frame-size = <1518>;`",
+        "u32"
+    ),
+    ["max-speed"] = chapter4_property(
+        "Ethernet specific considerations",
+        "max-speed",
+        "## Definition:\n\nSpecifies maximum speed (specified in megabits per second) supported the device.\n\n## Example:\n\n`max-speed = <1000>;`",
+        "u32"
+    ),
+    ["phy-connection-type"] = chapter4_property(
+        "Ethernet specific considerations",
+        "phy-connection-type",
+        '## Definition:\n\nSpecifies interface type between the Ethernet device and a physical layer (PHY) device. The value of this property is specific to the implementation.\n\n## Example:\n\n`phy-connection-type = "mii";`\n\n## Possible Values:\n\n- `mii`        Media Independent Interface\n- `rmii`       Reduced Media Independent Interface\n- `gmii`       Gigabit Media Independent Interface\n- `rgmii`      Reduced Gigabit Media Independent\n- `rgmii-id`   rgmii with internal delay\n- `rgmii-txid` rgmii with internal delay on TX only\n- `rgmii-rxid` rgmii with internal delay on RX only\n- `tbi`        Ten Bit Interface\n- `rtbi`       Reduced Ten Bit Interface\n- `smii`       Serial Media Independent Interface\n- `sgmii`      Serial Gigabit Media Independent Interface\n- `rev-mii`    Reverse Media Independent Interface\n- `xgmii`      10 Gigabits Media Independent Interface\n- `moca`       Multimedia over Coaxial\n- `qsgmii`     Quad Serial Gigabit Media Independent Interface\n- `trgmii`     Turbo Reduced Gigabit Media Independent Interface',
+        "string"
+    ),
+    ["phy-handle"] = chapter4_property(
+        "Ethernet specific considerations",
+        "phy-handle",
+        "## Definition:\n\nSpecifies a reference to a node representing a physical layer (PHY) device connected to this Ethernet device. This property is required in case where the Ethernet device is connected to a physical layer device.\n\n## Example:\n\n`phy-handle = <&PHY0>;`",
+        "phandle"
+    ),
+}
+
+local open_pic_title = "Power ISA Open PIC Interrupt Controller"
+local open_pic_node_markdown = [[# Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+## Power ISA Open PIC Interrupt Controller
+
+## Path: %s
+
+An Open PIC interrupt controller implements the Open PIC architecture (developed jointly by AMD and Cyrix) and specified in The Open Programmable Interrupt Controller (PIC) Register Interface Specification Revision 1.2.
+
+Interrupt specifiers in an Open PIC interrupt domain are encoded with two cells. The first cell defines the interrupt number. The second cell defines the sense and level information.
+
+Sense and level information shall be encoded as follows in interrupt specifiers:
+```
+0 = low to high edge sensitive type enabled
+1 = active low level sensitive type enabled
+2 = active high level sensitive type enabled
+3 = high to low edge sensitive type enabled
+```]]
+local open_pic_property_markdown = {
+    compatible = chapter4_property(
+        open_pic_title,
+        "compatible",
+        '## Usage: Required\n\n## Definition:\n\nValue shall include `"open-pic"`.\n\nAll other standard properties are allowed but are optional.',
+        "string"
+    ),
+    reg = chapter4_property(
+        open_pic_title,
+        "reg",
+        "## Usage: Required\n\n## Definition:\n\nSpecifies the physical address of the registers device within the address space of the parent bus.\n\nAll other standard properties are allowed but are optional.",
+        "prop_encoded_array"
+    ),
+    ["interrupt-controller"] = chapter4_property(
+        open_pic_title,
+        "interrupt-controller",
+        "## Usage: Required\n\n## Definition:\n\nSpecifies that this node is an interrupt controller.\n\nAll other standard properties are allowed but are optional.",
+        "empty"
+    ),
+    ["#interrupt-cells"] = chapter4_property(
+        open_pic_title,
+        "#interrupt-cells",
+        "## Usage: Required\n\n## Definition:\n\nShall be 2.\n\nAll other standard properties are allowed but are optional.",
+        "u32"
+    ),
+    ["#address-cells"] = chapter4_property(
+        open_pic_title,
+        "#address-cells",
+        "## Usage: Required\n\n## Definition:\n\nShall be 0.\n\nAll other standard properties are allowed but are optional.",
+        "u32"
+    ),
+}
+
+local simple_bus_node_markdown = [[# Devicetree Specification: simple-bus Bindings
+
+## `simple-bus` Node
+
+## Path: %s
+
+System-on-a-chip processors may have an internal I/O bus that cannot be probed for devices. The devices on the bus can be accessed directly without additional configuration required. This type of bus is represented as a node with a compatible value of "simple-bus".]]
+local simple_bus_property_markdown = {
+    compatible = chapter4_property(
+        nil,
+        "compatible",
+        '## Usage: Required\n\n## Definition:\n\nValue shall include "simple-bus".',
+        "string"
+    ),
+    ranges = chapter4_property(
+        nil,
+        "ranges",
+        "## Usage: Required\n\n## Definition:\n\nThis property represents the mapping between parent address to child address spaces.",
+        "prop_encoded_array"
+    ),
+    ["nonposted-mmio"] = chapter4_property(
+        nil,
+        "nonposted-mmio",
+        "## Usage: Optional\n\n## Definition:\n\nSpecifies that direct children of this bus should use non-posted memory accesses (i.e. a non-posted mapping mode) for MMIO ranges.",
+        "empty"
+    ),
+}
+
 local function property_name_at_cursor(ctx)
     local lines = read_lines(ctx.file)
     local line = lines[ctx.row]
@@ -3034,6 +3265,23 @@ function M.hover(ctx)
         return reserved_memory_region_node_markdown:format(reserved_memory_region_path(ctx))
     end
 
+    local node_path = cache_node_path(ctx)
+    if M.on_a_ns16550_node(ctx) then
+        return ns16550_node_markdown:format(node_path)
+    end
+    if M.on_a_serial_device_node(ctx) then
+        return serial_node_markdown:format(node_path)
+    end
+    if M.on_a_network_device_node(ctx) then
+        return network_node_markdown:format(node_path)
+    end
+    if M.on_an_open_pic_node(ctx) then
+        return open_pic_node_markdown:format(node_path)
+    end
+    if M.on_a_simple_bus_node(ctx) then
+        return simple_bus_node_markdown:format(node_path)
+    end
+
     if M.in_an_aliases_node(ctx) then
         local alias = property_name_at_cursor(ctx)
         if alias then
@@ -3090,8 +3338,25 @@ function M.hover(ctx)
         return reserved_memory_property_markdown[property_name]
     end
 
+    local property_name = property_name_at_cursor(ctx)
+    local chapter4_markdown
+    if M.in_a_ns16550_node(ctx) then
+        chapter4_markdown = ns16550_property_markdown[property_name]
+    elseif M.in_a_serial_device_node(ctx) then
+        chapter4_markdown = serial_property_markdown[property_name]
+    elseif M.in_a_network_device_node(ctx) then
+        chapter4_markdown = network_property_markdown[property_name]
+    elseif M.in_an_open_pic_node(ctx) then
+        chapter4_markdown = open_pic_property_markdown[property_name]
+    elseif M.in_a_simple_bus_node(ctx) then
+        chapter4_markdown = simple_bus_property_markdown[property_name]
+    end
+    chapter4_markdown = chapter4_markdown or miscellaneous_property_markdown[property_name]
+    if chapter4_markdown then
+        return chapter4_markdown:format(node_path)
+    end
+
     if M.in_possible_memory_region_consumer(ctx) then
-        local property_name = property_name_at_cursor(ctx)
         local markdown = memory_region_property_markdown[property_name]
         if markdown then
             return markdown:format(possible_memory_region_consumer_path(ctx))
@@ -3102,8 +3367,8 @@ function M.hover(ctx)
         return #stack > 1
     end)
     if M.in_a_root_node(ctx) and not in_descendant_node then
-        for property_name, markdown in pairs(root_property_markdown) do
-            if on_a_property_name(ctx, property_name) then
+        for root_property_name, markdown in pairs(root_property_markdown) do
+            if on_a_property_name(ctx, root_property_name) then
                 return markdown
             end
         end
@@ -3119,7 +3384,6 @@ function M.hover(ctx)
         )
     end
 
-    local property_name = property_name_at_cursor(ctx)
     local nexus_markdown = nexus_property_markdown[property_name]
     local standard_markdown = standard_property_markdown[property_name]
     if standard_markdown and not nexus_markdown then
