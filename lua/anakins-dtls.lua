@@ -1334,9 +1334,9 @@ function M.goto_implementation(ctx)
     end
 
     local quoted = '"' .. compatible .. '"'
-    local command = ("rg --line-number --column --only-matching --fixed-strings --glob '*.c' %s %s"):format(
+    local command = ("rg --line-number --column --only-matching --fixed-strings --glob '*.{c,h}' %s %s"):format(
         shell_quote(quoted),
-        shell_quote(root .. "/drivers")
+        shell_quote(root)
     )
     local handle = io.popen(command)
     local match = handle:read("*l")

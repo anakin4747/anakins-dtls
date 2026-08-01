@@ -1185,6 +1185,19 @@ for _, location in ipairs(dts_locations) do
             }, dtls.goto_implementation(ctx))
         end)
 
+        it("finds implementations outside the drivers directory", function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+            ctx.row = 102
+            ctx.col = 25
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/sound/soc/fsl/fsl_mqs.c"):format(cwd, layout.name, kernel_path),
+                row = 447,
+                start_col = 19,
+                end_col = 31,
+            }, dtls.goto_implementation(ctx))
+        end)
+
         it("returns nil when the cursor is outside a compatible string", function()
             ctx.col = 5
 
