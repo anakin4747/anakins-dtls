@@ -1313,6 +1313,51 @@ function M.goto_definition(ctx)
     end
 end
 
+local function compatible_string_at_cursor(ctx)
+    local line = read_lines(ctx.file)[ctx.row]
+    if not line or not line:match("^%s*compatible%s*=") then
+        return nil
+    end
+
+    for start_col, compatible, end_col in line:gmatch('()"([^"]+)"()') do
+        if ctx.col >= start_col and ctx.col < end_col then
+            return compatible
+        end
+    end
+end
+
+function M.goto_implementation(ctx)
+    local compatible = compatible_string_at_cursor(ctx)
+    local root = compatible and kernel_root(ctx.file)
+    if not root then
+        return nil
+    end
+
+    local quoted = '"' .. compatible .. '"'
+    local command = ("rg --line-number --column --only-matching --fixed-strings --glob '*.c' %s %s"):format(
+        shell_quote(quoted),
+        shell_quote(root .. "/drivers")
+    )
+    local handle = io.popen(command)
+    local match = handle:read("*l")
+    handle:close()
+    if not match then
+        return nil
+    end
+
+    local file, row, quote_col = match:match("^(.-):(%d+):(%d+):")
+    if not file then
+        return nil
+    end
+
+    return {
+        file = file,
+        row = tonumber(row),
+        start_col = tonumber(quote_col) + 1,
+        end_col = tonumber(quote_col) + #compatible,
+    }
+end
+
 local dts_v1_markdown = [[# Devicetree Specification: `/dts-v1/`
 
 ## Definition:
@@ -3677,7 +3722,12 @@ default_handlers["initialize"] = function(server, msg)
     server.workspace_root = workspace_root_from_params(params)
     server.state = "initialized"
     send_response(server, msg.id, {
-        capabilities = { textDocumentSync = 1, hoverProvider = true, definitionProvider = true },
+        capabilities = {
+            textDocumentSync = 1,
+            hoverProvider = true,
+            definitionProvider = true,
+            implementationProvider = true,
+        },
     })
 end
 
@@ -3749,6 +3799,28 @@ default_handlers["textDocument/definition"] = function(server, msg)
             range = {
                 start = { line = definition.row - 1, character = definition.start_col - 1 },
                 ["end"] = { line = definition.row - 1, character = definition.end_col },
+            },
+        })
+    else
+        send_response(server, msg.id, json.NULL)
+    end
+end
+
+default_handlers["textDocument/implementation"] = function(server, msg)
+    local params = msg.params or {}
+    local position = params.position or {}
+    local implementation = M.goto_implementation({
+        file = uri_to_path((params.textDocument or {}).uri),
+        row = (position.line or 0) + 1,
+        col = (position.character or 0) + 1,
+    })
+
+    if implementation then
+        send_response(server, msg.id, {
+            uri = "file://" .. implementation.file,
+            range = {
+                start = { line = implementation.row - 1, character = implementation.start_col - 1 },
+                ["end"] = { line = implementation.row - 1, character = implementation.end_col },
             },
         })
     else

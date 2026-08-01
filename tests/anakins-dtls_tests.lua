@@ -1144,6 +1144,55 @@ describe("goto_definition()", function()
     end)
 end)
 
+for _, location in ipairs(dts_locations) do
+    local layout = location
+
+    describe("goto_implementation() " .. layout.name, function()
+        before_each(function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+            ctx = {
+                file = ("%s/tests/%s%s/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"):format(
+                    cwd,
+                    layout.name,
+                    kernel_path
+                ),
+                row = 384,
+                col = 25,
+            }
+        end)
+
+        it("returns the matching driver's compatible entry", function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/drivers/soc/imx/imx93-src.c"):format(cwd, layout.name, kernel_path),
+                row = 16,
+                start_col = 19,
+                end_col = 31,
+            }, dtls.goto_implementation(ctx))
+        end)
+
+        it("returns another driver with a directly matching compatible string", function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+            ctx.row = 391
+            ctx.col = 30
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/drivers/pmdomain/imx/imx93-pd.c"):format(cwd, layout.name, kernel_path),
+                row = 154,
+                start_col = 19,
+                end_col = 37,
+            }, dtls.goto_implementation(ctx))
+        end)
+
+        it("returns nil when the cursor is outside a compatible string", function()
+            ctx.col = 5
+
+            assert.is_nil(dtls.goto_implementation(ctx))
+        end)
+    end)
+end
+
 describe("in_possible_memory_region_consumer()", function()
     it("returns true in a device node with a memory-region property", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:164:9")

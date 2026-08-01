@@ -17,18 +17,19 @@
           src = ./.;
           dontBuild = true;
 
-          nativeBuildInputs = [ lua ];
+          nativeBuildInputs = [ lua makeWrapper ];
 
           installPhase = ''
             runHook preInstall
             patchShebangs lua/anakins-dtls.lua
             install -Dm755 lua/anakins-dtls.lua $out/bin/anakins-dtls
+            wrapProgram $out/bin/anakins-dtls --prefix PATH : ${lib.makeBinPath [ ripgrep ]}
             runHook postInstall
           '';
         };
 
         checks.default = runCommand "lua-hello-world-check" {
-          nativeBuildInputs = [ gnumake lua luaPackages.busted luaPackages.luacheck cocogitto stylua ];
+          nativeBuildInputs = [ gnumake lua luaPackages.busted luaPackages.luacheck cocogitto stylua ripgrep ];
           src = ./.;
           IN_NIX_SHELL = 1;
         } ''
@@ -102,6 +103,7 @@
             stylua
             cocogitto
             gnumake
+            ripgrep
           ];
         };
       });
