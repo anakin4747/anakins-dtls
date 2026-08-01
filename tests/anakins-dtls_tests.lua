@@ -3606,6 +3606,635 @@ describe("hover()", function()
         assert.spy(in_a_chosen_node).returned_with(true)
     end)
 
+    describe("chapter 4 device bindings", function()
+        local chapter4_file = ("%s/tests/chapter4-hover.dts"):format(cwd)
+
+        local function assert_hover_uses(helper_name, position, expected, fixture)
+            local classifier = spy.on(dtls, helper_name)
+            ctx.file = fixture or ctx.file
+            ctx.row, ctx.col = row_col(position)
+
+            assert.are.same(expected, dtls.hover(ctx))
+            assert.spy(classifier).was_called_with(ctx)
+            assert.spy(classifier).returned_with(true)
+        end
+
+        describe("miscellaneous properties", function()
+            it("returns miscellaneous property hover markdown for `clock-frequency`", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:420:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Miscellaneous Properties
+
+                    ## Property Name: clock-frequency
+
+                    ## Path: /miscellaneous-device/clock-frequency
+
+                    ## Definition:
+
+                    Specifies the frequency of a clock in Hz. The value is a `<prop-encoded-array>` in one of two forms:
+                    - a 32-bit integer consisting of one `<u32>` specifying the frequency.
+                    - a 64-bit integer represented as a `<u64>` specifying the frequency.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns miscellaneous property hover markdown for `reg-shift`", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:421:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Miscellaneous Properties
+
+                    ## Property Name: reg-shift
+
+                    ## Path: /miscellaneous-device/reg-shift
+
+                    ## Definition:
+
+                    The `reg-shift` property provides a mechanism to represent devices that are identical in most respects except for the number of bytes between registers. The `reg-shift` property specifies in bytes how far the discrete device registers are separated from each other. The individual register location is calculated by using following formula: "registers address" << reg-shift. If unspecified, the default value is 0.
+
+                    For example, in a system where 16540 UART registers are located at addresses 0x0, 0x4, 0x8, 0xC, 0x10, 0x14, 0x18, and 0x1C, a `reg-shift = <2>` property would be used to specify register locations.
+                ]]) .. dtls.get_type_definition("u32")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+
+            it("returns miscellaneous property hover markdown for `label`", function()
+                ctx.row, ctx.col = row_col("tests/custom.dts:422:9")
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Miscellaneous Properties
+
+                    ## Property Name: label
+
+                    ## Path: /miscellaneous-device/label
+
+                    ## Definition:
+
+                    The label property defines a human-readable string describing a device. The binding for a given device specifies the exact meaning of the property for that device.
+                ]]) .. dtls.get_type_definition("string")
+                assert.are.same(expected, dtls.hover(ctx))
+            end)
+        end)
+
+        describe("serial class binding", function()
+            it("returns hover markdown for a serial class binding node", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Serial Class Binding
+
+                    ## Serial Class Binding
+
+                    ## Path: /serial-device
+
+                    The class of serial devices consists of various types of point-to-point serial line devices. Examples of serial line devices include the 8250 UART, 16550 UART, HDLC device, and BISYNC device. In most cases, hardware compatible with the RS-232 standard fits into the serial device class.
+
+                    I2C and SPI (Serial Peripheral Interface) devices shall not be represented as serial port devices because they have their own specific representation.
+                ]])
+                assert_hover_uses("on_a_serial_device_node", "tests/custom.dts:425:5", expected)
+            end)
+
+            it("returns serial class binding hover markdown for `clock-frequency`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Serial Class Binding
+
+                    ## Property Name: clock-frequency
+
+                    ## Path: /serial-device/clock-frequency
+
+                    ## Definition:
+
+                    Specifies the frequency in Hertz of the baud rate generator's input clock.
+
+                    ## Example:
+
+                    `clock-frequency = <100000000>;`
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_serial_device_node", "tests/custom.dts:427:9", expected)
+            end)
+
+            it("returns serial class binding hover markdown for `current-speed`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Serial Class Binding
+
+                    ## Property Name: current-speed
+
+                    ## Path: /serial-device/current-speed
+
+                    ## Definition:
+
+                    Specifies the current speed of a serial device in bits per second. A boot program should set this property if it has initialized the serial device.
+
+                    ## Example:
+
+                    115,200 Baud: `current-speed = <115200>;`
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses(
+                    "in_a_serial_device_node",
+                    "tests/chapter4-hover.dts:5:9",
+                    expected,
+                    chapter4_file
+                )
+            end)
+        end)
+
+        describe("ns16550 uart properties", function()
+            it("returns hover markdown for an ns16550 UART node", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## National Semiconductor 16450/16550 Compatible UART
+
+                    ## Path: /uart@4600
+
+                    Serial devices compatible to the National Semiconductor 16450/16550 UART (Universal Asynchronous Receiver Transmitter).
+                ]])
+                assert_hover_uses("on_a_ns16550_node", "tests/custom.dts:439:5", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `compatible`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: compatible
+
+                    ## Path: /uart@4600/compatible
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Value shall include "ns16550".
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("stringlist")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:440:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `clock-frequency`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: clock-frequency
+
+                    ## Path: /uart@4600/clock-frequency
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the frequency (in Hz) of the baud rate generator’s input clock.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:443:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `current-speed`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: current-speed
+
+                    ## Path: /uart@4600/current-speed
+
+                    ## Usage: Optional but recommended
+
+                    ## Definition:
+
+                    Specifies current serial device speed in bits per second.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:444:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `reg`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: reg
+
+                    ## Path: /uart@4600/reg
+
+                    ## Usage: Required
+
+                    ## Definition:
+
+                    Specifies the physical address of the registers device within the address space of the parent bus.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:441:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `interrupts`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: interrupts
+
+                    ## Path: /uart@4600/interrupts
+
+                    ## Usage: Optional but recommended
+
+                    ## Definition:
+
+                    Specifies the interrupts generated by this device. The value of the interrupts property consists of one or more interrupt specifiers. The format of an interrupt specifier is defined by the binding document describing the node’s interrupt parent.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:442:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `reg-shift`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: reg-shift
+
+                    ## Path: /uart@4600/reg-shift
+
+                    ## Usage: Optional
+
+                    ## Definition:
+
+                    Specifies in bytes how far the discrete device registers are separated from each other. The individual register location is calculated by using following formula: `"registers address" << reg-shift`. If unspecified, the default value is 0.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:445:9", expected)
+            end)
+
+            it("returns ns16550 UART hover markdown for `virtual-reg`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: National Semiconductor 16450/16550 Compatible UART
+
+                    ## Property Name: virtual-reg
+
+                    ## Path: /uart@4600/virtual-reg
+
+                    ## Usage: See definition
+
+                    ## Definition:
+
+                    Specifies an effective address that maps to the first physical address specified in the `reg` property. This property is required if this device node is the system’s console.
+
+                    All other standard properties are allowed but are optional.
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_ns16550_node", "tests/custom.dts:446:9", expected)
+            end)
+        end)
+
+        describe("network class binding", function()
+            it("returns hover markdown for a network class binding node", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Network Class Binding
+
+                    ## Network Class Binding
+
+                    ## Path: /ethernet@0
+
+                    Network devices are packet oriented communication devices. Devices in this class are assumed to implement the data link layer (layer 2) of the seven-layer OSI model and use Media Access Control (MAC) addresses. Examples of network devices include Ethernet, FDDI, 802.11, and Token-Ring.
+                ]])
+                assert_hover_uses("on_a_network_device_node", "tests/custom.dts:449:5", expected)
+            end)
+
+            it("returns network class binding hover markdown for `address-bits`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Network Class Binding
+
+                    ## Property Name: address-bits
+
+                    ## Path: /ethernet@0/address-bits
+
+                    ## Definition:
+
+                    Specifies number of address bits required to address the device described by this node. This property specifies number of bits in MAC address. If unspecified, the default value is 48.
+
+                    ## Example:
+
+                    `address-bits = <48>;`
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:450:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `local-mac-address`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Network Class Binding
+
+                    ## Property Name: local-mac-address
+
+                    ## Value type: `<prop-encoded-array>` encoded as an array of hex numbers.
+
+                    ## Path: /ethernet@0/local-mac-address
+
+                    ## Definition:
+
+                    Specifies MAC address that was assigned to the network device described by the node containing this property.
+
+                    ## Example:
+
+                    `local-mac-address = [ 00 00 12 34 56 78 ];`
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:451:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `mac-address`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Network Class Binding
+
+                    ## Property Name: mac-address
+
+                    ## Value type: `<prop-encoded-array>` encoded as an array of hex numbers.
+
+                    ## Path: /ethernet@0/mac-address
+
+                    ## Definition:
+
+                    Specifies the MAC address that was last used by the boot program. This property should be used in cases where the MAC address assigned to the device by the boot program is different from the local-mac-address property. This property shall be used only if the value differs from local-mac-address property value.
+
+                    ## Example:
+
+                    `mac-address = [ 02 03 04 05 06 07 ];`
+                ]]) .. dtls.get_type_definition("prop_encoded_array")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:452:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `max-frame-size`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Network Class Binding
+
+                    ## Property Name: max-frame-size
+
+                    ## Path: /ethernet@0/max-frame-size
+
+                    ## Definition:
+
+                    Specifies maximum packet length in bytes that the physical interface can send and receive.
+
+                    ## Example:
+
+                    `max-frame-size = <1518>;`
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:453:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `max-speed`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Ethernet specific considerations
+
+                    ## Property Name: max-speed
+
+                    ## Path: /ethernet@1/max-speed
+
+                    ## Definition:
+
+                    Specifies maximum speed (specified in megabits per second) supported the device.
+
+                    ## Example:
+
+                    `max-speed = <1000>;`
+                ]]) .. dtls.get_type_definition("u32")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:457:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `phy-connection-type`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Ethernet specific considerations
+
+                    ## Property Name: phy-connection-type
+
+                    ## Path: /ethernet@1/phy-connection-type
+
+                    ## Definition:
+
+                    Specifies interface type between the Ethernet device and a physical layer (PHY) device. The value of this property is specific to the implementation.
+
+                    ## Example:
+
+                    `phy-connection-type = "mii";`
+
+                    ## Possible Values:
+
+                    - `mii`        Media Independent Interface
+                    - `rmii`       Reduced Media Independent Interface
+                    - `gmii`       Gigabit Media Independent Interface
+                    - `rgmii`      Reduced Gigabit Media Independent
+                    - `rgmii-id`   rgmii with internal delay
+                    - `rgmii-txid` rgmii with internal delay on TX only
+                    - `rgmii-rxid` rgmii with internal delay on RX only
+                    - `tbi`        Ten Bit Interface
+                    - `rtbi`       Reduced Ten Bit Interface
+                    - `smii`       Serial Media Independent Interface
+                    - `sgmii`      Serial Gigabit Media Independent Interface
+                    - `rev-mii`    Reverse Media Independent Interface
+                    - `xgmii`      10 Gigabits Media Independent Interface
+                    - `moca`       Multimedia over Coaxial
+                    - `qsgmii`     Quad Serial Gigabit Media Independent Interface
+                    - `trgmii`     Turbo Reduced Gigabit Media Independent Interface
+                ]]) .. dtls.get_type_definition("string")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:458:9", expected)
+            end)
+
+            it("returns network class binding hover markdown for `phy-handle`", function()
+                local expected = dtls.dedent([[
+                    # Devicetree Specification: Ethernet specific considerations
+
+                    ## Property Name: phy-handle
+
+                    ## Path: /ethernet@1/phy-handle
+
+                    ## Definition:
+
+                    Specifies a reference to a node representing a physical layer (PHY) device connected to this Ethernet device. This property is required in case where the Ethernet device is connected to a physical layer device.
+
+                    ## Example:
+
+                    `phy-handle = <&PHY0>;`
+                ]]) .. dtls.get_type_definition("phandle")
+                assert_hover_uses("in_a_network_device_node", "tests/custom.dts:459:9", expected)
+            end)
+        end)
+
+        it("returns hover markdown for an Open PIC node", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Power ISA Open PIC Interrupt Controller
+
+                ## Path: /interrupt-controller@10000000
+
+                An Open PIC interrupt controller implements the Open PIC architecture (developed jointly by AMD and Cyrix) and specified in The Open Programmable Interrupt Controller (PIC) Register Interface Specification Revision 1.2.
+
+                Interrupt specifiers in an Open PIC interrupt domain are encoded with two cells. The first cell defines the interrupt number. The second cell defines the sense and level information.
+
+                Sense and level information shall be encoded as follows in interrupt specifiers:
+                ```
+                0 = low to high edge sensitive type enabled
+                1 = active low level sensitive type enabled
+                2 = active high level sensitive type enabled
+                3 = high to low edge sensitive type enabled
+                ```
+            ]])
+            assert_hover_uses("on_an_open_pic_node", "tests/custom.dts:462:5", expected)
+        end)
+
+        it("returns Open PIC hover markdown for `compatible`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Property Name: compatible
+
+                ## Path: /interrupt-controller@10000000/compatible
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Value shall include `"open-pic"`.
+
+                All other standard properties are allowed but are optional.
+            ]]) .. dtls.get_type_definition("string")
+            assert_hover_uses("in_an_open_pic_node", "tests/custom.dts:463:9", expected)
+        end)
+
+        it("returns Open PIC hover markdown for `reg`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Property Name: reg
+
+                ## Path: /interrupt-controller@10000000/reg
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Specifies the physical address of the registers device within the address space of the parent bus.
+
+                All other standard properties are allowed but are optional.
+            ]]) .. dtls.get_type_definition("prop_encoded_array")
+            assert_hover_uses("in_an_open_pic_node", "tests/custom.dts:464:9", expected)
+        end)
+
+        it("returns Open PIC hover markdown for `interrupt-controller`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Property Name: interrupt-controller
+
+                ## Path: /interrupt-controller@10000000/interrupt-controller
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Specifies that this node is an interrupt controller.
+
+                All other standard properties are allowed but are optional.
+            ]]) .. dtls.get_type_definition("empty")
+            assert_hover_uses("in_an_open_pic_node", "tests/custom.dts:465:9", expected)
+        end)
+
+        it("returns Open PIC hover markdown for `#interrupt-cells`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Property Name: #interrupt-cells
+
+                ## Path: /interrupt-controller@10000000/#interrupt-cells
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Shall be 2.
+
+                All other standard properties are allowed but are optional.
+            ]]) .. dtls.get_type_definition("u32")
+            assert_hover_uses("in_an_open_pic_node", "tests/custom.dts:466:9", expected)
+        end)
+
+        it("returns Open PIC hover markdown for `#address-cells`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: Power ISA Open PIC Interrupt Controller
+
+                ## Property Name: #address-cells
+
+                ## Path: /interrupt-controller@10000000/#address-cells
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Shall be 0.
+
+                All other standard properties are allowed but are optional.
+            ]]) .. dtls.get_type_definition("u32")
+            assert_hover_uses("in_an_open_pic_node", "tests/custom.dts:467:9", expected)
+        end)
+
+        it("returns hover markdown for a simple-bus node", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification: simple-bus Bindings
+
+                ## `simple-bus` Node
+
+                ## Path: /soc
+
+                System-on-a-chip processors may have an internal I/O bus that cannot be probed for devices. The devices on the bus can be accessed directly without additional configuration required. This type of bus is represented as a node with a compatible value of "simple-bus".
+            ]])
+            assert_hover_uses("on_a_simple_bus_node", "tests/custom.dts:470:5", expected)
+        end)
+
+        it("returns simple-bus hover markdown for `compatible`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: compatible
+
+                ## Path: /soc/compatible
+
+                ## Usage: Required
+
+                ## Definition:
+
+                Value shall include "simple-bus".
+            ]]) .. dtls.get_type_definition("string")
+            assert_hover_uses("in_a_simple_bus_node", "tests/custom.dts:471:9", expected)
+        end)
+
+        it("returns simple-bus hover markdown for `ranges`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: ranges
+
+                ## Path: /soc/ranges
+
+                ## Usage: Required
+
+                ## Definition:
+
+                This property represents the mapping between parent address to child address spaces.
+            ]]) .. dtls.get_type_definition("prop_encoded_array")
+            assert_hover_uses("in_a_simple_bus_node", "tests/custom.dts:472:9", expected)
+        end)
+
+        it("returns simple-bus hover markdown for `nonposted-mmio`", function()
+            local expected = dtls.dedent([[
+                # Devicetree Specification:
+
+                ## Property Name: nonposted-mmio
+
+                ## Path: /soc/nonposted-mmio
+
+                ## Usage: Optional
+
+                ## Definition:
+
+                Specifies that direct children of this bus should use non-posted memory accesses (i.e. a non-posted mapping mode) for MMIO ranges.
+            ]]) .. dtls.get_type_definition("empty")
+            assert_hover_uses("in_a_simple_bus_node", "tests/custom.dts:473:9", expected)
+        end)
+    end)
+
     describe("standard properties", function()
         it("returns hover markdown for standard `compatible` property name", function()
             ctx.row, ctx.col = row_col("tests/custom.dts:416:9")

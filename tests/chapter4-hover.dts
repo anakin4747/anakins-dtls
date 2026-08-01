@@ -1,0 +1,8 @@
+/dts-v1/;
+
+/ {
+    serial-device {
+        current-speed = <115200>;
+        compatible = "ns8250";
+    };
+};
