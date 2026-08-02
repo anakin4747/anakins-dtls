@@ -1649,14 +1649,30 @@ function M.goto_definition(ctx)
 end
 
 local function compatible_string_at_cursor(ctx)
-    local line = read_lines(ctx.file)[ctx.row]
-    if not line or not line:match("^%s*compatible%s*=") then
+    local lines = read_lines(ctx.file)
+    local line = lines[ctx.row]
+    if not line then
         return nil
     end
 
     for start_col, compatible, end_col in line:gmatch('()"([^"]+)"()') do
         if ctx.col >= start_col and ctx.col < end_col then
-            return compatible
+            if line:match("^%s*compatible%s*=") then
+                return compatible
+            end
+            if line:find("=") or line:find("[{}]") then
+                return nil
+            end
+
+            for row = ctx.row - 1, 1, -1 do
+                local property_line = lines[row]
+                if property_line:match("^%s*compatible%s*=") then
+                    return compatible
+                end
+                if property_line:find("=") or property_line:find("[;{}]") then
+                    return nil
+                end
+            end
         end
     end
 end

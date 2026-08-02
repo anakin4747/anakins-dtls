@@ -1,0 +1,4 @@
+device {
+	compatible = "syscon",
+		     "fsl,imx93-src";
+};

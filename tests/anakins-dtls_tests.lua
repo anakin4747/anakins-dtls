@@ -1198,6 +1198,24 @@ for _, location in ipairs(dts_locations) do
             }, dtls.goto_implementation(ctx))
         end)
 
+        it("finds a compatible string continued on the next line", function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+            ctx.file = ("%s/tests/%s%s/arch/arm64/boot/dts/freescale/multiline-compatible.dtsi"):format(
+                cwd,
+                layout.name,
+                kernel_path
+            )
+            ctx.row = 3
+            ctx.col = 20
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/drivers/soc/imx/imx93-src.c"):format(cwd, layout.name, kernel_path),
+                row = 16,
+                start_col = 19,
+                end_col = 31,
+            }, dtls.goto_implementation(ctx))
+        end)
+
         it("returns nil when the cursor is outside a compatible string", function()
             ctx.col = 5
 
