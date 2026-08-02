@@ -5402,11 +5402,13 @@ describe("kernel_root()", function()
         )
     end)
 
-    it("prefers Buildroot's LINUX_DIR config output over default kernel source locations", function()
-        local project = ("%s/tests/default-kernel-sources/config-priority"):format(cwd)
+    for _, project_type in ipairs({ "yocto", "buildroot" }) do
+        it("prefers .anakins-dtls " .. project_type .. " output over default kernel source locations", function()
+            local project = ("%s/tests/default-kernel-sources/config-priority/%s"):format(cwd, project_type)
 
-        assert.are.equal(project .. "/configured-linux", dtls.kernel_root(project .. "/device/devicetree.dts"))
-    end)
+            assert.are.equal(project .. "/configured-linux", dtls.kernel_root(project .. "/device/devicetree.dts"))
+        end)
+    end
 end)
 
 describe("missing file", function()
