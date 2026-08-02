@@ -3918,7 +3918,13 @@ default_handlers["shutdown"] = function(server, msg)
     send_response(server, msg.id, json.NULL)
 end
 
-default_handlers["textDocument/didSave"] = function(_, _) end
+default_handlers["textDocument/didSave"] = function(server, msg)
+    local uri = ((msg.params or {}).textDocument or {}).uri
+    send_notification(server, "textDocument/publishDiagnostics", {
+        uri = uri,
+        diagnostics = json.array(M.get_diagnostics(uri_to_path(uri))),
+    })
+end
 
 default_handlers["textDocument/hover"] = function(server, msg)
     local params = msg.params or {}

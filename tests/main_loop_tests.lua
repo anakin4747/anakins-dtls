@@ -7,6 +7,10 @@ package.path = "./lua/?.lua;" .. package.path
 local dtls = require("anakins-dtls")
 local json = dtls.json
 
+local pwd = io.popen("pwd")
+local project_root = pwd:read("*l")
+pwd:close()
+
 -- Sentinel used in expected-output tables to mean "this field must be
 -- present, but its exact value isn't asserted here" (e.g. capabilities).
 local ANY = setmetatable({}, {
@@ -140,14 +144,22 @@ describe("server_step() state transitions", function()
             },
         },
         {
-            name = "didSave notification while initialized is accepted silently",
+            name = "didSave notification while initialized publishes diagnostics",
             starting_state = "initialized",
             input = {
                 method = "textDocument/didSave",
-                params = { textDocument = { uri = "file:///custom.dts" } },
+                params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(project_root) } },
             },
             expect_state = "initialized",
-            expect_output = {},
+            expect_output = {
+                {
+                    method = "textDocument/publishDiagnostics",
+                    params = {
+                        uri = ("file://%s/tests/custom.dts"):format(project_root),
+                        diagnostics = {},
+                    },
+                },
+            },
         },
         {
             name = "didSave notification before initialize reports an error via showMessage",
@@ -637,7 +649,7 @@ it("handles a full initialize -> didSave -> shutdown -> exit session", function(
     server.channel:push_input(frame({ method = "initialized", params = {} }))
     server.channel:push_input(frame({
         method = "textDocument/didSave",
-        params = { textDocument = { uri = "file:///custom.dts" } },
+        params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(project_root) } },
     }))
     server.channel:push_input(frame({ method = "shutdown", id = 2 }))
     server.channel:push_input(frame({ method = "exit" }))
@@ -647,9 +659,11 @@ it("handles a full initialize -> didSave -> shutdown -> exit session", function(
     local output = parse_output(server.channel)
     assert.are.equal(1, output[1].id)
     assert.truthy(output[1].result.capabilities)
-    assert.are.equal(2, output[2].id)
-    assert.same(json.NULL, output[2].result)
-    assert.are.equal(2, #output)
+    assert.are.equal("textDocument/publishDiagnostics", output[2].method)
+    assert.same({}, output[2].params.diagnostics)
+    assert.are.equal(2, output[3].id)
+    assert.same(json.NULL, output[3].result)
+    assert.are.equal(3, #output)
     assert.are.equal(0, server.exit_code)
 end)
 
@@ -666,7 +680,7 @@ it("runs the real script end-to-end over real stdio", function()
     input:write(frame({ method = "initialized", params = {} }))
     input:write(frame({
         method = "textDocument/didSave",
-        params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(cwd) } },
+        params = { textDocument = { uri = ("file://%s/tests/missing-semicolons.dts"):format(cwd) } },
     }))
     input:write(frame({ method = "shutdown", id = 2 }))
     input:write(frame({ method = "exit" }))
@@ -682,9 +696,21 @@ it("runs the real script end-to-end over real stdio", function()
 
     assert.are.equal(1, output[1].id)
     assert.truthy(output[1].result.capabilities)
-    assert.are.equal(2, output[2].id)
-    assert.same(json.NULL, output[2].result)
-    assert.are.equal(2, #output)
+    assert.are.equal("textDocument/publishDiagnostics", output[2].method)
+    assert.are.equal(("file://%s/tests/missing-semicolons.dts"):format(cwd), output[2].params.uri)
+    assert.same({
+        range = {
+            start = { line = 1, character = 24 },
+            ["end"] = { line = 1, character = 24 },
+        },
+        severity = 1,
+        source = "anakins-dtls",
+        message = "Missing semicolon",
+    }, output[2].params.diagnostics[1])
+    assert.are.equal(4, #output[2].params.diagnostics)
+    assert.are.equal(2, output[3].id)
+    assert.same(json.NULL, output[3].result)
+    assert.are.equal(3, #output)
 end)
 
 it("runs correctly even when invoked under a different file name, as when installed by Nix", function()
