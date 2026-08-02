@@ -397,15 +397,11 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
         assert.are.equal("window/showMessage", output[1].method)
         assert.are.equal(2, output[1].params.type)
         assert.are.equal(
-            "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n"
-                .. "In a Yocto project you can generate one with:\n"
-                .. "```sh\n"
-                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
-                .. "```\n"
-                .. "For buildroot run the following command:\n"
-                .. "```sh\n"
-                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n"
-                .. "```",
+            "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n\n"
+                .. "For Yocto run the following command to generate one:\n"
+                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n\n"
+                .. "For buildroot run the following command to generate one:\n"
+                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n",
             output[1].params.message
         )
         assert.are.equal("textDocument/publishDiagnostics", output[2].method)

@@ -4226,15 +4226,11 @@ default_handlers["textDocument/didOpen"] = function(server, msg)
     if M.out_of_tree_without_config(ctx) then
         send_notification(server, "window/showMessage", {
             type = 2,
-            message = "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n"
-                .. "In a Yocto project you can generate one with:\n"
-                .. "```sh\n"
-                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
-                .. "```\n"
-                .. "For buildroot run the following command:\n"
-                .. "```sh\n"
-                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n"
-                .. "```",
+            message = "Out-of-tree devicetree detected, but no .anakins-dtls was found.\n\n"
+                .. "For Yocto run the following command to generate one:\n"
+                .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n\n"
+                .. "For buildroot run the following command to generate one:\n"
+                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n",
         })
     end
 
