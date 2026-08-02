@@ -52,6 +52,7 @@ diagnostic rules:
 - Unit address (``@<address>``) should be appended to the name if the node is a static allocation (for /reserved-memory child nodes)
 - warnings if required root node properties do not exist
 - hints if optional but recommended root node properties do not exist
+- diagnostics for incorrect prop encoded arrays
 
 grep for the words shall, must, required, for warnings or errors diagnostics
 grep for the words should, recommended for hints diagnostics
@@ -159,6 +160,38 @@ whether or not you are on or in the node
 
 ---
 
+Hover pulled from yaml files
+
+---
+
+Hover over CPP macros
+
+---
+
+Completion
+
+---
+
+node references
+
+---
+
+in coming and out going calls
+
+---
+
+Go to definition on property names to go to devicetree bindings
+
+---
+
+Fix the out-of-tree warning since its not markdown for some reason
+
+---
+
+Document symbols
+
+---
+
 devicetree specification typos/mistakes:
 - devicetree-specification/source/chapter3-devicenodes.rst:131:The *unit-name* component of the node name
     Shouldn't it say the *node-name* of the node shall be ``memory``.
@@ -168,5 +201,4 @@ devicetree specification typos/mistakes:
     frequency is spelled without an n
 - .. table:: ``/cpus/cpu*`` Node General Properties has array instead of
   prop_encoded_array
-
 
