@@ -599,6 +599,7 @@ end
 local function indentation_diagnostics(lines)
     local diagnostics = {}
     local depth = 0
+    local indentation_style
     local indent_width
     local in_block_comment = false
     local in_assignment = false
@@ -645,23 +646,41 @@ local function indentation_diagnostics(lines)
         if content ~= "" and not content:match("^#%s*include") and not malformed_closer then
             local indentation = line:match("^[ \t]*")
             local line_depth = content:sub(1, 1) == "}" and math.max(depth - 1, 0) or depth
+            local style = indentation:find("\t", 1, true) and "tabs" or "spaces"
 
-            if indentation:find("\t", 1, true) then
-                diagnostics[#diagnostics + 1] = diagnostic(row - 1, 0, "Use spaces consistently for indentation", 4)
-            elseif not in_assignment then
-                local spaces = #indentation
-                if indent_width then
-                    local expected = line_depth * indent_width
-                    if spaces ~= expected then
-                        diagnostics[#diagnostics + 1] = diagnostic(
-                            row - 1,
-                            spaces,
-                            ("Inconsistent indentation: expected %d spaces, found %d"):format(expected, spaces),
-                            4
-                        )
+            if line_depth > 0 and #indentation > 0 and not indentation_style then
+                indentation_style = style
+            end
+
+            if not in_assignment then
+                if
+                    indentation:find("\t", 1, true) and indentation:find(" ", 1, true)
+                    or indentation_style and #indentation > 0 and style ~= indentation_style
+                then
+                    diagnostics[#diagnostics + 1] =
+                        diagnostic(row - 1, 0, "Do not mix tabs and spaces for indentation", 4)
+                else
+                    local width = #indentation
+                    if indentation_style == "tabs" then
+                        indent_width = 1
                     end
-                elseif line_depth > 0 and spaces % line_depth == 0 then
-                    indent_width = spaces / line_depth
+                    if indent_width then
+                        local expected = line_depth * indent_width
+                        if width ~= expected then
+                            diagnostics[#diagnostics + 1] = diagnostic(
+                                row - 1,
+                                width,
+                                ("Inconsistent indentation: expected %d %s, found %d"):format(
+                                    expected,
+                                    indentation_style,
+                                    width
+                                ),
+                                4
+                            )
+                        end
+                    elseif line_depth > 0 and width % line_depth == 0 then
+                        indent_width = width / line_depth
+                    end
                 end
             end
         end

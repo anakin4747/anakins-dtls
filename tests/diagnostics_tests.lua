@@ -125,6 +125,20 @@ describe("get_diagnostics()", function()
     end)
 
     describe("hints about inconsistent indentation", function()
+        it("accepts consistent tab indentation", function()
+            local diagnostics = dtls.get_diagnostics(
+                cwd .. "/tests/out-of-tree/linux/arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts"
+            )
+            local indentation_hints = {}
+            for _, item in ipairs(diagnostics) do
+                if item.message:find("indentation", 1, true) then
+                    indentation_hints[#indentation_hints + 1] = item
+                end
+            end
+
+            assert.same({}, indentation_hints)
+        end)
+
         it("for indentation that does not match structural levels", function()
             assert.same({
                 {
@@ -152,7 +166,7 @@ describe("get_diagnostics()", function()
                     },
                     severity = 4,
                     source = "anakins-dtls",
-                    message = "Use spaces consistently for indentation",
+                    message = "Do not mix tabs and spaces for indentation",
                 },
                 {
                     range = {
