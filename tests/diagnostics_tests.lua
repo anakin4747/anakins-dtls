@@ -91,4 +91,47 @@ describe("get_diagnostics()", function()
             }, dtls.get_diagnostics(cwd .. "/tests/missing-closing-delimiters.dts"))
         end)
     end)
+
+    describe("hints about inconsistent indentation", function()
+        it("for indentation that does not match structural levels", function()
+            assert.same({
+                {
+                    range = {
+                        start = { line = 2, character = 7 },
+                        ["end"] = { line = 2, character = 7 },
+                    },
+                    severity = 4,
+                    source = "anakins-dtls",
+                    message = "Inconsistent indentation: expected 8 spaces, found 7",
+                },
+                {
+                    range = {
+                        start = { line = 7, character = 8 },
+                        ["end"] = { line = 7, character = 8 },
+                    },
+                    severity = 4,
+                    source = "anakins-dtls",
+                    message = "Inconsistent indentation: expected 12 spaces, found 8",
+                },
+                {
+                    range = {
+                        start = { line = 8, character = 0 },
+                        ["end"] = { line = 8, character = 0 },
+                    },
+                    severity = 4,
+                    source = "anakins-dtls",
+                    message = "Use spaces consistently for indentation",
+                },
+                {
+                    range = {
+                        start = { line = 12, character = 5 },
+                        ["end"] = { line = 12, character = 5 },
+                    },
+                    severity = 4,
+                    source = "anakins-dtls",
+                    message = "Inconsistent indentation: expected 4 spaces, found 5",
+                },
+            }, dtls.get_diagnostics(cwd .. "/tests/inconsistent-indentation.dts"))
+        end)
+    end)
 end)

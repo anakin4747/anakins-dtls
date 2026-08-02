@@ -516,16 +516,104 @@ local function read_lines(file)
     return lines
 end
 
-local function diagnostic(line, character, message)
+local function diagnostic(line, character, message, severity)
     return {
         range = {
             start = { line = line, character = character },
             ["end"] = { line = line, character = character },
         },
-        severity = 1,
+        severity = severity or 1,
         source = "anakins-dtls",
         message = message,
     }
+end
+
+local function indentation_diagnostics(lines)
+    local diagnostics = {}
+    local depth = 0
+    local indent_width
+    local in_block_comment = false
+    local in_assignment = false
+
+    for row, line in ipairs(lines) do
+        local code = {}
+        local in_string = false
+        local escaped = false
+        local col = 1
+        while col <= #line do
+            local char = line:sub(col, col)
+            local following_char = line:sub(col + 1, col + 1)
+
+            if in_block_comment then
+                if char == "*" and following_char == "/" then
+                    in_block_comment = false
+                    col = col + 1
+                end
+            elseif in_string then
+                if escaped then
+                    escaped = false
+                elseif char == "\\" then
+                    escaped = true
+                elseif char == '"' then
+                    in_string = false
+                end
+            elseif char == "/" and following_char == "*" then
+                in_block_comment = true
+                col = col + 1
+            elseif char == "/" and following_char == "/" then
+                break
+            else
+                code[#code + 1] = char
+                if char == '"' then
+                    in_string = true
+                end
+            end
+            col = col + 1
+        end
+
+        code = table.concat(code)
+        local content = code:match("^%s*(.-)%s*$")
+        local malformed_closer = content == ";" and depth > 1
+        if content ~= "" and not content:match("^#%s*include") and not malformed_closer then
+            local indentation = line:match("^[ \t]*")
+            local line_depth = content:sub(1, 1) == "}" and math.max(depth - 1, 0) or depth
+
+            if indentation:find("\t", 1, true) then
+                diagnostics[#diagnostics + 1] = diagnostic(row - 1, 0, "Use spaces consistently for indentation", 4)
+            elseif not in_assignment then
+                local spaces = #indentation
+                if indent_width then
+                    local expected = line_depth * indent_width
+                    if spaces ~= expected then
+                        diagnostics[#diagnostics + 1] = diagnostic(
+                            row - 1,
+                            spaces,
+                            ("Inconsistent indentation: expected %d spaces, found %d"):format(expected, spaces),
+                            4
+                        )
+                    end
+                elseif line_depth > 0 and spaces % line_depth == 0 then
+                    indent_width = spaces / line_depth
+                end
+            end
+        end
+
+        if malformed_closer then
+            depth = depth - 1
+        else
+            local _, openings = code:gsub("{", "")
+            local _, closings = code:gsub("}", "")
+            depth = math.max(depth + openings - closings, 0)
+        end
+
+        if in_assignment then
+            in_assignment = not code:find(";", 1, true)
+        elseif code:find("=", 1, true) and not code:find(";", 1, true) then
+            in_assignment = true
+        end
+    end
+
+    return diagnostics
 end
 
 local function closing_delimiter_diagnostics(lines)
@@ -638,6 +726,9 @@ function M.get_diagnostics(file)
     local lines = read_lines(file)
     local diagnostics = closing_delimiter_diagnostics(lines)
     for _, item in ipairs(semicolon_diagnostics(lines)) do
+        diagnostics[#diagnostics + 1] = item
+    end
+    for _, item in ipairs(indentation_diagnostics(lines)) do
         diagnostics[#diagnostics + 1] = item
     end
     table.sort(diagnostics, function(left, right)

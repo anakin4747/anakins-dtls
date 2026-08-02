@@ -1,0 +1,14 @@
+/ {
+    parent {
+       uneven-child {
+            compatible = "vendor,uneven";
+        };
+
+        child {
+        child-property = <1>;
+	    mixed-indentation;
+        };
+    };
+
+     uneven-sibling;
+};
