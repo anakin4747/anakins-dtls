@@ -1121,6 +1121,49 @@ for _, location in ipairs(dts_locations) do
     end)
 end
 
+for _, location in ipairs(dts_locations) do
+    local layout = location
+
+    describe("find_cpp_macro_definition() " .. layout.name, function()
+        before_each(function()
+            ctx = {
+                row = 497,
+                col = 30,
+                file = ("%s/tests/%s/%s"):format(cwd, layout.name, layout.path),
+            }
+        end)
+
+        it("finds a macro definition in an included header", function()
+            local kernel_path = layout.kernel_path ~= "" and "/" .. layout.kernel_path or ""
+
+            assert.are.same({
+                file = ("%s/tests/%s%s/include/dt-bindings/net/ti-dp83867.h"):format(
+                    cwd,
+                    layout.name,
+                    kernel_path
+                ),
+                row = 52,
+                start_col = 9,
+                end_col = 29,
+            }, dtls.find_cpp_macro_definition(ctx))
+        end)
+    end)
+end
+
+describe("find_cpp_macro_definition() without headers", function()
+    it("does not look for macros when the devicetree includes no headers", function()
+        local kernel_root = spy.on(dtls, "kernel_root")
+        ctx = {
+            row = 4,
+            col = 14,
+            file = cwd .. "/tests/no-headers.dts",
+        }
+
+        assert.is_nil(dtls.find_cpp_macro_definition(ctx))
+        assert.spy(kernel_root).was_not_called()
+    end)
+end)
+
 describe("goto_definition()", function()
     it("returns the node label definition at a label reference", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
@@ -1148,6 +1191,17 @@ describe("goto_definition()", function()
     it("returns nil outside a label reference", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:76:9")
         assert.is_nil(dtls.goto_definition(ctx))
+    end)
+
+    it("returns an included header macro definition", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:497:30")
+
+        assert.are.same({
+            file = cwd .. "/tests/in-tree/include/dt-bindings/net/ti-dp83867.h",
+            row = 52,
+            start_col = 9,
+            end_col = 29,
+        }, dtls.goto_definition(ctx))
     end)
 end)
 

@@ -562,6 +562,34 @@ describe("textDocument/definition", function()
         local output = parse_output(server.channel)
         assert.same(json.NULL, output[1].result)
     end)
+
+    it("responds with the location of an included header macro definition", function()
+        local handle = io.popen("pwd")
+        local cwd = handle:read("*l")
+        handle:close()
+        local file = ("%s/tests/in-tree/arch/arm64/boot/dts/freescale/custom.dts"):format(cwd)
+
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/definition",
+            id = 6,
+            params = {
+                textDocument = { uri = "file://" .. file },
+                position = { line = 496, character = 29 },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.are.same({
+            uri = "file://" .. cwd .. "/tests/in-tree/include/dt-bindings/net/ti-dp83867.h",
+            range = {
+                start = { line = 51, character = 8 },
+                ["end"] = { line = 51, character = 29 },
+            },
+        }, output[1].result)
+    end)
 end)
 
 describe("textDocument/implementation", function()

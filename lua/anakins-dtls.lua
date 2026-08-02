@@ -1110,6 +1110,35 @@ local function included_files(file, root, seen, results)
     return results
 end
 
+local function included_headers(file)
+    local headers = {}
+    for _, line in ipairs(read_lines(file)) do
+        local header = line:match('^%s*#include%s+[<"]([^>"]+%.h)[>"]')
+        if header then
+            headers[#headers + 1] = header
+        end
+    end
+    return headers
+end
+
+local function resolve_header(file, root, header)
+    local relative = parent_directory(file) .. "/" .. header
+    if path_exists(relative) then
+        return relative
+    end
+
+    if not root then
+        return nil
+    end
+
+    local in_include = root .. "/include/" .. header
+    if path_exists(in_include) then
+        return in_include
+    end
+
+    return find_file(root, header:match("([^/]+)$"))
+end
+
 function M.list_node_properties(ctx)
     local bounds = containing_node(ctx.file, ctx.row)
     if not bounds then
@@ -1662,10 +1691,55 @@ function M.find_node_label_definition(ctx)
     end
 end
 
+local function identifier_at_cursor(ctx)
+    local line = read_lines(ctx.file)[ctx.row]
+    if not line then
+        return nil
+    end
+
+    for start_col, identifier, end_col in line:gmatch("()([%a_][%w_]*)()") do
+        if ctx.col >= start_col and ctx.col < end_col then
+            return identifier
+        end
+    end
+end
+
+function M.find_cpp_macro_definition(ctx)
+    local macro = identifier_at_cursor(ctx)
+    if not macro then
+        return nil
+    end
+
+    local headers = included_headers(ctx.file)
+    if #headers == 0 then
+        return nil
+    end
+
+    local root = M.kernel_root(ctx.file)
+    for _, header in ipairs(headers) do
+        local file = resolve_header(ctx.file, root, header)
+        if file then
+            for row, line in ipairs(read_lines(file)) do
+                local leading, defined = line:match("^(%s*#%s*define%s+)([%a_][%w_]*)")
+                if defined == macro then
+                    local start_col = #leading + 1
+                    return {
+                        file = file,
+                        row = row,
+                        start_col = start_col,
+                        end_col = start_col + #macro - 1,
+                    }
+                end
+            end
+        end
+    end
+end
+
 function M.goto_definition(ctx)
     if M.on_a_label_reference(ctx) then
         return M.find_node_label_definition(ctx)
     end
+    return M.find_cpp_macro_definition(ctx)
 end
 
 local function compatible_string_at_cursor(ctx)
