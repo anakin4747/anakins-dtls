@@ -516,6 +516,136 @@ local function read_lines(file)
     return lines
 end
 
+local function diagnostic(line, character, message)
+    return {
+        range = {
+            start = { line = line, character = character },
+            ["end"] = { line = line, character = character },
+        },
+        severity = 1,
+        source = "anakins-dtls",
+        message = message,
+    }
+end
+
+local function closing_delimiter_diagnostics(lines)
+    local diagnostics = {}
+    local braces = {}
+    local angle_depth = 0
+
+    for row, line in ipairs(lines) do
+        local in_string = false
+        local escaped = false
+        local col = 1
+        while col <= #line do
+            local char = line:sub(col, col)
+            local following_char = line:sub(col + 1, col + 1)
+
+            if not in_string and char == "/" and following_char == "/" then
+                break
+            elseif in_string then
+                if escaped then
+                    escaped = false
+                elseif char == "\\" then
+                    escaped = true
+                elseif char == '"' then
+                    in_string = false
+                end
+            elseif char == '"' then
+                in_string = true
+            elseif char == "<" then
+                angle_depth = angle_depth + 1
+            elseif char == ">" and angle_depth > 0 then
+                angle_depth = angle_depth - 1
+            elseif char == "{" then
+                braces[#braces + 1] = true
+            elseif char == "}" and #braces > 0 then
+                braces[#braces] = nil
+            elseif char == ";" and angle_depth > 0 then
+                diagnostics[#diagnostics + 1] = diagnostic(row - 1, col - 1, "Missing closing >")
+                angle_depth = 0
+            end
+            col = col + 1
+        end
+
+        if in_string then
+            diagnostics[#diagnostics + 1] = diagnostic(row - 1, #line - 1, "Missing closing double quote")
+        end
+
+        if line:match("^%s*;%s*$") and #braces > 1 then
+            diagnostics[#diagnostics + 1] =
+                diagnostic(row - 1, (line:find(";", 1, true) or 1) - 1, "Missing closing brace")
+            braces[#braces] = nil
+        end
+    end
+
+    table.sort(diagnostics, function(left, right)
+        local left_start = left.range.start
+        local right_start = right.range.start
+        return left_start.line < right_start.line
+            or (left_start.line == right_start.line and left_start.character < right_start.character)
+    end)
+    return diagnostics
+end
+
+local function semicolon_diagnostics(lines)
+    local diagnostics = {}
+    local assignment
+    local angle_depth = 0
+
+    for row, line in ipairs(lines) do
+        local content = line:gsub("//.*$", ""):gsub("%s+$", "")
+        if assignment then
+            for char in content:gmatch("[<>]") do
+                angle_depth = angle_depth + (char == "<" and 1 or -1)
+            end
+
+            if content:find(";", 1, true) then
+                assignment = nil
+                angle_depth = 0
+            elseif angle_depth == 0 and not content:match("[,=]%s*$") and content ~= "" then
+                diagnostics[#diagnostics + 1] = diagnostic(row - 1, #content, "Missing semicolon")
+                assignment = nil
+            end
+        elseif content:match("^%s*[%w#?,._+%-]+%s*=") then
+            assignment = true
+            for char in content:gmatch("[<>]") do
+                angle_depth = angle_depth + (char == "<" and 1 or -1)
+            end
+
+            if content:find(";", 1, true) then
+                assignment = nil
+                angle_depth = 0
+            elseif angle_depth == 0 and not content:match("[,=]%s*$") then
+                diagnostics[#diagnostics + 1] = diagnostic(row - 1, #content, "Missing semicolon")
+                assignment = nil
+            end
+        elseif content:match("^%s*[%w#?,._+%-]+%s*$") then
+            diagnostics[#diagnostics + 1] = diagnostic(row - 1, #content, "Missing semicolon")
+        elseif content:match("^%s*}%s*$") then
+            diagnostics[#diagnostics + 1] = diagnostic(row - 1, #content, "Missing semicolon")
+        end
+    end
+
+    return diagnostics
+end
+
+function M.get_diagnostics(file)
+    if file:sub(1, 1) ~= "/" then
+        error("get_diagnostics: file path must be absolute")
+    end
+
+    local lines = read_lines(file)
+    local diagnostics = closing_delimiter_diagnostics(lines)
+    for _, item in ipairs(semicolon_diagnostics(lines)) do
+        diagnostics[#diagnostics + 1] = item
+    end
+    table.sort(diagnostics, function(left, right)
+        return left.range.start.line < right.range.start.line
+    end)
+    return diagnostics
+end
+
 local function path_exists(path)
     return os.rename(path, path) ~= nil
 end
