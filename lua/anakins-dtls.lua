@@ -1463,7 +1463,7 @@ end
 
 local function property_path(ctx, property_name)
     local bounds = containing_node(ctx.file, ctx.row)
-    return bounds and bounds.path .. "/" .. property_name
+    return bounds and bounds.path .. (bounds.path == "/" and "" or "/") .. property_name
 end
 
 local function with_path(markdown, path)

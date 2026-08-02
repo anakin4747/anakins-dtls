@@ -4983,6 +4983,15 @@ describe("hover()", function()
             assert.are.same(expected, actual)
         end)
 
+        it("returns a single-slash path for root `interrupt-parent`", function()
+            ctx.file = cwd .. "/tests/in-tree/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
+            ctx.row, ctx.col = row_col("imx91_93_common.dtsi:17:2")
+
+            local actual = dtls.hover(ctx)
+
+            assert.matches("## Path: /interrupt%-parent\n", actual)
+        end)
+
         it("returns hover markdown for `interrupts-extended` property name", function()
             ctx.row, ctx.col = row_col("tests/custom.dts:361:9")
             local expected = dtls.dedent([[
