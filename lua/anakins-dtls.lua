@@ -4037,7 +4037,11 @@ default_handlers["initialize"] = function(server, msg)
     server.state = "initialized"
     send_response(server, msg.id, {
         capabilities = {
-            textDocumentSync = 0,
+            textDocumentSync = {
+                openClose = true,
+                change = 0,
+                save = true,
+            },
             hoverProvider = true,
             definitionProvider = true,
             implementationProvider = true,

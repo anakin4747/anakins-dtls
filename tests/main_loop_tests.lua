@@ -381,14 +381,18 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
     end)
 end)
 
-it("advertises no text document synchronization", function()
+it("requests open and save notifications without document content synchronization", function()
     local server = dtls.new_server(dtls.new_memory_channel())
     server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
 
     dtls.server_step(server)
 
     local output = parse_output(server.channel)
-    assert.are.equal(0, output[1].result.capabilities.textDocumentSync)
+    assert.same({
+        openClose = true,
+        change = 0,
+        save = true,
+    }, output[1].result.capabilities.textDocumentSync)
 end)
 
 describe("textDocument/hover", function()
