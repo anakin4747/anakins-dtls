@@ -719,6 +719,7 @@ local function closing_delimiter_diagnostics(lines)
                 braces[#braces] = nil
             elseif char == ";" and angle_depth > 0 then
                 diagnostics[#diagnostics + 1] = diagnostic(row - 1, col - 1, "Missing closing >")
+                diagnostics[#diagnostics].range["end"].character = col
                 angle_depth = 0
             end
             col = col + 1
@@ -726,6 +727,7 @@ local function closing_delimiter_diagnostics(lines)
 
         if in_string then
             diagnostics[#diagnostics + 1] = diagnostic(row - 1, #line - 1, "Missing closing double quote")
+            diagnostics[#diagnostics].range["end"].character = #line
         end
 
         if line:match("^%s*;%s*$") and #braces > 1 then

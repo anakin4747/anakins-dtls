@@ -73,7 +73,7 @@ describe("get_diagnostics()", function()
                 {
                     range = {
                         start = { line = 6, character = 34 },
-                        ["end"] = { line = 6, character = 34 },
+                        ["end"] = { line = 6, character = 35 },
                     },
                     severity = 1,
                     source = "anakins-dtls",
@@ -82,7 +82,7 @@ describe("get_diagnostics()", function()
                 {
                     range = {
                         start = { line = 10, character = 36 },
-                        ["end"] = { line = 10, character = 36 },
+                        ["end"] = { line = 10, character = 37 },
                     },
                     severity = 1,
                     source = "anakins-dtls",
