@@ -90,6 +90,38 @@ describe("get_diagnostics()", function()
                 },
             }, dtls.get_diagnostics(cwd .. "/tests/missing-closing-delimiters.dts"))
         end)
+
+        it("for values too large to fit in a cell", function()
+            assert.same({
+                {
+                    range = {
+                        start = { line = 2, character = 21 },
+                        ["end"] = { line = 2, character = 32 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Cell value exceeds 0xFFFFFFFF; represent a <u64> as two cells",
+                },
+                {
+                    range = {
+                        start = { line = 3, character = 25 },
+                        ["end"] = { line = 3, character = 35 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Cell value exceeds 0xFFFFFFFF; represent a <u64> as two cells",
+                },
+                {
+                    range = {
+                        start = { line = 5, character = 15 },
+                        ["end"] = { line = 5, character = 33 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Cell value exceeds 0xFFFFFFFF; represent a <u64> as two cells",
+                },
+            }, dtls.get_diagnostics(cwd .. "/tests/oversized-cells.dts"))
+        end)
     end)
 
     describe("hints about inconsistent indentation", function()

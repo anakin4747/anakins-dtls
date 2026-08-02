@@ -1,0 +1,10 @@
+/ {
+    valid = <0xFFFFFFFF 4294967295>;
+    oversized-hex = <0x100000000>;
+    oversized-decimal = <4294967296>;
+    multiline = <
+        &label 0x1122334455667788
+    >;
+    text = "<0x100000000 4294967296>";
+    // ignored = <0x100000000>;
+};

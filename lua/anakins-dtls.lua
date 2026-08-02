@@ -528,6 +528,74 @@ local function diagnostic(line, character, message, severity)
     }
 end
 
+local function cell_value_diagnostics(lines)
+    local diagnostics = {}
+    local angle_depth = 0
+    local in_block_comment = false
+    local in_string = false
+    local escaped = false
+
+    for row, line in ipairs(lines) do
+        local col = 1
+        while col <= #line do
+            local char = line:sub(col, col)
+            local following_char = line:sub(col + 1, col + 1)
+
+            if in_block_comment then
+                if char == "*" and following_char == "/" then
+                    in_block_comment = false
+                    col = col + 1
+                end
+            elseif in_string then
+                if escaped then
+                    escaped = false
+                elseif char == "\\" then
+                    escaped = true
+                elseif char == '"' then
+                    in_string = false
+                end
+            elseif char == "/" and following_char == "*" then
+                in_block_comment = true
+                col = col + 1
+            elseif char == "/" and following_char == "/" then
+                break
+            elseif char == '"' then
+                in_string = true
+            elseif char == "<" then
+                angle_depth = angle_depth + 1
+            elseif char == ">" and angle_depth > 0 then
+                angle_depth = angle_depth - 1
+            elseif angle_depth > 0 and char:match("%d") then
+                local start_col = col
+                local value
+                local maximum
+                if char == "0" and following_char:match("[xX]") then
+                    value = line:match("^0[xX]([%da-fA-F]+)", col)
+                    maximum = "ffffffff"
+                    col = col + 2 + #(value or "") - 1
+                else
+                    value = line:match("^(%d+)", col)
+                    maximum = "4294967295"
+                    col = col + #(value or "") - 1
+                end
+
+                value = (value or ""):gsub("^0+", "")
+                if #value > #maximum or (#value == #maximum and value:lower() > maximum) then
+                    diagnostics[#diagnostics + 1] = diagnostic(
+                        row - 1,
+                        start_col - 1,
+                        "Cell value exceeds 0xFFFFFFFF; represent a <u64> as two cells"
+                    )
+                    diagnostics[#diagnostics].range["end"].character = col
+                end
+            end
+            col = col + 1
+        end
+    end
+
+    return diagnostics
+end
+
 local function indentation_diagnostics(lines)
     local diagnostics = {}
     local depth = 0
@@ -726,6 +794,9 @@ function M.get_diagnostics(file)
     local lines = read_lines(file)
     local diagnostics = closing_delimiter_diagnostics(lines)
     for _, item in ipairs(semicolon_diagnostics(lines)) do
+        diagnostics[#diagnostics + 1] = item
+    end
+    for _, item in ipairs(cell_value_diagnostics(lines)) do
         diagnostics[#diagnostics + 1] = item
     end
     for _, item in ipairs(indentation_diagnostics(lines)) do
