@@ -771,7 +771,7 @@ local function semicolon_diagnostics(lines)
     local angle_depth = 0
 
     for row, line in ipairs(lines) do
-        local content = line:gsub("//.*$", ""):gsub("%s+$", "")
+        local content = line:gsub("/%*.-%*/", ""):gsub("//.*$", ""):gsub("%s+$", "")
         if assignment then
             for char in content:gmatch("[<>]") do
                 angle_depth = angle_depth + (char == "<" and 1 or -1)

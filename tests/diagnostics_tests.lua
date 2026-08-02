@@ -59,6 +59,10 @@ describe("get_diagnostics()", function()
             }, dtls.get_diagnostics(cwd .. "/tests/missing-semicolons.dts"))
         end)
 
+        it("accepts multiline reg arrays", function()
+            assert.same({}, dtls.get_diagnostics(cwd .. "/tests/multiline-reg.dts"))
+        end)
+
         it("for missing closing delimiters", function()
             assert.same({
                 {
