@@ -1477,12 +1477,32 @@ end
 
 local function cache_node_path(ctx)
     local bounds = containing_node(ctx.file, ctx.row)
-    return bounds and bounds.path
+    if not bounds then
+        return nil
+    end
+
+    local label = bounds.name:match("^&([%w_]+)$")
+    if label then
+        local root = M.kernel_root(ctx.file)
+        for _, file in ipairs(included_files(ctx.file, root)) do
+            for _, candidate in
+                ipairs(find_all_node_bounds(file, function()
+                    return true
+                end))
+            do
+                if candidate.label == label then
+                    return candidate.path
+                end
+            end
+        end
+    end
+
+    return bounds.path
 end
 
 local function property_path(ctx, property_name)
-    local bounds = containing_node(ctx.file, ctx.row)
-    return bounds and bounds.path .. (bounds.path == "/" and "" or "/") .. property_name
+    local path = cache_node_path(ctx)
+    return path and path .. (path == "/" and "" or "/") .. property_name
 end
 
 local function with_path(markdown, path)

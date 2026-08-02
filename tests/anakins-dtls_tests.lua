@@ -4595,6 +4595,15 @@ describe("hover()", function()
             assert.are.same(expected, actual)
         end)
 
+        it("resolves label references in standard property paths", function()
+            ctx.row, ctx.col = row_col("tests/custom.dts:566:5")
+
+            local actual = dtls.hover(ctx)
+
+            assert.is_string(actual)
+            assert.matches("## Path: /soc@0/bus@44000000/serial@44380000/status\n", actual, nil, true)
+        end)
+
         it("returns hover markdown for standard `status` property value `okay`", function()
             ctx.row, ctx.col = row_col("tests/custom.dts:354:19")
             local expected = dtls.dedent([[
