@@ -1,2 +1,4 @@
 .luarc.json
 tmp/
+vscode-anakins-dtls/dist/
+vscode-anakins-dtls/node_modules/

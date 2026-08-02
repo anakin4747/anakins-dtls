@@ -10,6 +10,32 @@
         pkgs = import nixpkgs { inherit system; };
         version = "0.1.0";
         revision = self.rev or (self.dirtyRev or "unknown");
+        vscodeExtension = pkgs.buildNpmPackage {
+          pname = "vscode-anakins-dtls";
+          inherit version;
+
+          src = ./vscode-anakins-dtls;
+          npmDepsHash = "sha256-vZu0qL6aRKcaJVy48bvyhvQetYHWuukAAIvnKIANn4o=";
+          npmBuildScript = "compile";
+
+          installPhase = ''
+            runHook preInstall
+            extensionDir="$out/share/vscode/extensions/anakin4747.anakins-dtls"
+            mkdir -p "$extensionDir"
+            cp -r dist node_modules package.json language-configuration.json "$extensionDir/"
+            runHook postInstall
+          '';
+
+          passthru = {
+            vscodeExtPublisher = "anakin4747";
+            vscodeExtName = "anakins-dtls";
+            vscodeExtUniqueId = "anakin4747.anakins-dtls";
+          };
+        };
+        vscodeWithExtension = pkgs.vscode-with-extensions.override {
+          vscode = pkgs.vscodium;
+          vscodeExtensions = [ vscodeExtension ];
+        };
       in
       with pkgs; {
         packages.default = stdenvNoCC.mkDerivation {
@@ -98,6 +124,21 @@
           program = "${writeShellScript "tryout-out-of-tree" ''
             exec ${self.packages.${system}.tryout}/bin/tryout out-of-tree
           ''}";
+        };
+
+        packages.tryout-vscode = writeShellApplication {
+          name = "tryout-vscode";
+          runtimeInputs = [ vscodeWithExtension self.packages.${system}.default ripgrep ];
+          checkPhase = "";
+          text = ''
+            mapfile -t devicetrees < <(rg --files tests -g '*.dts' -g '*.dtsi')
+            exec codium --new-window . "''${devicetrees[@]}" "$@"
+          '';
+        };
+
+        apps.tryout-vscode = {
+          type = "app";
+          program = "${self.packages.${system}.tryout-vscode}/bin/tryout-vscode";
         };
 
         devShells.default = mkShell {

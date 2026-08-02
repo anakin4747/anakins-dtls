@@ -1,0 +1,44 @@
+{
+  "name": "anakins-dtls",
+  "publisher": "anakin4747",
+  "displayName": "Anakin's Devicetree Language Server",
+  "description": "Language support for Devicetree source files",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:devicetree"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "devicetree",
+        "aliases": [
+          "Devicetree",
+          "devicetree"
+        ],
+        "extensions": [
+          ".dts",
+          ".dtsi"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.4.0"
+  }
+}
