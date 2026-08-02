@@ -1,0 +1,16 @@
+/ {
+    interrupt-controller
+
+    device {
+        compatible =
+            "vendor,first",
+            "vendor,second"
+
+        child@10000000 {
+            reg = <
+                0x00000000 0x10000000
+                0x00000000 0x00100000
+            >
+        };
+    };
+}
