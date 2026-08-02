@@ -1,0 +1,13 @@
+/ {
+    missing-brace {
+        compatible = "vendor,brace";
+    ;
+
+    missing-double-quote {
+        compatible = "vendor,quote;
+    };
+
+    missing-angle-bracket {
+        reg = <0x00000000 0x10000000;
+    };
+};

@@ -58,5 +58,37 @@ describe("get_diagnostics()", function()
                 },
             }, dtls.get_diagnostics(cwd .. "/tests/missing-semicolons.dts"))
         end)
+
+        it("for missing closing delimiters", function()
+            assert.same({
+                {
+                    range = {
+                        start = { line = 3, character = 4 },
+                        ["end"] = { line = 3, character = 4 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Missing closing brace",
+                },
+                {
+                    range = {
+                        start = { line = 6, character = 34 },
+                        ["end"] = { line = 6, character = 34 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Missing closing double quote",
+                },
+                {
+                    range = {
+                        start = { line = 10, character = 36 },
+                        ["end"] = { line = 10, character = 36 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Missing closing >",
+                },
+            }, dtls.get_diagnostics(cwd .. "/tests/missing-closing-delimiters.dts"))
+        end)
     end)
 end)
