@@ -4051,10 +4051,18 @@ end
 
 default_handlers["initialized"] = function(_, _) end
 
+local function publish_diagnostics(server, uri)
+    send_notification(server, "textDocument/publishDiagnostics", {
+        uri = uri,
+        diagnostics = json.array(M.get_diagnostics(uri_to_path(uri))),
+    })
+end
+
 default_handlers["textDocument/didOpen"] = function(server, msg)
     local params = msg.params or {}
+    local uri = (params.textDocument or {}).uri
     local ctx = {
-        file = uri_to_path((params.textDocument or {}).uri),
+        file = uri_to_path(uri),
         workspace_root = server.workspace_root,
     }
 
@@ -4072,6 +4080,8 @@ default_handlers["textDocument/didOpen"] = function(server, msg)
                 .. "```",
         })
     end
+
+    publish_diagnostics(server, uri)
 end
 
 default_handlers["shutdown"] = function(server, msg)
@@ -4086,10 +4096,7 @@ end
 
 default_handlers["textDocument/didSave"] = function(server, msg)
     local uri = ((msg.params or {}).textDocument or {}).uri
-    send_notification(server, "textDocument/publishDiagnostics", {
-        uri = uri,
-        diagnostics = json.array(M.get_diagnostics(uri_to_path(uri))),
-    })
+    publish_diagnostics(server, uri)
 end
 
 default_handlers["textDocument/hover"] = function(server, msg)

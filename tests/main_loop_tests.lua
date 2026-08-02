@@ -324,6 +324,36 @@ describe("workspace/didChangeWorkspaceFolders notification", function()
     end)
 end)
 
+it("publishes diagnostics when a document opens", function()
+    local server = dtls.new_server(dtls.new_memory_channel())
+    server.channel:push_input(frame({
+        method = "initialize",
+        id = 1,
+        params = {
+            workspaceFolders = {
+                { uri = ("file://%s"):format(project_root), name = "repo" },
+            },
+        },
+    }))
+    dtls.server_step(server)
+    server.channel:take_output()
+
+    local uri = ("file://%s/tests/missing-closing-delimiters.dts"):format(project_root)
+    server.channel:push_input(frame({
+        method = "textDocument/didOpen",
+        params = { textDocument = { uri = uri } },
+    }))
+
+    dtls.server_step(server)
+
+    local output = parse_output(server.channel)
+    assert.are.equal(2, #output)
+    assert.are.equal("window/showMessage", output[1].method)
+    assert.are.equal("textDocument/publishDiagnostics", output[2].method)
+    assert.are.equal(uri, output[2].params.uri)
+    assert.is_true(#output[2].params.diagnostics > 0)
+end)
+
 describe("out-of-tree devicetree with no .anakins-dtls", function()
     it("warns via showMessage on didOpen", function()
         local handle = io.popen("pwd")
@@ -363,7 +393,7 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
         assert.are.equal("initialized", server.state)
 
         local output = parse_output(server.channel)
-        assert.are.equal(1, #output)
+        assert.are.equal(2, #output)
         assert.are.equal("window/showMessage", output[1].method)
         assert.are.equal(2, output[1].params.type)
         assert.are.equal(
@@ -377,6 +407,11 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
                 .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n"
                 .. "```",
             output[1].params.message
+        )
+        assert.are.equal("textDocument/publishDiagnostics", output[2].method)
+        assert.are.equal(
+            ("file://%s/tests/out-of-tree-no-config/one/path/to/devicetree.dts"):format(cwd),
+            output[2].params.uri
         )
     end)
 end)
