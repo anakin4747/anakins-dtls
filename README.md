@@ -1,80 +1,121 @@
-Goals:
-- parameterize tests to run for both in-tree and out-of-tree to avoid duplicate
-  tests
 
-Use the same fixture file for in-tree and out-of-tree
+# anakins-dtls - Anakin's Devicetree Language Server
 
-And then for the in-tree tests insert the fixture in the tree while for the out
-of tree situations
+A Devicetree language server written in Lua using Agentic TDD.
 
+## usage
 
-
-have the fixture file be based on this file `imx93-phyboard-nash.dts` but call
-it custom.dts or something and then have arch/arm64/boot/dts/freescale/custom.dts be a symlink to
-
-
-
-
-arch/arm64/boot/dts/freescale/imx93-phyboard-nash.dts which pulls in:
-    include/dt-bindings/net/ti-dp83867.h
-    arch/arm64/boot/dts/freescale/imx93-phycore-som.dtsi which pulls in:
-        include/dt-bindings/leds/common.h
-        arch/arm64/boot/dts/freescale/imx93.dtsi which pulls in:
-            arch/arm64/boot/dts/freescale/imx91_93_common.dtsi which pulls in:
-                include/dt-bindings/clock/imx93-clock.h
-                include/dt-bindings/dma/fsl-edma.h
-                include/dt-bindings/gpio/gpio.h
-                include/dt-bindings/input/input.h
-                include/dt-bindings/interrupt-controller/arm-gic.h
-                include/dt-bindings/power/fsl,imx93-power.h
-                include/dt-bindings/thermal/thermal.h
-                arch/arm64/boot/dts/freescale/imx93-pinfunc.h
-
-
-
-fixture structure:
-
-custom.dts - copy of imx93-phyboard-nash.dts but will contain additions for false positive tests
-in-tree/
-  arch/ - for dts and dtsi
-  arch/arm64/boot/dts/freescale/custom.dts - symlink pointing to custom.dts
-  include/ - for header files
-  Documentation/ - for yaml and txt bindings
-out-of-tree/
-  custom.dts - symlink pointing to custom.dts
-  .anakins-dtls - points S to ./linux/
-  linux/
-    arch/ - for dts and dtsi
-    include/ - for header files
-    Documentation/ - for yaml and txt bindings
-
-So for parameterizing the in-tree vs out-of-tree
-
-```lua
-describe("Test Suite", function()
-    local dts_locations = {
-        { name = "in-tree", path = "in-tree/arch/arm64/boot/dts/freescale/custom.dts" },
-        { name = "out-of-tree", path = "out-of-tree/custom.dts" }
-    }
-
-    for _, location in ipairs(dts_locations) do
-        it("should run tests for " .. location.name, function()
-            -- Load the fixture file
-            local fixture_path = case.path
-            -- Insert the fixture into the tree or out-of-tree as needed
-            if case.name == "in-tree" then
-                -- Insert fixture into the in-tree structure
-                -- (e.g., copy or symlink to arch/arm64/boot/dts/freescale/custom.dts)
-            else
-                -- Insert fixture into the out-of-tree structure
-                -- (e.g., symlink to out-of-tree/custom.dts)
-            end
-
-            -- Run the tests using the fixture
-            -- (e.g., compile, validate, etc.)
-        end)
-    end
-end)
+Configure your editor to launch the language server with the following command:
+```sh
+anakins-dtls
 ```
 
+## configuration
 
+Since a Devicetree can be in a Yocto or Buildroot project which is outside the
+Linux kernel source tree, `anakins-dtls` has a config file that connects out of
+tree devicetrees to the kernel source tree.
+
+For Yocto you can generate a config file like so:
+```sh
+bitbake-getvar S -r virtual/kernel > .anakins-dtls
+```
+
+For Buildroot you can generate a config file like so:
+```sh
+make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls
+```
+
+## tests
+
+This application was written using test driven development. This repo uses a
+Nix flake, `./flake.nix`, to define the development environment so the `nix`
+package manager is the only requirement for running the tests.
+
+To run the tests simply run:
+```sh
+make
+```
+
+## documentation
+
+One of the benefits of test driven development is that the tests document the
+behaviour of the software under test. Therefore the tests are the
+documentation.
+
+Run the following command to get an overview of all the features of the
+language server:
+```sh
+make
+```
+
+## installation
+
+This application is managed by a Nix flake, `./flake.nix`, so installation can
+be done via the `nix` package manager or through the inputs of other flakes.
+
+To install the language server and its dependencies run:
+```sh
+nix profile add github:anakin4747/anakins-dtls
+```
+
+Or after cloning this repo:
+```sh
+make install
+```
+
+Or as the input of another Nix flake:
+```nix
+{
+  description = "Example Nix Flake";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs";
+    dtls = {
+      url = "github:anakin4747/anakins-dtls";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = inputs@{ self, nixpkgs, ... }:
+  # ...
+}
+```
+
+Or if you do not want to use `nix` you can manually install after cloning with:
+```sh
+make manual-install
+```
+But you will have to install `lua` and `ripgrep` as well.
+
+## features
+
+### hover
+
+All nodes and properties defined in the Devicetree Specification have hover
+documentation from the specification.
+
+### goto definition
+
+Goto definition for node labels.
+
+Goto definition for CPP macros.
+
+### goto implementation
+
+Goto driver implementation when the cursor is on a compatible value that maps
+to a driver in the kernel source tree.
+
+### diagnostics
+
+Minimal diagnostics for missing semicolons or closing braces. More diagnostics
+will be added in the future as needed.
+
+Note that diagnostics only update on saving to disk.
+
+### document symbols
+
+Providing documents symbols.
+
+## future features
+
+See `./TODO.md` has my notes on what I want to implement in the future.
