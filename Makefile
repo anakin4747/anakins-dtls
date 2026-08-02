@@ -5,6 +5,7 @@ endif
 
 .PHONY: make
 make:
+	@grep -Fq 'version = "'$$(git describe --tags --abbrev=0)'";' flake.nix
 	$(SHELL_PREFIX) make test lint fmt-check
 
 .luarc.json:

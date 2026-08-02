@@ -8,7 +8,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        version = "0.1.0";
+        version = "v0.3.0";
         revision = self.rev or (self.dirtyRev or "unknown");
         vscodeExtension = pkgs.buildNpmPackage {
           pname = "vscode-anakins-dtls";
