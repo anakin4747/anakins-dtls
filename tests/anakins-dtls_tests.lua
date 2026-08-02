@@ -4409,6 +4409,17 @@ describe("hover()", function()
     end)
 
     describe("standard properties", function()
+        it("returns compatible hover markdown in a deeply nested node", function()
+            ctx.file = cwd .. "/tests/in-tree/arch/arm64/boot/dts/freescale/imx91_93_common.dtsi"
+            ctx.row, ctx.col = row_col("imx91_93_common.dtsi:29:5")
+
+            local actual = dtls.hover(ctx)
+
+            assert.is_string(actual)
+            assert.matches("## Property Name: compatible", actual)
+            assert.matches("## Path: /cpus/idle%-states/cpu%-pd%-wait/compatible\n", actual)
+        end)
+
         it("returns hover markdown for standard `compatible` property name", function()
             ctx.row, ctx.col = row_col("tests/custom.dts:416:9")
             local expected = dtls.dedent([[

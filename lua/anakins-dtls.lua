@@ -3788,7 +3788,10 @@ function M.hover(ctx)
 
     if M.in_a_cpus_node(ctx) then
         local property_name = property_name_at_cursor(ctx)
-        return cpus_property_markdown[property_name]
+        local markdown = cpus_property_markdown[property_name]
+        if markdown then
+            return markdown
+        end
     end
 
     if M.in_a_memory_node(ctx) then
