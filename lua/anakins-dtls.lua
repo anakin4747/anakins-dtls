@@ -1199,7 +1199,7 @@ end
 local function is_ns16550_node(ctx)
     for _, values in ipairs(compatible_strings(ctx)) do
         for compatible in values:gmatch('"([^"]+)"') do
-            if compatible == "ns16550" then
+            if compatible == "ns16550" or compatible == "ns16550a" then
                 return true
             end
         end

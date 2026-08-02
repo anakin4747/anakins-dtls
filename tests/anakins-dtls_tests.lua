@@ -775,6 +775,13 @@ describe("in_a_ns16550_node()", function()
         assert(dtls.in_a_ns16550_node(ctx))
     end)
 
+    it("returns true if in a node with a compatible string of 'ns16550a'", function()
+        ctx.row, ctx.col = row_col("tests/custom.dts:440:9")
+        assert(with_node_properties({ "compatible" }, { compatible = { '"ns16550a"' } }, function()
+            return dtls.in_a_ns16550_node(ctx)
+        end))
+    end)
+
     it("returns false if not in a ns16550 node", function()
         -- inside serial-device (compatible = "ns8250", not ns16550)
         ctx.row, ctx.col = row_col("tests/custom.dts:426:9")
