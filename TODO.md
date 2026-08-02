@@ -24,40 +24,32 @@ identifying standard nodes:
 diagnostic rules:
 
 - All devicetrees shall have a root node
-- in `node-name@unit-address`, `node-name` shall be 1 to 31 characters in
-  length
+- in `node-name@unit-address`, `node-name` shall be 1 to 31 characters in length
 - in `node-name@unit-address`, `node-name` shall consist of only `0-9` `a-z` `A-Z` `,`  `.`  `_`  `+`  `-`
 - in `node-name@unit-address`, `unit-address` shall consist of only `0-9` `a-z` `A-Z` `,`  `.`  `_`  `+`  `-`
 - The `node-name` shall start with a lower or uppercase character
 - If the node has no `reg` property, the `@unit-address` must be omitted
-- In the case of *node-name* without an *@unit-address* the *node-name* shall
-  be unique from any property names at the same level in the tree.
-- A unit-address must match the reg property (omitting 0x in the unit-address
-  for hex values)
+- In the case of *node-name* without an *@unit-address* the *node-name* shall be unique from any property names at the same level in the tree.
+- A unit-address must match the reg property (omitting 0x in the unit-address for hex values)
 - property names shall be 1 to 31 characters in length
 - property names shall consist of only  `0-9` `a-z` `A-Z` `,` `.` `_` `+` `?` `#` `-`
+
 - a <u64> value shall be represented as two cells <0x11223344 0x55667788> so a
   single cell shall not be larger than 0xFFFFFFFF
-- unmatched braces
-- missing semi-colons
-- uneven indenting as hints
 - Nonstandard property names should specify a unique string prefix, such as a
   stock ticker symbol, identifying the name of the company or organization that
   defined the property. This could be a hint instead of an error. Use list from
   `Generic Names Recommendation` for determining Nonstandard property names.
-- properties with values different from the type they should have
+- properties with values different from the type they should have warnings
 - `<prop-encoded-array>` doesn't match the property definition
-- hints for deprecated nodes like `linux,phandle` or device_type properties
-  outside of cpu and memory nodes
+- hints for deprecated nodes like `linux,phandle` or device_type properties outside of cpu and memory nodes
 - errors on duplicate properties
 - missing one /cpus node is an error
 - more than one /cpus is an error
 - missing /memory node
 - ``/dts-v1/;`` shall be present to identify the file as a version 1 DTS
-- The client program may access memory not covered by any memory reservations,
-  so error if the client program tries to use reserved memory
-- Unit address (``@<address>``) should be appended to the name if the node is a
-  static allocation (for /reserved-memory child nodes)
+- The client program may access memory not covered by any memory reservations, so error if the client program tries to use reserved memory
+- Unit address (``@<address>``) should be appended to the name if the node is a static allocation (for /reserved-memory child nodes)
 - warnings if required root node properties do not exist
 - hints if optional but recommended root node properties do not exist
 
