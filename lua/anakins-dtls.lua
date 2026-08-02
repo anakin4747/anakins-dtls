@@ -1085,6 +1085,137 @@ local function properties_in_bounds(file, bounds)
     return properties, values
 end
 
+local function symbol_range(start_row, start_col, end_row, end_col)
+    return {
+        start = { line = start_row - 1, character = start_col - 1 },
+        ["end"] = { line = end_row - 1, character = end_col },
+    }
+end
+
+local function symbol_code_line(line, in_block_comment)
+    local code = {}
+    local in_string = false
+    local escaped = false
+    local col = 1
+    while col <= #line do
+        local char = line:sub(col, col)
+        local following_char = line:sub(col + 1, col + 1)
+        if in_block_comment then
+            code[#code + 1] = " "
+            if char == "*" and following_char == "/" then
+                code[#code + 1] = " "
+                in_block_comment = false
+                col = col + 1
+            end
+        elseif in_string then
+            code[#code + 1] = " "
+            if escaped then
+                escaped = false
+            elseif char == "\\" then
+                escaped = true
+            elseif char == '"' then
+                in_string = false
+            end
+        elseif char == "/" and following_char == "*" then
+            code[#code + 1] = " "
+            code[#code + 1] = " "
+            in_block_comment = true
+            col = col + 1
+        elseif char == "/" and following_char == "/" then
+            while #code < #line do
+                code[#code + 1] = " "
+            end
+            break
+        elseif char == '"' then
+            code[#code + 1] = " "
+            in_string = true
+        else
+            code[#code + 1] = char
+        end
+        col = col + 1
+    end
+    return table.concat(code), in_block_comment
+end
+
+function M.document_symbols(file)
+    local symbols = json.array()
+    local stack = {}
+    local pending_property
+    local in_block_comment = false
+
+    for row, line in ipairs(read_lines(file)) do
+        local code
+        code, in_block_comment = symbol_code_line(line, in_block_comment)
+
+        if pending_property then
+            local semicolon_col = code:find(";", 1, true)
+            if semicolon_col then
+                pending_property.range["end"] = { line = row - 1, character = semicolon_col }
+                pending_property = nil
+            end
+        end
+
+        local open_col = code:find("{", 1, true)
+        if open_col then
+            local declaration = code:sub(1, open_col - 1):match("^%s*(.-)%s*$")
+            if declaration ~= "" then
+                local start_col = code:find("%S")
+                local selection_end_col = open_col - 1
+                while code:sub(selection_end_col, selection_end_col):match("%s") do
+                    selection_end_col = selection_end_col - 1
+                end
+                local symbol = {
+                    name = declaration,
+                    kind = 3,
+                    range = symbol_range(row, start_col, row, open_col),
+                    selectionRange = symbol_range(row, start_col, row, selection_end_col),
+                }
+                local parent = stack[#stack]
+                if parent then
+                    parent.children = parent.children or json.array()
+                    parent.children[#parent.children + 1] = symbol
+                else
+                    symbols[#symbols + 1] = symbol
+                end
+                stack[#stack + 1] = symbol
+            end
+        elseif not pending_property and stack[#stack] then
+            local label, name, separator = code:match("^%s*([%w_]+)%s*:%s*([%w#?,._+%-]+)%s*([=;])")
+            if not name then
+                name, separator = code:match("^%s*([%w#?,._+%-]+)%s*([=;])")
+            end
+            if name then
+                local start_col = code:find("%S")
+                local name_start = code:find(name, start_col, true)
+                local semicolon_col = code:find(";", name_start + #name, true)
+                local symbol = {
+                    name = label and (label .. ": " .. name) or name,
+                    kind = 7,
+                    range = symbol_range(row, start_col, row, semicolon_col or #line),
+                    selectionRange = symbol_range(row, name_start, row, name_start + #name - 1),
+                }
+                local parent = stack[#stack]
+                parent.children = parent.children or json.array()
+                parent.children[#parent.children + 1] = symbol
+                if separator == "=" and not semicolon_col then
+                    pending_property = symbol
+                end
+            end
+        end
+
+        for close_col in code:gmatch("()}()") do
+            local symbol = stack[#stack]
+            if symbol then
+                local semicolon_col = code:find(";", close_col, true)
+                symbol.range["end"] = { line = row - 1, character = semicolon_col or close_col - 1 }
+                stack[#stack] = nil
+            end
+        end
+    end
+
+    return symbols
+end
+
 local function included_files(file, root, seen, results)
     seen = seen or {}
     results = results or {}
@@ -4202,6 +4333,7 @@ default_handlers["initialize"] = function(server, msg)
             hoverProvider = true,
             definitionProvider = true,
             implementationProvider = true,
+            documentSymbolProvider = true,
         },
     })
 end
@@ -4314,6 +4446,12 @@ default_handlers["textDocument/implementation"] = function(server, msg)
     else
         send_response(server, msg.id, json.NULL)
     end
+end
+
+default_handlers["textDocument/documentSymbol"] = function(server, msg)
+    local params = msg.params or {}
+    local file = uri_to_path((params.textDocument or {}).uri)
+    send_response(server, msg.id, M.document_symbols(file))
 end
 
 default_handlers["workspace/didChangeWorkspaceFolders"] = function(server, msg)

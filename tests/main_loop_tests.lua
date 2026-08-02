@@ -650,6 +650,37 @@ describe("textDocument/implementation", function()
     end)
 end)
 
+describe("textDocument/documentSymbol", function()
+    it("advertises documentSymbolProvider in the initialize response capabilities", function()
+        local server = dtls.new_server(dtls.new_memory_channel())
+        server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.is_true(output[1].result.capabilities.documentSymbolProvider)
+    end)
+
+    it("responds with every symbol in the requested document", function()
+        local server = new_server_in_state("initialized")
+        server.channel:push_input(frame({
+            method = "textDocument/documentSymbol",
+            id = 8,
+            params = {
+                textDocument = { uri = ("file://%s/tests/document-symbols.dts"):format(project_root) },
+            },
+        }))
+
+        dtls.server_step(server)
+
+        local output = parse_output(server.channel)
+        assert.are.equal(8, output[1].id)
+        assert.are.equal(2, #output[1].result)
+        assert.are.equal("/", output[1].result[1].name)
+        assert.are.equal("&bus_label", output[1].result[2].name)
+    end)
+end)
+
 describe("error handling", function()
     it("catches a Lua error thrown while handling a message and keeps running", function()
         local server = new_server_in_state("initialized")

@@ -31,6 +31,46 @@ local function with_node_properties(properties, values, callback)
     return result
 end
 
+describe("document_symbols()", function()
+    local symbols = dtls.document_symbols("tests/document-symbols.dts")
+
+    it("lists nodes and direct properties hierarchically", function()
+        assert.are.equal(2, #symbols)
+        assert.are.equal("/", symbols[1].name)
+        assert.are.equal(3, symbols[1].kind)
+        assert.are.equal("compatible", symbols[1].children[1].name)
+        assert.are.equal(7, symbols[1].children[1].kind)
+        assert.are.equal("enabled", symbols[1].children[2].name)
+        assert.are.equal("bus_label: bus@1000", symbols[1].children[3].name)
+        assert.are.equal("child@0", symbols[1].children[3].children[2].name)
+        assert.are.equal("status", symbols[1].children[3].children[2].children[1].name)
+    end)
+
+    it("lists labelled node overlays", function()
+        assert.are.equal("&bus_label", symbols[2].name)
+        assert.are.equal("clock-frequency", symbols[2].children[1].name)
+    end)
+
+    it("reports complete and selection ranges in LSP coordinates", function()
+        assert.same({
+            start = { line = 6, character = 4 },
+            ["end"] = { line = 13, character = 6 },
+        }, symbols[1].children[3].range)
+        assert.same({
+            start = { line = 6, character = 4 },
+            ["end"] = { line = 6, character = 23 },
+        }, symbols[1].children[3].selectionRange)
+        assert.same({
+            start = { line = 7, character = 8 },
+            ["end"] = { line = 8, character = 22 },
+        }, symbols[1].children[3].children[1].range)
+        assert.same({
+            start = { line = 7, character = 8 },
+            ["end"] = { line = 7, character = 11 },
+        }, symbols[1].children[3].children[1].selectionRange)
+    end)
+end)
+
 local handle = io.popen("pwd")
 local cwd = handle:read("*l")
 handle:close()

@@ -1,0 +1,19 @@
+/dts-v1/;
+
+/ {
+    compatible = "test,board";
+    enabled;
+
+    bus_label: bus@1000 {
+        reg = <0x1000
+               0x100>;
+
+        child@0 {
+            status = "okay";
+        };
+    };
+};
+
+&bus_label {
+    clock-frequency = <1000000>;
+};
