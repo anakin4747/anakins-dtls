@@ -70,52 +70,6 @@ Do rule checking on didOpen, didChange, and didSave
 
 ---
 
-Hover:
-
-                    # Devicetree Specification:
-
-                    ## Property Name: model
-
-                    ## Path: /model
-
-                    ## Usage: Required
-
-                    ## Value Type: `<string>`
-
-                    ## Definition:
-
-                    Specifies a string that uniquely identifies the model of the system board. The recommended format is "manufacturer,model-number".
-
-                    ## Type Definition:
-
-
-    Devicetree Bindings from Kernel Documentation: (Optional if found)
-
-    /* ... */
-
-    Devicetree Bindings from Specification: (Optional if found)
-
-    /* ... */ from chapter 4
-
-    Devicetree Specification:
-
-    /* ... */
-
-    Type Definition:
-
-    /* ... */ from chapter 2
-
-    Anakin's Opinion:
-
-    /* ... */
-
-
----
-
-cwd is sent via the initialize request or workspace/didChangeWorkspaceFolders
-
----
-
 when you are in a dts you know that you are appending the nodes in dtsi but
 when you are in dtsi the language server wont know which dts so it should have
 to assume the perspective of the dtsi
@@ -134,19 +88,6 @@ easiest I don't want to manage state when the filesystem already can
 }
 
 react on textDocument/didSave instead
-
----
-
-a way to enable logging for getting a debug tracing for automated bug capturing
-
-anakins-dtls --trace
-
----
-
-and a way to save the json RPC messages from Neovim verbatim for known good
-fixtures
-
-anakins-dtls --save-rpc-to /path/to/save/to/
 
 ---
 
