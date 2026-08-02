@@ -5370,6 +5370,43 @@ describe("out_of_tree_without_config()", function()
         }
         assert(not dtls.out_of_tree_without_config(ctx))
     end)
+
+    for _, project_type in ipairs({ "yocto", "buildroot" }) do
+        it("returns false when " .. project_type .. " default kernel sources are present", function()
+            local project = ("%s/tests/default-kernel-sources/%s"):format(cwd, project_type)
+            ctx = {
+                file = project .. "/devicetree.dts",
+                workspace_root = project,
+            }
+            assert(not dtls.out_of_tree_without_config(ctx))
+        end)
+    end
+end)
+
+describe("kernel_root()", function()
+    it("finds Yocto's default kernel source location", function()
+        local project = ("%s/tests/default-kernel-sources/yocto"):format(cwd)
+
+        assert.are.equal(
+            project .. "/build-machine/tmp/work-shared/board/kernel-sources",
+            dtls.kernel_root(project .. "/devicetree.dts")
+        )
+    end)
+
+    it("finds Buildroot's default kernel source location", function()
+        local project = ("%s/tests/default-kernel-sources/buildroot"):format(cwd)
+
+        assert.are.equal(
+            project .. "/output/build/linux-6.12",
+            dtls.kernel_root(project .. "/devicetree.dts")
+        )
+    end)
+
+    it("prefers Buildroot's LINUX_DIR config output over default kernel source locations", function()
+        local project = ("%s/tests/default-kernel-sources/config-priority"):format(cwd)
+
+        assert.are.equal(project .. "/configured-linux", dtls.kernel_root(project .. "/device/devicetree.dts"))
+    end)
 end)
 
 describe("missing file", function()

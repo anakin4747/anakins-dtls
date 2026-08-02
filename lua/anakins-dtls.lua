@@ -540,8 +540,22 @@ local function find_file(root, name)
     return file
 end
 
-local function kernel_root(file)
+local function default_kernel_root(directory)
+    local root = shell_quote(directory)
+    local command = (
+        "for directory in %s %s; do "
+        .. 'if [ -d "$directory" ]; then printf \'%%s\\n\' "$directory"; break; fi; '
+        .. "done"
+    ):format(root .. "/build*/tmp/work-shared/*/kernel-sources", root .. "/output/build/linux-*")
+    local handle = io.popen(command)
+    local source = handle:read("*l")
+    handle:close()
+    return source
+end
+
+function M.kernel_root(file)
     local directory = parent_directory(file)
+    local fallback
     while directory do
         if
             path_exists(directory .. "/arch")
@@ -554,7 +568,7 @@ local function kernel_root(file)
         local config = io.open(directory .. "/.anakins-dtls", "r")
         if config then
             for line in config:lines() do
-                local source = line:match('^%s*S%s*=%s*"([^"]+)"')
+                local source = line:match('^%s*S%s*=%s*"([^"]+)"') or line:match("^%s*LINUX_DIR%s*=%s*(.-)%s*$")
                 if source then
                     config:close()
                     if source:sub(1, 1) == "/" then
@@ -566,12 +580,16 @@ local function kernel_root(file)
             config:close()
         end
 
+        fallback = fallback or default_kernel_root(directory)
+
         local parent = parent_directory(directory)
         if not parent or parent == directory then
             break
         end
         directory = parent
     end
+
+    return fallback
 end
 
 function M.out_of_tree_without_config(ctx)
@@ -596,6 +614,10 @@ function M.out_of_tree_without_config(ctx)
             break
         end
         directory = parent
+    end
+
+    if M.kernel_root(ctx.file) then
+        return false
     end
 
     return not path_exists(ctx.workspace_root .. "/.anakins-dtls")
@@ -787,7 +809,7 @@ function M.list_node_properties(ctx)
         return properties, values
     end
 
-    local root = kernel_root(ctx.file)
+    local root = M.kernel_root(ctx.file)
     for _, file in ipairs(included_files(ctx.file, root)) do
         for _, candidate in
             ipairs(find_all_node_bounds(file, function()
@@ -1268,7 +1290,7 @@ function M.on_a_label_reference(ctx)
 end
 
 local function find_node_label_bounds(ctx, label)
-    local root = kernel_root(ctx.file)
+    local root = M.kernel_root(ctx.file)
     for _, file in ipairs(included_files(ctx.file, root)) do
         for _, bounds in
             ipairs(find_all_node_bounds(file, function()
@@ -1288,7 +1310,7 @@ function M.find_node_label_definition(ctx)
         return nil
     end
 
-    local root = kernel_root(ctx.file)
+    local root = M.kernel_root(ctx.file)
     for _, file in ipairs(included_files(ctx.file, root)) do
         for _, bounds in
             ipairs(find_all_node_bounds(file, function()
@@ -1328,7 +1350,7 @@ end
 
 function M.goto_implementation(ctx)
     local compatible = compatible_string_at_cursor(ctx)
-    local root = compatible and kernel_root(ctx.file)
+    local root = compatible and M.kernel_root(ctx.file)
     if not root then
         return nil
     end
@@ -3747,6 +3769,10 @@ default_handlers["textDocument/didOpen"] = function(server, msg)
                 .. "In a Yocto project you can generate one with:\n"
                 .. "```sh\n"
                 .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
+                .. "```\n"
+                .. "For buildroot run the following command:\n"
+                .. "```sh\n"
+                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n"
                 .. "```",
         })
     end

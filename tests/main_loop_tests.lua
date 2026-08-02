@@ -359,6 +359,10 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
                 .. "In a Yocto project you can generate one with:\n"
                 .. "```sh\n"
                 .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n"
+                .. "```\n"
+                .. "For buildroot run the following command:\n"
+                .. "```sh\n"
+                .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n"
                 .. "```",
             output[1].params.message
         )
