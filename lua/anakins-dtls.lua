@@ -1704,6 +1704,36 @@ local function identifier_at_cursor(ctx)
     end
 end
 
+local function find_macro_in_header(file, root, macro, seen)
+    if seen[file] then
+        return nil
+    end
+    seen[file] = true
+
+    for row, line in ipairs(read_lines(file)) do
+        local leading, defined = line:match("^(%s*#%s*define%s+)([%a_][%w_]*)")
+        if defined == macro then
+            local start_col = #leading + 1
+            return {
+                file = file,
+                row = row,
+                start_col = start_col,
+                end_col = start_col + #macro - 1,
+            }
+        end
+    end
+
+    for _, header in ipairs(included_headers(file)) do
+        local included = resolve_header(file, root, header)
+        if included then
+            local definition = find_macro_in_header(included, root, macro, seen)
+            if definition then
+                return definition
+            end
+        end
+    end
+end
+
 function M.find_cpp_macro_definition(ctx)
     local macro = identifier_at_cursor(ctx)
     if not macro then
@@ -1716,20 +1746,13 @@ function M.find_cpp_macro_definition(ctx)
     end
 
     local root = M.kernel_root(ctx.file)
+    local seen = {}
     for _, header in ipairs(headers) do
         local file = resolve_header(ctx.file, root, header)
         if file then
-            for row, line in ipairs(read_lines(file)) do
-                local leading, defined = line:match("^(%s*#%s*define%s+)([%a_][%w_]*)")
-                if defined == macro then
-                    local start_col = #leading + 1
-                    return {
-                        file = file,
-                        row = row,
-                        start_col = start_col,
-                        end_col = start_col + #macro - 1,
-                    }
-                end
+            local definition = find_macro_in_header(file, root, macro, seen)
+            if definition then
+                return definition
             end
         end
     end

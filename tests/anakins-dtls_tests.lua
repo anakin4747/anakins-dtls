@@ -1164,6 +1164,23 @@ describe("find_cpp_macro_definition() without headers", function()
     end)
 end)
 
+describe("find_cpp_macro_definition() with recursive headers", function()
+    it("finds a macro definition in a recursively included header", function()
+        ctx = {
+            row = 4,
+            col = 15,
+            file = cwd .. "/tests/recursive-headers.dts",
+        }
+
+        assert.are.same({
+            file = cwd .. "/tests/headers/inner.h",
+            row = 2,
+            start_col = 9,
+            end_col = 24,
+        }, dtls.find_cpp_macro_definition(ctx))
+    end)
+end)
+
 describe("goto_definition()", function()
     it("returns the node label definition at a label reference", function()
         ctx.row, ctx.col = row_col("tests/custom.dts:76:26")
