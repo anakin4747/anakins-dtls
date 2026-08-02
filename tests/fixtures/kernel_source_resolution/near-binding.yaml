@@ -1,8 +1,0 @@
-title: Nearby Widget
-
-description: |
-  Binding used to prove that the nearest kernel source found while crawling upward is selected.
-
-properties:
-  compatible:
-    const: vendor,widget-a
