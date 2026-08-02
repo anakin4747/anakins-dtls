@@ -3745,7 +3745,7 @@ default_handlers["initialize"] = function(server, msg)
     server.state = "initialized"
     send_response(server, msg.id, {
         capabilities = {
-            textDocumentSync = 1,
+            textDocumentSync = 0,
             hoverProvider = true,
             definitionProvider = true,
             implementationProvider = true,
@@ -3969,6 +3969,14 @@ local function running_as_main_script()
 end
 
 if running_as_main_script() then
+    if arg[1] == "--version" or arg[1] == "-v" then
+        local version = os.getenv("ANAKINS_DTLS_VERSION") or "unknown"
+        local revision = os.getenv("ANAKINS_DTLS_REVISION") or "unknown"
+        io.write("having a hoot and a holler\n")
+        io.write(("anakins-dtls %s (%s)\n"):format(version, revision))
+        os.exit(0)
+    end
+
     local server = M.new_server(new_stdio_channel())
     M.server_run(server)
     os.exit(server.exit_code or 0)

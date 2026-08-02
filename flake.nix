@@ -8,11 +8,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        version = "0.1.0";
+        revision = self.rev or (self.dirtyRev or "unknown");
       in
       with pkgs; {
         packages.default = stdenvNoCC.mkDerivation {
-          pname = "lua-hello-world";
-          version = "0.1.0";
+          pname = "anakins-dtls";
+          inherit version;
 
           src = ./.;
           dontBuild = true;
@@ -23,7 +25,10 @@
             runHook preInstall
             patchShebangs lua/anakins-dtls.lua
             install -Dm755 lua/anakins-dtls.lua $out/bin/anakins-dtls
-            wrapProgram $out/bin/anakins-dtls --prefix PATH : ${lib.makeBinPath [ ripgrep ]}
+            wrapProgram $out/bin/anakins-dtls \
+              --prefix PATH : ${lib.makeBinPath [ lua ripgrep ]} \
+              --set ANAKINS_DTLS_VERSION ${lib.escapeShellArg version} \
+              --set ANAKINS_DTLS_REVISION ${lib.escapeShellArg revision}
             runHook postInstall
           '';
         };

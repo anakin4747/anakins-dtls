@@ -369,6 +369,16 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
     end)
 end)
 
+it("advertises no text document synchronization", function()
+    local server = dtls.new_server(dtls.new_memory_channel())
+    server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
+
+    dtls.server_step(server)
+
+    local output = parse_output(server.channel)
+    assert.are.equal(0, output[1].result.capabilities.textDocumentSync)
+end)
+
 describe("textDocument/hover", function()
     it("advertises hoverProvider in the initialize response capabilities", function()
         local server = dtls.new_server(dtls.new_memory_channel())
@@ -705,3 +715,21 @@ it("runs correctly even when invoked under a different file name, as when instal
     assert.same(json.NULL, output[2].result)
     assert.are.equal(2, #output)
 end)
+
+for _, flag in ipairs({ "--version", "-v" }) do
+    it("reports the installed tag version and Git revision with " .. flag, function()
+        local outfile = os.tmpname()
+
+        os.execute(
+            "ANAKINS_DTLS_VERSION=1.2.3 ANAKINS_DTLS_REVISION=abcdef0 "
+                .. ("lua lua/anakins-dtls.lua %s > %q"):format(flag, outfile)
+        )
+
+        local output_handle = io.open(outfile, "r")
+        local output = output_handle:read("*a")
+        output_handle:close()
+        os.remove(outfile)
+
+        assert.are.equal("having a hoot and a holler\nanakins-dtls 1.2.3 (abcdef0)\n", output)
+    end)
+end
