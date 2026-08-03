@@ -87,6 +87,23 @@ make manual-install
 ```
 But you will have to install `lua` and `ripgrep` as well.
 
+### uninstallation
+
+If installed with `nix`:
+```sh
+nix profile remove anakins-dtls
+```
+
+If installed with `nix` by the Makefile:
+```sh
+make uninstall
+```
+
+If manually installed without `nix` through the Makefile:
+```sh
+make manual-uninstall
+```
+
 ## features
 
 ### hover
