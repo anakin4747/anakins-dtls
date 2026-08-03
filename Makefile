@@ -43,3 +43,7 @@ manual-install:
 		-e '/ANAKINS_DTLS_VERSION/s/or "unknown"/or "$(VERSION)"/' \
 		-e '/ANAKINS_DTLS_REVISION/s/or "unknown"/or "$(REVISION)"/' \
 		"$(DESTDIR)$(PREFIX)/bin/anakins-dtls"
+
+.PHONY: manual-uninstall
+manual-uninstall:
+	rm -f "$(DESTDIR)$(PREFIX)/bin/anakins-dtls"
