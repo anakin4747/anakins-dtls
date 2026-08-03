@@ -5576,6 +5576,45 @@ describe("kernel_root()", function()
     end
 end)
 
+describe("missing_kernel_sources_warning()", function()
+    local cases = {
+        {
+            project_type = "Yocto",
+            directory = "yocto",
+            source = "build/tmp/work/kernel-source",
+            command = "bitbake -c unpack virtual/kernel",
+        },
+        {
+            project_type = "Buildroot",
+            directory = "buildroot",
+            source = "output/build/linux-6.12",
+            command = "make linux-extract",
+        },
+    }
+
+    for _, case in ipairs(cases) do
+        it("returns a warning for missing " .. case.project_type .. " kernel sources", function()
+            local project = ("%s/tests/missing-kernel-sources/%s"):format(cwd, case.directory)
+
+            assert.are.equal(
+                ("Kernel sources path does not exist:\n%s/%s\n\nFor %s, create it with:\n%s"):format(
+                    project,
+                    case.source,
+                    case.project_type,
+                    case.command
+                ),
+                dtls.missing_kernel_sources_warning(project .. "/devicetree.dts")
+            )
+        end)
+    end
+
+    it("returns nil when configured kernel sources exist", function()
+        local project = ("%s/tests/out-of-tree"):format(cwd)
+
+        assert.is_nil(dtls.missing_kernel_sources_warning(project .. "/custom.dts"))
+    end)
+end)
+
 describe("missing file", function()
     local function_names = {
         "out_of_tree_without_config",

@@ -905,6 +905,49 @@ function M.kernel_root(file)
     return fallback
 end
 
+function M.missing_kernel_sources_warning(file)
+    local directory = parent_directory(file)
+    while directory do
+        local config = io.open(directory .. "/.anakins-dtls", "r")
+        if config then
+            for line in config:lines() do
+                local source = line:match('^%s*S%s*=%s*"([^"]+)"')
+                local project_type = "Yocto"
+                local command = "bitbake -c unpack virtual/kernel"
+                if not source then
+                    source = line:match("^%s*LINUX_DIR%s*=%s*(.-)%s*$")
+                    project_type = "Buildroot"
+                    command = "make linux-extract"
+                end
+                if source then
+                    config:close()
+                    local path = source
+                    if path:sub(1, 1) ~= "/" then
+                        path = directory .. "/" .. path:gsub("^%./", "")
+                    end
+                    if not path_exists(path) then
+                        return ("Kernel sources path does not exist:\n%s\n\nFor %s, create it with:\n%s"):format(
+                            path,
+                            project_type,
+                            command
+                        )
+                    end
+                    return nil
+                end
+            end
+            config:close()
+        end
+
+        local parent = parent_directory(directory)
+        if not parent or parent == directory then
+            break
+        end
+        directory = parent
+    end
+
+    return nil
+end
+
 function M.out_of_tree_without_config(ctx)
     local file = io.open(ctx.file, "r")
     if not file then
@@ -4363,6 +4406,14 @@ default_handlers["textDocument/didOpen"] = function(server, msg)
                 .. "bitbake-getvar S -r virtual/kernel > .anakins-dtls\n\n"
                 .. "For buildroot run the following command to generate one:\n"
                 .. "make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls\n",
+        })
+    end
+
+    local warning = M.missing_kernel_sources_warning(ctx.file)
+    if warning then
+        send_notification(server, "window/showMessage", {
+            type = 2,
+            message = warning,
         })
     end
 

@@ -412,6 +412,62 @@ describe("out-of-tree devicetree with no .anakins-dtls", function()
     end)
 end)
 
+describe("configured kernel sources path does not exist", function()
+    local cases = {
+        {
+            project_type = "Yocto",
+            directory = "yocto",
+            source = "build/tmp/work/kernel-source",
+            command = "bitbake -c unpack virtual/kernel",
+        },
+        {
+            project_type = "Buildroot",
+            directory = "buildroot",
+            source = "output/build/linux-6.12",
+            command = "make linux-extract",
+        },
+    }
+
+    for _, case in ipairs(cases) do
+        it("warns with the " .. case.project_type .. " command on didOpen", function()
+            local project = ("%s/tests/missing-kernel-sources/%s"):format(project_root, case.directory)
+            local uri = "file://" .. project .. "/devicetree.dts"
+            local server = dtls.new_server(dtls.new_memory_channel())
+
+            server.channel:push_input(frame({
+                method = "initialize",
+                id = 1,
+                params = { workspaceFolders = { { uri = "file://" .. project, name = "repo" } } },
+            }))
+            dtls.server_step(server)
+            server.channel:take_output()
+
+            server.channel:push_input(frame({
+                method = "textDocument/didOpen",
+                params = { textDocument = { uri = uri } },
+            }))
+            dtls.server_step(server)
+
+            local output = parse_output(server.channel)
+            assert.are.equal(2, #output)
+            assert.same({
+                jsonrpc = "2.0",
+                method = "window/showMessage",
+                params = {
+                    type = 2,
+                    message = ("Kernel sources path does not exist:\n%s/%s\n\nFor %s, create it with:\n%s"):format(
+                        project,
+                        case.source,
+                        case.project_type,
+                        case.command
+                    ),
+                },
+            }, output[1])
+            assert.are.equal("textDocument/publishDiagnostics", output[2].method)
+        end)
+    end
+end)
+
 it("requests open and save notifications without document content synchronization", function()
     local server = dtls.new_server(dtls.new_memory_channel())
     server.channel:push_input(frame({ method = "initialize", id = 1, params = {} }))
