@@ -1,0 +1,11 @@
+/ {
+	missing-brace
+		compatible = "vendor,device";
+	};
+
+	missing_colon labelled-node {
+	};
+
+	valid_label: valid-node {
+	};
+};

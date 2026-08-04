@@ -104,6 +104,37 @@ describe("get_diagnostics()", function()
             }, dtls.get_diagnostics(cwd .. "/tests/missing-closing-delimiters.dts"))
         end)
 
+        it("for missing node opening braces and label colons", function()
+            local diagnostics = dtls.get_diagnostics(cwd .. "/tests/missing-node-syntax.dts")
+            local actual = {}
+            for _, item in ipairs(diagnostics) do
+                if item.message == "Missing opening brace" or item.message == "Missing colon after label" then
+                    actual[#actual + 1] = item
+                end
+            end
+
+            assert.same({
+                {
+                    range = {
+                        start = { line = 1, character = 14 },
+                        ["end"] = { line = 1, character = 14 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Missing opening brace",
+                },
+                {
+                    range = {
+                        start = { line = 5, character = 1 },
+                        ["end"] = { line = 5, character = 14 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Missing colon after label",
+                },
+            }, actual)
+        end)
+
         it("for values too large to fit in a cell", function()
             assert.same({
                 {
