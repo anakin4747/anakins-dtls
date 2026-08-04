@@ -927,6 +927,7 @@ for _, flag in ipairs({ "--help", "-h" }) do
 
             Generate .anakins-dtls for Yocto:
               bitbake-getvar S -r virtual/kernel > .anakins-dtls
+
         ]])
 
         os.execute(("lua lua/anakins-dtls.lua %s > %q"):format(flag, outfile))

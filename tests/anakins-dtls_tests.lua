@@ -8,6 +8,12 @@ local before_each = busted.before_each
 package.path = "./lua/?.lua;" .. package.path
 local dtls = require("anakins-dtls")
 
+describe("dedent()", function()
+    it("preserves trailing newlines", function()
+        assert.are.equal("text\n", dtls.dedent("\n    text\n\n    "))
+    end)
+end)
+
 local function row_col(filename_linenumber)
     local row, col = filename_linenumber:match(":(%d+):(%d+)")
     return tonumber(row), tonumber(col)
@@ -4600,9 +4606,7 @@ describe("hover()", function()
 
                 ## Example:
 
-                `model = "fsl,MPC8349EMITX";`
-
-            ]]) .. dtls.get_type_definition("string")
+                `model = "fsl,MPC8349EMITX";`]]) .. dtls.get_type_definition("string")
             local actual = dtls.hover(ctx)
             assert.are.same(expected, actual)
         end)

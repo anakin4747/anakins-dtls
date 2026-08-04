@@ -411,6 +411,7 @@ local M = {}
 M.json = json
 
 function M.dedent(text)
+    text = text:gsub("\n[ \t]+$", "")
     text = text:gsub("^\n", "")
 
     local indent
@@ -428,7 +429,7 @@ function M.dedent(text)
         text = text:gsub("^" .. indent, "")
     end
 
-    return (text:gsub("%s+$", ""))
+    return (text:gsub("[ \t]+$", ""))
 end
 
 local type_definitions = {
@@ -4943,7 +4944,8 @@ Generate .anakins-dtls for Buildroot:
   make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls
 
 Generate .anakins-dtls for Yocto:
-  bitbake-getvar S -r virtual/kernel > .anakins-dtls]])
+  bitbake-getvar S -r virtual/kernel > .anakins-dtls
+]])
         os.exit(0)
     end
 
