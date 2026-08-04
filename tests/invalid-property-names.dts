@@ -1,0 +1,12 @@
+/ {
+	abcdefghijklmnopqrstuvwxyzabcdef = <0>;
+	bad$property = <0>;
+	valid,property.name_+#-? = <0>;
+
+	duplicate = <1>;
+	duplicate = <2>;
+
+	child {
+		duplicate = <3>;
+	};
+};

@@ -215,6 +215,48 @@ describe("get_diagnostics()", function()
         end)
     end)
 
+    describe("reports invalid properties", function()
+        it("checks property names and duplicate properties", function()
+            local diagnostics = dtls.get_diagnostics(cwd .. "/tests/invalid-property-names.dts")
+            local actual = {}
+            for _, item in ipairs(diagnostics) do
+                if item.message:find("Property", 1, true) or item.message:find("Duplicate", 1, true) then
+                    actual[#actual + 1] = item
+                end
+            end
+
+            assert.same({
+                {
+                    range = {
+                        start = { line = 1, character = 1 },
+                        ["end"] = { line = 1, character = 33 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Property name must be 1 to 31 characters long",
+                },
+                {
+                    range = {
+                        start = { line = 2, character = 1 },
+                        ["end"] = { line = 2, character = 13 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Property name contains an invalid character",
+                },
+                {
+                    range = {
+                        start = { line = 6, character = 1 },
+                        ["end"] = { line = 6, character = 10 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Duplicate property 'duplicate'",
+                },
+            }, actual)
+        end)
+    end)
+
     describe("hints about inconsistent indentation", function()
         it("accepts consistent tab indentation", function()
             local diagnostics = dtls.get_diagnostics(

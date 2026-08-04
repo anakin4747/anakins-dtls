@@ -974,8 +974,34 @@ local function node_name_diagnostics(lines)
                 if node.pending_reg and not node.reg then
                     collect_reg_cells(node, code)
                 end
-                local property = code:match("^%s*([^%s=;{}]+)%s*[=;]")
+                local property = code:match("^%s*([^%s=;{}<>]+)%s*[=;]")
                 if property then
+                    local property_item = { row = row }
+                    local property_col = code:find(property, 1, true)
+                    if #property < 1 or #property > 31 then
+                        diagnostics[#diagnostics + 1] = name_diagnostic(
+                            property_item,
+                            "Property name must be 1 to 31 characters long",
+                            property_col,
+                            #property
+                        )
+                    end
+                    if property:find("[^%w,._+?#%-]") then
+                        diagnostics[#diagnostics + 1] = name_diagnostic(
+                            property_item,
+                            "Property name contains an invalid character",
+                            property_col,
+                            #property
+                        )
+                    end
+                    if node.properties[property] then
+                        diagnostics[#diagnostics + 1] = name_diagnostic(
+                            property_item,
+                            ("Duplicate property '%s'"):format(property),
+                            property_col,
+                            #property
+                        )
+                    end
                     node.properties[property] = true
                     if property == "#address-cells" then
                         node.address_cells = tonumber(code:match("<%s*(%d+)")) or node.address_cells
