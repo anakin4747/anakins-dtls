@@ -40,6 +40,15 @@ describe("get_diagnostics()", function()
                 },
                 {
                     range = {
+                        start = { line = 8, character = 14 },
+                        ["end"] = { line = 8, character = 22 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Unit address must match the first address in reg",
+                },
+                {
+                    range = {
                         start = { line = 12, character = 13 },
                         ["end"] = { line = 12, character = 13 },
                     },
@@ -125,6 +134,84 @@ describe("get_diagnostics()", function()
                     message = "Cell value exceeds 0xFFFFFFFF; represent a <u64> as two cells",
                 },
             }, dtls.get_diagnostics(cwd .. "/tests/oversized-cells.dts"))
+        end)
+    end)
+
+    describe("reports invalid node names", function()
+        it("checks node-name and unit-address requirements", function()
+            local diagnostics = dtls.get_diagnostics(cwd .. "/tests/invalid-node-names.dts")
+            local actual = {}
+            for _, item in ipairs(diagnostics) do
+                if item.message:find("Node name", 1, true) or item.message:find("Unit address", 1, true) then
+                    actual[#actual + 1] = item
+                end
+            end
+
+            assert.same({
+                {
+                    range = {
+                        start = { line = 3, character = 1 },
+                        ["end"] = { line = 3, character = 33 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Node name must be 1 to 31 characters long",
+                },
+                {
+                    range = {
+                        start = { line = 7, character = 1 },
+                        ["end"] = { line = 7, character = 9 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Node name contains an invalid character",
+                },
+                {
+                    range = {
+                        start = { line = 11, character = 8 },
+                        ["end"] = { line = 11, character = 17 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Unit address contains an invalid character",
+                },
+                {
+                    range = {
+                        start = { line = 15, character = 1 },
+                        ["end"] = { line = 15, character = 8 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Node name must start with a letter",
+                },
+                {
+                    range = {
+                        start = { line = 18, character = 13 },
+                        ["end"] = { line = 18, character = 14 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Unit address must be omitted when the node has no reg property",
+                },
+                {
+                    range = {
+                        start = { line = 21, character = 15 },
+                        ["end"] = { line = 21, character = 16 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Unit address must match the first address in reg",
+                },
+                {
+                    range = {
+                        start = { line = 38, character = 1 },
+                        ["end"] = { line = 38, character = 19 },
+                    },
+                    severity = 1,
+                    source = "anakins-dtls",
+                    message = "Node name without a unit address conflicts with a property name",
+                },
+            }, actual)
         end)
     end)
 

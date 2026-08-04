@@ -1,0 +1,41 @@
+/ {
+	#address-cells = <1>;
+
+	abcdefghijklmnopqrstuvwxyzabcdef@0 {
+		reg = <0>;
+	};
+
+	bad$name@0 {
+		reg = <0>;
+	};
+
+	device@bad$value {
+		reg = <0>;
+	};
+
+	1device {
+	};
+
+	missing-reg@1 {
+	};
+
+	wrong-address@2 {
+		reg = <0x1 0x100>;
+	};
+
+	matching-address@0000000A {
+		reg = <0x0000000a 0x100>;
+	};
+
+	wide-bus {
+		#address-cells = <2>;
+
+		wide-address@1,0 {
+			reg = <0x1 0x00000000 0x100>;
+		};
+	};
+
+	property-collision;
+	property-collision {
+	};
+};

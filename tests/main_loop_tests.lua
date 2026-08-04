@@ -148,14 +148,14 @@ describe("server_step() state transitions", function()
             starting_state = "initialized",
             input = {
                 method = "textDocument/didSave",
-                params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(project_root) } },
+                params = { textDocument = { uri = ("file://%s/tests/multiline-reg.dts"):format(project_root) } },
             },
             expect_state = "initialized",
             expect_output = {
                 {
                     method = "textDocument/publishDiagnostics",
                     params = {
-                        uri = ("file://%s/tests/custom.dts"):format(project_root),
+                        uri = ("file://%s/tests/multiline-reg.dts"):format(project_root),
                         diagnostics = {},
                     },
                 },
@@ -799,7 +799,7 @@ it("handles a full initialize -> didSave -> shutdown -> exit session", function(
     server.channel:push_input(frame({ method = "initialized", params = {} }))
     server.channel:push_input(frame({
         method = "textDocument/didSave",
-        params = { textDocument = { uri = ("file://%s/tests/custom.dts"):format(project_root) } },
+        params = { textDocument = { uri = ("file://%s/tests/multiline-reg.dts"):format(project_root) } },
     }))
     server.channel:push_input(frame({ method = "shutdown", id = 2 }))
     server.channel:push_input(frame({ method = "exit" }))
@@ -857,7 +857,7 @@ it("runs the real script end-to-end over real stdio", function()
         source = "anakins-dtls",
         message = "Missing semicolon",
     }, output[2].params.diagnostics[1])
-    assert.are.equal(4, #output[2].params.diagnostics)
+    assert.are.equal(5, #output[2].params.diagnostics)
     assert.are.equal(2, output[3].id)
     assert.same(json.NULL, output[3].result)
     assert.are.equal(3, #output)

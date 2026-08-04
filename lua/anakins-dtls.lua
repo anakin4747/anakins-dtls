@@ -807,6 +807,200 @@ local function semicolon_diagnostics(lines)
     return diagnostics
 end
 
+local function name_diagnostic(item, message, start_col, length)
+    local result = diagnostic(item.row - 1, start_col - 1, message)
+    result.range["end"].character = start_col - 1 + length
+    return result
+end
+
+local function normalized_address(value)
+    local hex = value:match("^0[xX]([%da-fA-F]+)$")
+    if hex then
+        return (hex:lower():gsub("^0+", "")):gsub("^$", "0")
+    end
+    return value:gsub("^0+", ""):gsub("^$", "0")
+end
+
+local function collect_reg_cells(node, code)
+    for value in code:gmatch("0[xX][%da-fA-F]+") do
+        node.reg_cells[#node.reg_cells + 1] = normalized_address(value)
+        if #node.reg_cells == node.address_cells then
+            break
+        end
+    end
+    if #node.reg_cells == 0 then
+        for value in code:gmatch("%f[%d]%d+%f[^%d]") do
+            node.reg_cells[#node.reg_cells + 1] = normalized_address(value)
+            if #node.reg_cells == node.address_cells then
+                break
+            end
+        end
+    end
+    if #node.reg_cells == node.address_cells then
+        node.reg = table.concat(node.reg_cells, ",")
+        node.pending_reg = nil
+    end
+end
+
+local function node_name_diagnostics(lines)
+    local diagnostics = {}
+    local stack = {}
+    local in_block_comment = false
+
+    local function finish_node(node)
+        if node.name ~= "/" and node.name:sub(1, 1) ~= "&" then
+            local node_name, unit_address = node.name:match("^(.-)@(.*)$")
+            node_name = node_name or node.name
+            local node_col = node.col
+            if #node_name < 1 or #node_name > 31 then
+                diagnostics[#diagnostics + 1] =
+                    name_diagnostic(node, "Node name must be 1 to 31 characters long", node_col, #node_name)
+            end
+            if node_name:find("[^%w,._+%-]") then
+                diagnostics[#diagnostics + 1] =
+                    name_diagnostic(node, "Node name contains an invalid character", node_col, #node_name)
+            end
+            if not node_name:match("^[a-zA-Z]") then
+                diagnostics[#diagnostics + 1] =
+                    name_diagnostic(node, "Node name must start with a letter", node_col, #node_name)
+            end
+
+            if unit_address then
+                local unit_col = node_col + #node_name + 1
+                if unit_address:find("[^%w,._+%-]") then
+                    diagnostics[#diagnostics + 1] =
+                        name_diagnostic(node, "Unit address contains an invalid character", unit_col, #unit_address)
+                end
+                if not node.has_reg then
+                    diagnostics[#diagnostics + 1] = name_diagnostic(
+                        node,
+                        "Unit address must be omitted when the node has no reg property",
+                        unit_col,
+                        #unit_address
+                    )
+                elseif
+                    not unit_address:find("[^%w,._+%-]")
+                    and node.reg
+                    and node.reg ~= unit_address:lower():gsub("^0+", ""):gsub("^$", "0")
+                then
+                    diagnostics[#diagnostics + 1] = name_diagnostic(
+                        node,
+                        "Unit address must match the first address in reg",
+                        unit_col,
+                        #unit_address
+                    )
+                end
+            elseif node.parent then
+                node.node_name = node_name
+            end
+        end
+
+        for _, child in ipairs(node.children) do
+            if child.node_name and node.properties[child.node_name] then
+                diagnostics[#diagnostics + 1] = name_diagnostic(
+                    child,
+                    "Node name without a unit address conflicts with a property name",
+                    child.col,
+                    #child.node_name
+                )
+            end
+        end
+    end
+
+    for row, line in ipairs(lines) do
+        local code = {}
+        local in_string = false
+        local escaped = false
+        local col = 1
+        while col <= #line do
+            local char = line:sub(col, col)
+            local following_char = line:sub(col + 1, col + 1)
+            if in_block_comment then
+                code[#code + 1] = " "
+                if char == "*" and following_char == "/" then
+                    code[#code + 1] = " "
+                    in_block_comment = false
+                    col = col + 1
+                end
+            elseif in_string then
+                code[#code + 1] = " "
+                if escaped then
+                    escaped = false
+                elseif char == "\\" then
+                    escaped = true
+                elseif char == '"' then
+                    in_string = false
+                end
+            elseif char == "/" and following_char == "*" then
+                code[#code + 1] = " "
+                code[#code + 1] = " "
+                in_block_comment = true
+                col = col + 1
+            elseif char == "/" and following_char == "/" then
+                code[#code + 1] = string.rep(" ", #line - col + 1)
+                break
+            else
+                code[#code + 1] = char
+                if char == '"' then
+                    in_string = true
+                end
+            end
+            col = col + 1
+        end
+        code = table.concat(code)
+
+        local open_col = code:find("{", 1, true)
+        if open_col then
+            local prefix = code:sub(1, open_col - 1):match("^%s*(.-)%s*$")
+            local name = prefix:match("([^%s:]+)%s*$") or prefix
+            local name_col = code:find(name, 1, true)
+            local parent = stack[#stack]
+            local node = {
+                name = name,
+                col = name_col,
+                row = row,
+                parent = parent,
+                properties = {},
+                children = {},
+                address_cells = parent and parent.address_cells or 2,
+            }
+            if parent then
+                parent.children[#parent.children + 1] = node
+            end
+            stack[#stack + 1] = node
+        else
+            local node = stack[#stack]
+            if node then
+                if node.pending_reg and not node.reg then
+                    collect_reg_cells(node, code)
+                end
+                local property = code:match("^%s*([^%s=;{}]+)%s*[=;]")
+                if property then
+                    node.properties[property] = true
+                    if property == "#address-cells" then
+                        node.address_cells = tonumber(code:match("<%s*(%d+)")) or node.address_cells
+                    elseif property == "reg" then
+                        node.has_reg = true
+                        node.reg_cells = {}
+                        node.pending_reg = true
+                        collect_reg_cells(node, code)
+                    end
+                end
+            end
+        end
+
+        for _ in code:gmatch("}") do
+            local node = stack[#stack]
+            if node then
+                finish_node(node)
+                stack[#stack] = nil
+            end
+        end
+    end
+
+    return diagnostics
+end
+
 function M.get_diagnostics(file)
     if file:sub(1, 1) ~= "/" then
         error("get_diagnostics: file path must be absolute")
@@ -821,6 +1015,9 @@ function M.get_diagnostics(file)
         diagnostics[#diagnostics + 1] = item
     end
     for _, item in ipairs(indentation_diagnostics(lines)) do
+        diagnostics[#diagnostics + 1] = item
+    end
+    for _, item in ipairs(node_name_diagnostics(lines)) do
         diagnostics[#diagnostics + 1] = item
     end
     table.sort(diagnostics, function(left, right)
