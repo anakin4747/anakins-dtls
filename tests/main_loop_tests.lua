@@ -909,3 +909,33 @@ for _, flag in ipairs({ "--version", "-v" }) do
         assert.are.equal("having a hoot and a holler\nanakins-dtls 1.2.3 (abcdef0)\n", output)
     end)
 end
+
+for _, flag in ipairs({ "--help", "-h" }) do
+    it("reports usage and configuration commands with " .. flag, function()
+        local outfile = os.tmpname()
+        local expected = dtls.dedent([[
+            usage: anakins-dtls [option]
+
+            Run the Anakin's Devicetree Language Server over standard input and output.
+
+            Options:
+              -h, --help       Show this help message
+              -v, --version    Show version information
+
+            Generate .anakins-dtls for Buildroot:
+              make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls
+
+            Generate .anakins-dtls for Yocto:
+              bitbake-getvar S -r virtual/kernel > .anakins-dtls
+        ]])
+
+        os.execute(("lua lua/anakins-dtls.lua %s > %q"):format(flag, outfile))
+
+        local output_handle = io.open(outfile, "r")
+        local output = output_handle:read("*a")
+        output_handle:close()
+        os.remove(outfile)
+
+        assert.are.equal(expected, output)
+    end)
+end

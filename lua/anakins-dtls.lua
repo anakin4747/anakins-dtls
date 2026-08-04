@@ -4930,6 +4930,23 @@ local function running_as_main_script()
 end
 
 if running_as_main_script() then
+    if arg[1] == "--help" or arg[1] == "-h" then
+        io.write([[usage: anakins-dtls [option]
+
+Run the Anakin's Devicetree Language Server over standard input and output.
+
+Options:
+  -h, --help       Show this help message
+  -v, --version    Show version information
+
+Generate .anakins-dtls for Buildroot:
+  make -s --no-print-directory printvars VARS=LINUX_DIR > .anakins-dtls
+
+Generate .anakins-dtls for Yocto:
+  bitbake-getvar S -r virtual/kernel > .anakins-dtls]])
+        os.exit(0)
+    end
+
     if arg[1] == "--version" or arg[1] == "-v" then
         local version = os.getenv("ANAKINS_DTLS_VERSION") or "unknown"
         local revision = os.getenv("ANAKINS_DTLS_REVISION") or "unknown"
