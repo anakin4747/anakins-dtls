@@ -927,10 +927,44 @@ local function collect_reg_cells(node, code)
     end
 end
 
-local function node_name_diagnostics(lines)
+local function included_root_address_cells(file, seen)
+    seen = seen or {}
+    if seen[file] then
+        return nil
+    end
+    seen[file] = true
+
+    local result
+    local depth = 0
+    local lines = read_lines(file)
+    local code_lines = masked_code_lines(lines)
+    for row, code in ipairs(code_lines) do
+        local include = lines[row]:match('^%s*#include%s+"([^"]+)"')
+        if include then
+            local directory = file:match("^(.*)/[^/]+$") or "."
+            local included_file = directory .. "/" .. include
+            local handle = io.open(included_file, "r")
+            if handle then
+                handle:close()
+                result = included_root_address_cells(included_file, seen) or result
+            end
+        end
+
+        if depth == 1 then
+            result = tonumber(code:match("^%s*#address%-cells%s*=%s*<%s*(%d+)%s*>") or result)
+        end
+        for char in code:gmatch("[{}]") do
+            depth = depth + (char == "{" and 1 or -1)
+        end
+    end
+    return result
+end
+
+local function node_name_diagnostics(lines, file)
     local diagnostics = {}
     local stack = {}
     local in_block_comment = false
+    local root_address_cells = included_root_address_cells(file) or 2
 
     local function finish_node(node)
         if node.name ~= "/" and node.name:sub(1, 1) ~= "&" then
@@ -1047,7 +1081,7 @@ local function node_name_diagnostics(lines)
                 parent = parent,
                 properties = {},
                 children = {},
-                address_cells = parent and parent.address_cells or 2,
+                address_cells = parent and parent.address_cells or root_address_cells,
             }
             if parent then
                 parent.children[#parent.children + 1] = node
@@ -1131,7 +1165,7 @@ function M.get_diagnostics(file)
     for _, item in ipairs(indentation_diagnostics(lines)) do
         diagnostics[#diagnostics + 1] = item
     end
-    for _, item in ipairs(node_name_diagnostics(lines)) do
+    for _, item in ipairs(node_name_diagnostics(lines, file)) do
         diagnostics[#diagnostics + 1] = item
     end
     table.sort(diagnostics, function(left, right)

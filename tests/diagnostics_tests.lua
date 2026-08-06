@@ -72,6 +72,14 @@ describe("get_diagnostics()", function()
             assert.same({}, dtls.get_diagnostics(cwd .. "/tests/multiline-reg.dts"))
         end)
 
+        it("matches a zero unit address to a zero-padded hexadecimal reg address", function()
+            assert.same({}, dtls.get_diagnostics(cwd .. "/tests/zero-padded-reg-address.dts"))
+        end)
+
+        it("matches a unit address to the identical hexadecimal reg address", function()
+            assert.same({}, dtls.get_diagnostics(cwd .. "/tests/matching-reg-address.dts"))
+        end)
+
         it("for missing closing delimiters", function()
             assert.same({
                 {

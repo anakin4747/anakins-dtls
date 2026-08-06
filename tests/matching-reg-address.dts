@@ -1,0 +1,14 @@
+/dts-v1/;
+
+#include "one-cell-root.dtsi"
+
+/ {
+	nvram@1eff0000 {
+		compatible = "brcm,nvram";
+		reg = <0x1eff0000 0x10000>;
+
+		et0macaddr: et0macaddr {
+			#nvmem-cell-cells = <1>;
+		};
+	};
+};
